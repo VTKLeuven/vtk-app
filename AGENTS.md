@@ -1,132 +1,125 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+# Expo HAS CHANGED
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
+Read the exact versioned docs at https://docs.expo.dev/versions/v54.0.0/ before writing any code.
 
-# Local setup: `make up && make db && make dev`
+(Dit blok wordt door `expo start` herschreven en kan dan naar een andere versie
+wijzen dan waar deze app op staat. Wij zitten op SDK 54; zie onderaan waarom.)
 
-The root `Makefile` is a thin layer over the npm scripts; `make help` lists
-everything. The npm scripts stay the source of truth (CI runs those), so never
-put logic in a make target that exists only through `make`.
+# VTK (Expo)
 
-- **The local database lives in `infra/compose.dev.yml`**, not in
-  `infra/docker-compose.yml`. That second file is the **deploy stack**: it builds
-  the web and logistiek images and starts Immich, Umami and five workers. Bring
-  it up on your laptop and you get two Postgres containers on the same data
-  volume; that is one data directory with two postmasters, with everything that
-  follows from it. Locally, run only `make up`.
-- Postgres listens on **127.0.0.1:5433**, deliberately not on every interface:
-  otherwise a database with password `vtk` is open to the whole wifi network.
-- **MinIO runs alongside it** on 9000 (console on 9001), because without object
-  storage every `/api/media/...` is a 404 and every upload field in the admin
-  fails, so no photo anywhere on the site can be tried out locally. The `S3_*`
-  block in `.env.example` points at it; those credentials are not secrets.
-  `make db` finishes with `npm run db:images`, which uploads placeholder partner
-  logos generated from `fixtures/partners.json`.
+De VTK-site als native app, voor iOS en Android. Dezelfde inhoud en hetzelfde
+ontwerp als **vtk-website-new**, maar met de vorm van een app: een tabbalk
+onderaan, schermen in plaats van pagina's. **De admin hoort hier niet in** en
+blijft op het web.
 
-# Seed: content comes from fixtures, not from constants
+Niet te verwarren met **vtk-scanner-app**: dat is de ticketscanner voor aan de
+deur, met zijn eigen offline-werking en een donker scherm. Die blijft apart.
 
-`packages/db/prisma/fixtures/*.json` holds the editorial content of the dev site
-(navigation, CMS pages, calendar categories, POCs, partners, some homepage
-settings). `prisma/seed.ts` uses them; if they are missing it falls back to the constants in
-`packages/db/src/groups.ts`.
+**Lees `docs/` voor je plant of schrijft.** `docs/plan.md` is het plan én het
+logboek (welke fase waar staat), `docs/architecture.md` legt uit hoe de app met
+de site praat.
 
-That split exists because the seed is **create-only**: a reseed must not
-overwrite work done in the admin. As a result the constants drift away from the
-real site from their first use onwards. That once cost half an evening chasing a
-"bug" in the site header that only existed locally: local had eleven tabs, the
-site had nine, and the navigation therefore ran over the search button.
+## Draaien
 
-- Updating is done by someone with access to the dev database:
-  `FIXTURES_SOURCE_DATABASE_URL="postgresql://..." make fixtures`, and they
-  commit the result.
-- **Never `pg_dump` for fixtures.** This rule is about what lands in the
-  repository; a real backup is the other story and dumps everything on purpose
-  (`make backup`, into a gitignored `backups/`). That database carries member
-  data, orders, payments, door logs and mailing lists, `Setting` holds
-  `s3.config`, `sentry.config`, `door.config` and `brevo.lists`, and
-  `OauthClient.clientSecret` is stored in plaintext. `scripts/export-fixtures.ts` therefore exports per table, from a
-  fixed list and with a per-key allowlist for settings.
-- If you add a table to that export, two rules hold without exception: no
-  personal data, and key on the natural key (`code`, `slug`) instead of the
-  `cuid`, or the fixtures can only be imported into an empty database.
-- **A storage key never travels into the fixtures.** Production keys are random
-  (`logos/<hash>.png`) and point at a bucket a laptop cannot read, so they would
-  all 404. The header tab photo is dropped entirely; the partner logo is rewritten
-  to a deterministic `partners/seed/<slug>.svg` that `npm run db:images` fills
-  with a placeholder.
+```
+npm start          # expo start (dev build, niet Expo Go: react-native-webview)
+npm run type-check # tsc --noEmit, moet 0 fouten geven
+npm run lint
+```
 
-# Dev server: do NOT use Turbopack
+Lokaal testen vraagt HTTPS, want de weblogin doet KU Leuven-SSO. Draai
+vtk-website-new achter een cloudflared-tunnel en vul die URL in bij
+**Profiel -> Server**. Zie `docs/architecture.md`.
 
-`apps/web` and `apps/logistiek` both run `next dev --webpack` in their `dev`
-script. This is intentional. Next.js 16 + Turbopack + Tailwind v4's PostCSS
-plugin has a severe memory leak where every CSS recompile spawns a fresh
-`.next/dev/build/postcss.js` child process that is never reaped. In this
-monorepo that quickly balloons to hundreds of workers and tens of GB of
-memory (see https://github.com/vercel/next.js/discussions/77102).
+## Regels
 
-- Do NOT change the dev script back to plain `next dev`.
-- If you need to experiment with Turbopack, use the explicit
-  `npm run dev:turbopack -w @vtk/web` script and watch
-  `pgrep -f postcss.js | wc -l` — if that number keeps growing, kill it.
-- `next build` uses Turbopack and is fine (single-shot, no leak).
+1. **De server is de waarheid.** Elke regel die iets beslist (mag ik bestellen,
+   is de deadline voorbij, hoeveel zijn er nog) staat in vtk-website-new en wordt
+   hier niet nagebouwd. De app mag nooit soepeler zijn dan de site.
+2. **Alles native, behalve identiteit en geld.** Een WebView is toegelaten voor
+   inloggen, de onboarding-poorten en betalen (Mollie). Al de rest wordt een echt
+   scherm. Een browser openen voor eigen inhoud is een bug, geen keuze; enkel
+   adressen op een andere site (cudi, Career, Burgieclan) horen daar.
+9. **Home is wat je wil doen, Info is waar alles staat.** De snelkoppelingen
+   staan op Home en niet in Info; anders komt de helft twee keer voor, één keer
+   als tegel en één keer als menu-item uit het CMS.
+3. **Geen admin.** Ook niet voor wie er rechten voor heeft.
+4. **iOS en Android doen hetzelfde.** Geen platformspecifieke schermen.
+5. **Geen dependency die de Expo SDK al dekt.**
+6. **Geen emoji in de UI**; iconen komen uit `lucide-react-native`.
+7. **Nederlands in de interface**, Engelse vakterminologie waar dat natuurlijker
+   is. **Geen em-dashes**, ook niet in code, comments of commits.
+8. **Het ontwerp komt van de site.** De tokens in `src/theme/tokens.ts` zijn de
+   enige plek met kleuren; verzin er geen. Witte kaarten op papier, dunne randen,
+   geel enkel als accent, geen gradienten en geen kaart in een kaart. De donkere
+   `PageHead` opent elk scherm behalve Home, precies zoals `.vtk-page-head` dat op
+   de site doet.
 
-# Workspace root is pinned
+## Structuur
 
-Both `next.config.ts` files set `turbopack.root` and `outputFileTracingRoot`
-to the monorepo root. Do not remove these. Without them Next.js walks
-upwards to find a lockfile and can latch onto a stray `package-lock.json`
-in the user's home directory, then try to scan things like OrbStack
-container mounts (which contain symlink cycles).
+- `app/` - enkel expo-router routes. De vijf tabs staan in
+  `app/(tabs)/_layout.tsx`.
+- `app/(tabs)/(detail)/` - **alle doorklikschermen**, in één gedeelde stack die
+  binnen de tabnavigator zit. Daardoor blijft de tabbalk zichtbaar zodra je
+  ergens op tikt; stonden ze in de stack van de wortel, dan schoof elk scherm
+  over de balk heen. `(detail)` is een routegroep, dus de haakjes staan niet in
+  het adres: `(tabs)/(detail)/piano.tsx` is gewoon `/piano`. **Een nieuw
+  doorklikscherm hoort hier**, niet in `app/`.
+- `app/_layout.tsx` draagt enkel nog de tabs plus drie modals (inloggen, de
+  onboardingpoort, de serverinstelling). Die liggen bewust wél over de balk: een
+  modal die de navigatie eronder laat staan, is geen modal.
+- `src/api/` - de HTTP-laag en het contract met de site.
+- `src/auth/` - wie er ingelogd is (er wordt geen token bewaard; zie
+  `src/api/client.ts`) en de twee poorten uit `proxy.ts`.
+- `src/state/` - `AppProvider`, de schil: viewer, tabs, aankondiging.
+- `src/components/`, `src/theme/tokens.ts` - UI en tokens. `Prose` rendert alle
+  Markdown (pagina's, aankondigingen, evenement- en ticketbeschrijvingen).
+- `src/api/useResource.ts` - het patroon van elk scherm dat gegevens ophaalt:
+  cache tonen, ophalen, en het zeggen wanneer die verversing niet lukte.
+- `src/format.ts` - datums, uren en geld, altijd in `Europe/Brussels`.
+- `src/monthGrid.ts` - het maandrooster van de kalender. **Geen kopie van
+  `calendarGrid.ts` op de site**: die rekent met de lokale tijd van de machine,
+  en op een telefoon is dat niet noodzakelijk Brussel. Hier draait alles op
+  datumsleutels (`YYYY-MM-DD`) en op UTC-middag, zodat geen tijdzone en geen
+  zomertijdsprong een dag kan verschuiven.
+- `src/nativeRoute.ts` - vertaalt een pad uit het CMS naar een scherm in de app.
+  Het CMS kent de app niet en zet "Piano reserveren" als link naar `/piano`;
+  zonder deze tabel zou dat in een browser openen terwijl er een scherm voor
+  bestaat. **Komt er een native scherm bij, voeg hier dan een regel toe.**
+- `src/push.ts` - pushberichten. Toestemming wordt gevraagd via de knop in
+  Profiel en **nooit bij de eerste start**; op iOS krijg je maar één kans.
+- `src/storage.ts` - voorkeuren en de leescache. **Geen schrijfwachtrij**: dit is
+  niet de scanner, en bestellen vraagt netwerk.
 
-# Tailwind v4 source scanning is explicit
+## Wat bewust op de site blijft
 
-`apps/*/app/globals.css` uses `@import "tailwindcss" source(none);` plus
-explicit `@source` directives. Do not switch back to auto-detection: the
-oxide scanner follows symlinks and was walking `~/OrbStack/**`.
+Geen achterstand maar een beslissing: je gegevens wijzigen, verbonden apps,
+privacygegevens, formulieren, lesbezoeken en het contactformulier. Dat zijn
+formulieren met eigen validatie en soms juridische gevolgen, en die op twee
+plaatsen hebben is twee keer kunnen mislopen.
 
-# Never hand-edit deps; regenerate the lockfile
+Drie schrijfwegen lopen ook bewust langs de bestaande routes van de site in plaats
+van langs `/api/app/v1`: **afrekenen** (`/api/tickets/checkout`, dat het
+order-toegangscookie zet) en **in- en uitschrijven op een shift**
+(`/api/shift/register`, dat overlap, de 24-uursgrens en de cudi-sync bewaakt). Een
+wrapper zou daar niets doen dan doorgeven, of erger, de helft vergeten.
 
-npm drops other platforms' native binaries from `package-lock.json` on an
-incremental `npm install` (npm/cli#4828). The lockfile keeps working on the
-machine that wrote it, so this ships unnoticed: `npm ci` on Linux (the server
-and CI) or macOS then installs a binding package with no `.node` file in it,
-and the failure only surfaces at build/dev time as a cryptic "cannot find
-native binding". It has bitten us twice: `@rolldown/binding-*` (fixed in
-691f554) and `lightningcss-*` (fixed after `cee7046` shipped it broken again).
+## Gekopieerd uit vtk-website-new
 
-- After changing dependencies, do NOT commit an incrementally-updated lockfile.
-  Regenerate it: `rm -rf node_modules package-lock.json && npm install`.
-  A clean resolve pulls in every platform's optional deps.
-- `npm run verify:lockfile` (`scripts/check-lockfile-platforms.mjs`) asserts
-  that every declared platform binding has a lockfile entry. CI runs it before
-  `npm ci`, so a pruned lockfile fails the PR instead of the deploy.
-- Symptom on Windows: every page 500s in dev with a lightningcss error.
-  Installing just the one missing binary (`npm install --no-save
-  lightningcss-win32-x64-msvc`) unblocks your machine but leaves the lockfile
-  broken for Linux and macOS. Fix the lockfile instead.
+Deze bestanden zijn bewust een kopie en geen import; wijzigt het origineel, dan
+wijzigt dit mee. De contracttest in `apps/web/test/appApiContract.test.ts`
+vergelijkt de eerste rij byte voor byte wanneer beide repo's naast elkaar staan.
 
-# Prisma client must not be re-exported from @vtk/db
+| Hier | Origineel |
+|---|---|
+| `src/api/contract.ts` | `apps/web/lib/app-api/contract.ts` |
+| `src/theme/tokens.ts` | `apps/web/app/design/vtk-base.css` (`:root`) |
+| `src/api/client.ts` | `vtk-scanner-app/src/api/client.ts` |
 
-`packages/db/src/index.ts` exports `prisma` only. Do NOT re-export from
-`@prisma/client` (not even as types). The generated `index.d.ts` is
-~28k lines and pulling it through the bundler is pathologically slow.
-Import Prisma model types directly from `@prisma/client` at the call site
-if you need them.
+## Expo SDK 54, niet 57
 
-# `npm run verify` draait automatisch voor elke push
-
-`.githooks/pre-push` draait `npm run verify` (lockfile-check, `next typegen` +
-`tsc --noEmit`, eslint en de unit tests van `@vtk/web`). Dat zijn dezelfde
-checks als de `verify`-job in `.github/workflows/deploy.yml`, minus wat een
-database, een browser of een volledige build nodig heeft. Een mislukte verify op
-main blokkeert de deploy, dus je wil dat lokaal weten en niet uit de pipeline.
-
-- De hook installeert zichzelf: het `prepare`-script zet bij `npm install`
-  `core.hooksPath` op `.githooks`. Na een verse clone volstaat `npm install`.
-  Handmatig kan ook: `git config core.hooksPath .githooks`.
-- Overslaan doe je met `git push --no-verify` of `SKIP_VERIFY=1 git push`.
-  Enkel doen als je zeker weet dat de checks elders al groen stonden.
-- Voeg je een check toe aan de CI-job, voeg ze dan ook toe aan `npm run verify`
-  wanneer ze zonder database en zonder build kan draaien.
+Bewust gelijk aan vtk-scanner-app: een toolchain voor beide VTK-apps, en die is
+daar al door de EAS-bouwproblemen heen (de `react-dom`-pin, het wegvallen van
+`@react-native-cookies/cookies`, `platforms: ["ios","android"]` voor
+`eas update`). Upgraden is prima, maar doe het dan voor allebei tegelijk en als
+een eigen taak, niet en passant.

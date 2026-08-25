@@ -1,42 +1,48 @@
 {
-  "name": "vtk-website",
-  "version": "0.1.0",
-  "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "name": "vtk-app",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
   "scripts": {
-    "prepare": "git config core.hooksPath .githooks || true",
-    "verify": "npm run verify:lockfile && npm run verify:types && npm run lint && npm run test --workspace=@vtk/web && npm run test --workspace=@vtk/logistiek",
-    "verify:types": "npm run db:generate && npm exec --workspace=@vtk/web -- next typegen && npm exec --workspace=@vtk/logistiek -- next typegen && tsc --noEmit -p apps/web/tsconfig.build.json && tsc --noEmit -p apps/logistiek/tsconfig.build.json",
-    "verify:lockfile": "node scripts/check-lockfile-platforms.mjs",
-    "dev": "npm run dev --workspace=@vtk/web",
-    "build": "npm run build --workspace=@vtk/db && npm run build --workspace=@vtk/web",
-    "start": "npm run start --workspace=@vtk/web",
-    "lint": "npm run lint --workspace=@vtk/web",
-    "db:generate": "npm run generate --workspace=@vtk/db",
-    "db:push": "npm run push --workspace=@vtk/db",
-    "db:migrate": "npm run migrate --workspace=@vtk/db",
-    "db:seed": "npm run seed --workspace=@vtk/db",
-    "db:admin": "dotenv -e .env -- tsx scripts/create-local-admin.ts",
-    "fixtures:export": "dotenv -e .env -- tsx scripts/export-fixtures.ts",
-    "import:praesidium": "dotenv -e .env -- tsx scripts/import-praesidium-history.ts",
-    "import:pages": "dotenv -e .env -- tsx scripts/import-pages.ts",
-    "probe:elixir": "dotenv -e .env -- tsx --conditions=react-server scripts/elixir-probe.ts"
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^26.0.0"
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "date-fns": "^4.4.0"
+    "@expo-google-fonts/instrument-serif": "^0.4.1",
+    "@expo-google-fonts/inter": "^0.4.2",
+    "expo": "^54.0.37",
+    "expo-constants": "~18.0.14",
+    "expo-font": "~14.0.12",
+    "expo-image": "~3.0.10",
+    "expo-linking": "~8.0.12",
+    "expo-notifications": "~0.32.12",
+    "expo-router": "~6.0.24",
+    "expo-splash-screen": "~31.0.13",
+    "expo-sqlite": "~16.0.10",
+    "expo-status-bar": "~3.0.9",
+    "expo-updates": "~29.0.20",
+    "expo-web-browser": "~15.0.8",
+    "lucide-react-native": "^1.33.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-markdown-display": "^7.0.2",
+    "react-native-qrcode-svg": "^6.3.21",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-svg": "15.12.1",
+    "react-native-webview": "13.15.0"
   },
-  "overrides": {
-    "passkit-generator": {
-      "joi": "17.13.4"
-    }
-  }
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@expo/ngrok": "^4.1.3",
+    "@types/react": "~19.1.10",
+    "babel-preset-expo": "~54.0.10",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~10.0.0",
+    "typescript": "^5.3.3"
+  },
+  "private": true
 }
