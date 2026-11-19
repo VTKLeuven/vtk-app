@@ -3,15 +3,20 @@ import {
   BookOpen,
   CalendarCheck,
   Check,
+  ChevronDown,
+  ChevronUp,
+  Clock,
   Eye,
   EyeOff,
   Flag,
   Link2,
+  MapPin,
   RefreshCw,
   Repeat,
   ExternalLink,
   Trash2,
   Unlink,
+  User,
   Users,
   X,
 } from 'lucide-react-native';
@@ -30,7 +35,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { AppPlanning } from '../../api/contract';
+import type { AppPlanning, AppPlanningSession } from '../../api/contract';
 import { mondayOf, shortDay, TYPE_LABELS, type Ref } from '../../planning/grid';
 import type { PlanningHandle } from '../../planning/usePlanning';
 import { COLORS, FONTS, PLANNING, RADIUS, SPACING, TYPE } from '../../theme/tokens';
@@ -240,12 +245,53 @@ export function DetailSheet({
     );
   }
 
-  const { session } = ref;
+  return (
+    <SessionSheet key={ref.session.uid} handle={handle} session={ref.session} planning={planning} onClose={onClose} />
+  );
+}
+
+/**
+ * Eén les. Dit was eerst een lijst van zeven gelijke regels (afvinken, verplicht,
+ * elke week verplicht, naar deze groep, verbergen, elke week verbergen, het vak),
+ * en dat was te veel voor wat je meestal wil: afvinken, of deze ene les
+ * verbergen. Nu staan die drie als knoppen bovenaan, met hun stand erin, en
+ * zitten de wekelijkse regels achter "Elke week op dit uur". Wat je doet, blijft
+ * hetzelfde als op Burgieclan.
+ */
+function SessionSheet({
+  handle,
+  session,
+  planning,
+  onClose,
+}: {
+  handle: PlanningHandle;
+  session: AppPlanningSession;
+  planning: AppPlanning;
+  onClose: () => void;
+}) {
+  const busy = handle.busy;
+  const run = handle.run;
   const week = mondayOf(session.date);
   const parallel = planning.sessions.some(
     (other) => other.uid !== session.uid && other.course === session.course && mondayOf(other.date) === week,
   );
-  const run = handle.run;
+  const hasRule = session.mandatory === 'rule' || session.hidden === 'rule';
+  const [weekly, setWeekly] = useState(hasRule);
+
+  const toggleMandatory = () => {
+    if (session.mandatory === 'rule' && session.mandatoryRule) {
+      void run({ op: 'removeRule', id: session.mandatoryRule });
+    } else {
+      void run({ op: 'mandatory', uid: session.uid, value: session.mandatory === null });
+    }
+  };
+  const toggleHidden = () => {
+    if (session.hidden === 'rule' && session.hiddenRule) {
+      void run({ op: 'removeRule', id: session.hiddenRule });
+    } else {
+      void run({ op: 'hide', uid: session.uid, value: session.hidden === null });
+    }
+  };
 
   return (
     <Sheet visible title={session.course} onClose={onClose}>
@@ -253,102 +299,97 @@ export function DetailSheet({
         {TYPE_LABELS[session.type] ?? TYPE_LABELS.other}
         {session.code ? `, ${session.code}` : ''}
       </Text>
-      <Fact label="Wanneer" value={`${shortDay(session.date)}, ${range(session.start, session.end)}`} />
-      <Fact label="Waar" value={session.location} />
-      <Fact label="Door" value={session.people} />
-      <Fact
-        label="Staat"
-        value={[
-          session.done ? 'Afgevinkt' : null,
-          session.mandatory === 'event' ? 'Verplicht' : session.mandatory === 'rule' ? 'Elke week verplicht' : null,
-          session.hidden === 'event' ? 'Verborgen' : session.hidden === 'rule' ? 'Elke week verborgen' : null,
-        ]
-          .filter(Boolean)
-          .join(', ')}
-      />
+      <View style={styles.meta}>
+        <MetaLine icon={Clock} text={`${shortDay(session.date)}, ${range(session.start, session.end)}`} />
+        <MetaLine icon={MapPin} text={session.location} />
+        <MetaLine icon={User} text={session.people} muted />
+      </View>
 
-      <View style={styles.actions}>
-        <ActionRow
+      <View style={styles.toggles}>
+        <Toggle
           icon={Check}
-          label={session.done ? 'Niet meer afgevinkt' : 'Afvinken'}
-          hint={session.done ? undefined : 'Gevolgd of ingehaald.'}
+          label={session.done ? 'Afgevinkt' : 'Afvinken'}
+          active={session.done}
           disabled={busy}
           onPress={() => void run({ op: 'done', uid: session.uid, value: !session.done })}
         />
+        <Toggle
+          icon={Flag}
+          label="Verplicht"
+          note={session.mandatory === 'rule' ? 'elke week' : undefined}
+          active={session.mandatory !== null}
+          disabled={busy}
+          onPress={toggleMandatory}
+        />
+        <Toggle
+          icon={EyeOff}
+          label={session.hidden ? 'Verborgen' : 'Verbergen'}
+          note={session.hidden === 'rule' ? 'elke week' : undefined}
+          active={session.hidden !== null}
+          disabled={busy}
+          onPress={toggleHidden}
+        />
+      </View>
 
-        {session.mandatory === 'rule' && session.mandatoryRule ? (
+      <View style={styles.actions}>
+        {parallel && session.hidden === null ? (
           <ActionRow
-            icon={Repeat}
-            label="Niet meer elke week verplicht"
+            icon={Users}
+            label="Ik ga naar deze groep"
+            hint="Verbergt de andere groepen van dit vak deze week."
             disabled={busy}
-            onPress={() => void run({ op: 'removeRule', id: session.mandatoryRule as string })}
+            onPress={() => void run({ op: 'keepOnly', uid: session.uid })}
           />
-        ) : session.mandatory === 'event' ? (
-          <ActionRow
-            icon={Flag}
-            label="Niet meer verplicht"
-            disabled={busy}
-            onPress={() => void run({ op: 'mandatory', uid: session.uid, value: false })}
-          />
-        ) : (
-          <>
-            <ActionRow
-              icon={Flag}
-              label="Verplicht"
-              hint="Komt in je agenda als MANDATORY."
-              disabled={busy}
-              onPress={() => void run({ op: 'mandatory', uid: session.uid, value: true })}
-            />
-            <ActionRow
-              icon={Repeat}
-              label="Elke week verplicht"
-              hint="Elke les van dit vak op deze dag, dit uur en in dit lokaal."
-              disabled={busy}
-              onPress={() => void run({ op: 'addRule', uid: session.uid, action: 'mandatory' })}
-            />
-          </>
-        )}
+        ) : null}
 
-        {session.hidden === 'rule' && session.hiddenRule ? (
-          <ActionRow
-            icon={Eye}
-            label="Niet meer elke week verbergen"
-            disabled={busy}
-            onPress={() => void run({ op: 'removeRule', id: session.hiddenRule as string })}
-          />
-        ) : session.hidden === 'event' ? (
-          <ActionRow
-            icon={Eye}
-            label="Terug tonen"
-            disabled={busy}
-            onPress={() => void run({ op: 'hide', uid: session.uid, value: false })}
-          />
-        ) : (
-          <>
-            {parallel ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: weekly }}
+          onPress={() => setWeekly(!weekly)}
+          style={({ pressed }) => [styles.row, styles.disclosure, pressed && styles.pressed]}
+        >
+          <Repeat size={18} color={COLORS.ink} />
+          <View style={styles.rowText}>
+            <Text style={styles.rowLabel}>Elke week op dit uur</Text>
+          </View>
+          {weekly ? <ChevronUp size={18} color={COLORS.muted} /> : <ChevronDown size={18} color={COLORS.muted} />}
+        </Pressable>
+
+        {weekly ? (
+          <View style={styles.nested}>
+            <Text style={styles.hint}>Voor elke les van dit vak op deze dag, dit uur en in dit lokaal.</Text>
+            {session.mandatory === 'rule' && session.mandatoryRule ? (
               <ActionRow
-                icon={Users}
-                label="Ik ga naar deze groep"
-                hint="Verbergt de andere groepen van dit vak deze week."
+                icon={Flag}
+                label="Niet meer elke week verplicht"
                 disabled={busy}
-                onPress={() => void run({ op: 'keepOnly', uid: session.uid })}
+                onPress={() => void run({ op: 'removeRule', id: session.mandatoryRule as string })}
               />
-            ) : null}
-            <ActionRow
-              icon={EyeOff}
-              label="Verbergen"
-              disabled={busy}
-              onPress={() => void run({ op: 'hide', uid: session.uid, value: true })}
-            />
-            <ActionRow
-              icon={Repeat}
-              label="Elke week verbergen"
-              hint="Elke les van dit vak op deze dag, dit uur en in dit lokaal."
-              disabled={busy}
-              onPress={() => void run({ op: 'addRule', uid: session.uid, action: 'hide' })}
-            />
-          </>
-        )}
+            ) : (
+              <ActionRow
+                icon={Flag}
+                label="Elke week verplicht"
+                disabled={busy}
+                onPress={() => void run({ op: 'addRule', uid: session.uid, action: 'mandatory' })}
+              />
+            )}
+            {session.hidden === 'rule' && session.hiddenRule ? (
+              <ActionRow
+                icon={Eye}
+                label="Niet meer elke week verbergen"
+                disabled={busy}
+                onPress={() => void run({ op: 'removeRule', id: session.hiddenRule as string })}
+              />
+            ) : (
+              <ActionRow
+                icon={EyeOff}
+                label="Elke week verbergen"
+                disabled={busy}
+                onPress={() => void run({ op: 'addRule', uid: session.uid, action: 'hide' })}
+              />
+            )}
+          </View>
+        ) : null}
 
         {session.courseUrl ? (
           <ActionRow
@@ -360,6 +401,57 @@ export function DetailSheet({
         ) : null}
       </View>
     </Sheet>
+  );
+}
+
+/** Eén feit van een les op één regel, met een icoon in plaats van een label. */
+function MetaLine({ icon: Icon, text, muted }: { icon: typeof Check; text: string | null; muted?: boolean }) {
+  if (!text) return null;
+  return (
+    <View style={styles.metaLine}>
+      <Icon size={15} color={COLORS.muted} />
+      <Text style={[styles.metaText, muted && styles.metaMuted]} numberOfLines={muted ? 2 : undefined}>
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+/** Een knop die een stand draagt: aan is geel, zoals de ster bij een evenement. */
+function Toggle({
+  icon: Icon,
+  label,
+  note,
+  active,
+  disabled,
+  onPress,
+}: {
+  icon: typeof Check;
+  label: string;
+  note?: string;
+  active: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: active, disabled }}
+      accessibilityLabel={note ? `${label}, ${note}` : label}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.toggle,
+        active && styles.toggleActive,
+        (pressed || disabled) && styles.pressed,
+      ]}
+    >
+      <Icon size={18} color={COLORS.ink} />
+      <Text style={styles.toggleLabel} numberOfLines={1}>
+        {label}
+      </Text>
+      {note ? <Text style={styles.toggleNote}>{note}</Text> : null}
+    </Pressable>
   );
 }
 
@@ -579,6 +671,29 @@ const styles = StyleSheet.create({
   },
   factValue: { ...TYPE.body, color: COLORS.ink, flex: 1 },
   actions: { borderTopWidth: 1, borderTopColor: COLORS.line2, marginTop: SPACING.xs },
+  meta: { gap: 6 },
+  metaLine: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm },
+  metaText: { ...TYPE.body, color: COLORS.ink, flex: 1, marginTop: -3 },
+  metaMuted: { ...TYPE.small, color: COLORS.muted, marginTop: -1 },
+  toggles: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.xs },
+  toggle: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    minHeight: 64,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: 4,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.line2,
+    backgroundColor: COLORS.surface,
+  },
+  toggleActive: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
+  toggleLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.ink },
+  toggleNote: { fontFamily: FONTS.medium, fontSize: 11, color: COLORS.ink, opacity: 0.7 },
+  disclosure: { alignItems: 'center' },
+  nested: { paddingLeft: SPACING.xl, paddingTop: SPACING.sm },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',

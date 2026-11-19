@@ -38,6 +38,10 @@ export type HeadTab<T extends string> = {
  * knop kwam je op iOS nergens meer weg zodra je één keer doorklikte. Hij staat
  * als kruimelpad boven de titel, zoals op de site, en verschijnt enkel wanneer er
  * iets is om naar terug te keren; een tabscherm zet `back={false}`.
+ *
+ * **`compact`** is voor een scherm dat zijn hoogte zelf nodig heeft, zoals de
+ * planning onder Kalender: een kleinere titel, geen ondertitel en minder lucht.
+ * Het blijft dezelfde kop (navy, patroon, gele lijn, pillen); enkel lager.
  */
 export function PageHead<T extends string = string>({
   title,
@@ -47,6 +51,7 @@ export function PageHead<T extends string = string>({
   back = true,
   backLabel = 'Terug',
   tabs,
+  compact = false,
   children,
 }: {
   title: string;
@@ -59,6 +64,8 @@ export function PageHead<T extends string = string>({
   /** Wat er naast het pijltje staat; standaard "Terug". */
   backLabel?: string;
   tabs?: { options: HeadTab<T>[]; value: T; onChange: (next: T) => void; scroll?: boolean };
+  /** Een lagere kop; zie hierboven. */
+  compact?: boolean;
   /** Extra inhoud onderaan de kop, nog op de navy band. */
   children?: React.ReactNode;
 }) {
@@ -67,7 +74,13 @@ export function PageHead<T extends string = string>({
   const showBack = back && router.canGoBack();
 
   return (
-    <View style={[styles.head, { paddingTop: insets.top + SPACING.md }]}>
+    <View
+      style={[
+        styles.head,
+        compact && styles.headCompact,
+        { paddingTop: insets.top + (compact ? SPACING.sm : SPACING.md) },
+      ]}
+    >
       <PatternBand offset={patternOffsetFor(title)} />
 
       {showBack ? (
@@ -81,17 +94,17 @@ export function PageHead<T extends string = string>({
           <ChevronLeft color={COLORS.onDarkMuted} size={18} />
           <Text style={styles.backLabel}>{backLabel}</Text>
         </Pressable>
-      ) : (
+      ) : compact ? null : (
         <View style={styles.noBack} />
       )}
 
-      <View style={styles.row}>
+      <View style={[styles.row, compact && styles.rowCompact]}>
         <View style={styles.text}>
-          {kicker ? <Text style={styles.kicker}>{kicker}</Text> : null}
-          <Text style={styles.title}>{title}</Text>
-          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+          {kicker && !compact ? <Text style={styles.kicker}>{kicker}</Text> : null}
+          <Text style={[styles.title, compact && styles.titleCompact]}>{title}</Text>
+          {subtitle && !compact ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
         </View>
-        {right ? <View style={styles.right}>{right}</View> : null}
+        {right ? <View style={[styles.right, compact && styles.rightCompact]}>{right}</View> : null}
       </View>
 
       {tabs ? (
@@ -99,7 +112,7 @@ export function PageHead<T extends string = string>({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={styles.tabsScroll}
+            style={[styles.tabsScroll, compact && styles.tabsCompact]}
             contentContainerStyle={styles.tabsScrollContent}
           >
             {tabs.options.map((option) => (
@@ -112,7 +125,7 @@ export function PageHead<T extends string = string>({
             ))}
           </ScrollView>
         ) : (
-          <View style={styles.tabs}>
+          <View style={[styles.tabs, compact && styles.tabsCompact]}>
             {tabs.options.map((option) => (
               <TabPill
                 key={option.value}
@@ -191,16 +204,21 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xs,
     paddingRight: SPACING.sm,
   },
+  headCompact: { paddingBottom: SPACING.md },
   noBack: { height: SPACING.md },
   pressed: { opacity: 0.6 },
   backLabel: { ...TYPE.small, color: COLORS.onDarkMuted },
   row: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.md },
   text: { flex: 1, gap: SPACING.sm },
+  rowCompact: { alignItems: 'center' },
   right: { paddingBottom: SPACING.xs },
+  rightCompact: { paddingBottom: 0 },
   kicker: { ...TYPE.small, color: COLORS.onDarkMuted },
   title: { ...TYPE.pageTitle, color: COLORS.onDark },
+  titleCompact: { fontSize: 24, lineHeight: 28, letterSpacing: -0.6 },
   subtitle: { ...TYPE.body, color: COLORS.onDarkMuted },
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.lg },
+  tabsCompact: { marginTop: SPACING.md },
   // Tot tegen de rand van het scherm, zodat de laatste pil zichtbaar doorloopt.
   tabsScroll: { marginTop: SPACING.lg, marginRight: -(SPACING.xl - 4) },
   tabsScrollContent: { gap: 6, paddingRight: SPACING.xl - 4 },

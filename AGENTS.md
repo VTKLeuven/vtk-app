@@ -113,9 +113,11 @@ uitzondering: die werkt in Expo Go niet.
    wat is er open, en wat wacht er op mij. De CMS-boom, de mensen, de piano en je
    profiel staan onder Meer. Zet een snelkoppeling niet op allebei; anders komt de
    helft twee keer voor, één keer als tegel en één keer als menu-item uit het CMS.
-10. **Wat je aan een balie toont, is twee tikken ver.** Je ticket, je
-   broodjescode en je bonnetjes staan achter een segment in hun eigen tab en niet
-   achter een menu. Aan een deur of een toog staat er een rij achter je.
+10. **Wat je aan een balie toont, is twee tikken ver.** Je ticket en je
+   bonnetjes staan achter een segment in hun eigen tab en niet achter een menu.
+   Aan een deur of een toog staat er een rij achter je. Een ticket vergroot je
+   met één tik tot over het hele scherm. Broodjes hebben geen code: aan het
+   Theokot scant men je studentenkaart.
 11. **Toon geen knop die "geen toegang" antwoordt.** `bootstrap.abilities` zegt
    wat deze gebruiker mag; verberg de rest. Dat is netheid en geen beveiliging,
    want elke route controleert het daarna nog eens zelf.
@@ -167,11 +169,12 @@ uitzondering: die werkt in Expo Go niet.
   niet op een leeg scherm eindigen. Ook deze worden gemaakt.
 - `app/(tabs)/_layout.tsx` is wél met de hand geschreven: **Home, Kalender,
   Studeren, Tickets, Meer**, met hun iconen. Tickets heeft twee tabbladen
-  (Kopen/Mijne) als pillen in de kop (`tabs` op `PageHead`), net als Broodjes
-  (Bestellen/Afhalen) en Kalender (Lijst/Maand, plus het tabblad **Planning**
-  voor de Burgieclan-koppeling via `src/components/planning/PlanningView.tsx`;
-  zie `docs/burgieclan-planning.md` in `vtk-website-new`). Broodjes staat als
-  snelkoppeling op Home.
+  (Kopen/Mijne) als pillen in de kop (`tabs` op `PageHead`). Kalender heeft er
+  drie (Planning, Agenda, Mijn lijst) en opent op **Planning** voor wie die
+  heeft (de Burgieclan-koppeling via `src/components/planning/PlanningView.tsx`;
+  zie `docs/burgieclan-planning.md` in `vtk-website-new`); Lijst en Maand zijn
+  weergaven onder Agenda, geen tabbladen. Broodjes staat als snelkoppeling op
+  Home en heeft enkel Bestellen.
 - `app/_layout.tsx` draagt enkel nog de tabs plus drie modals (inloggen, de
   onboardingpoort, de serverinstelling) en de scanner aan de deur
   (`app/scan/[eventId].tsx`, als `fullScreenModal`). Die liggen bewust wél over de
@@ -211,7 +214,7 @@ uitzondering: die werkt in Expo Go niet.
   kans.
 - `src/scanKind.ts` - welk soort code er gescand is in **Code scannen**
   (`scannen.tsx`, voor iedereen): uitnodiging, pas of fakbar, en een ticket dat
-  daar niet meetelt en naar Aan de deur verwijst. De prefix zegt welke.
+  daar niet meetelt en naar Tickets scannen verwijst. De prefix zegt welke.
 - `src/scanner/`, `src/components/scanner/`, `src/api/scanner.ts` - de scanner aan
   de deur (`deur.tsx` kiest het event, `scan/[eventId].tsx` scant). Zie
   `docs/scanner.md`.

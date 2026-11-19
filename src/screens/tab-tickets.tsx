@@ -2,9 +2,11 @@ import { useLocalSearchParams } from 'expo-router';
 
 import * as WebBrowser from 'expo-web-browser';
 import { Image } from 'expo-image';
-import { CircleCheck, ScanLine } from 'lucide-react-native';
+import { useKeepAwake } from 'expo-keep-awake';
+import { CircleCheck, Maximize2, ScanLine, X } from 'lucide-react-native';
 import { useState } from 'react';
 import {
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -13,9 +15,10 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { baseUrl } from '../api/client';
-import type { AppMyTicket } from '../api/contract';
+import type { AppMyOrder, AppMyTicket } from '../api/contract';
 import { fetchMyTickets, fetchTicketEvents } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { PageHead } from '../components/PageHead';
@@ -51,7 +54,7 @@ type Tab = 'kopen' | 'mijne';
  * De scanknop staat er ook, maar enkel voor wie iets te scannen heeft
  * (`abilities.scanTickets`): een gewone student ziet hem niet. Wie komt shiften,
  * scant onder Meer de uitnodigings-QR die de organisator toont, en heeft vanaf
- * dan deze knop en dat event onder Aan de deur.
+ * dan deze knop en dat event onder Tickets scannen.
  */
 export default function TicketsScreen() {
   const router = useTabRouter();
@@ -70,7 +73,10 @@ export default function TicketsScreen() {
     `${locale}:${viewer?.id ?? 'anon'}`,
   );
 
-  const ticketCount = (mine.data ?? []).reduce((total, order) => total + order.tickets.length, 0);
+  // Het bolletje telt enkel wat er nog komt; voorbije tickets staan standaard verborgen.
+  const ticketCount = (mine.data ?? [])
+    .filter((order) => !isPast(order))
+    .reduce((total, order) => total + order.tickets.length, 0);
 
   return (
     <>
@@ -90,7 +96,7 @@ export default function TicketsScreen() {
           bootstrap?.abilities?.scanTickets ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Tickets scannen aan de deur"
+              accessibilityLabel="Tickets scannen"
               onPress={() => router.push('/deur')}
               hitSlop={10}
             >
@@ -217,6 +223,9 @@ function MyTickets({
   onLogin: () => void;
   onShop: () => void;
 }) {
+  const [showPast, setShowPast] = useState(false);
+  const [enlarged, setEnlarged] = useState<Enlarged>(null);
+
   if (!loggedIn) {
     return (
       <ScrollView style={styles.root} contentContainerStyle={styles.content}>
@@ -236,45 +245,110 @@ function MyTickets({
     );
   }
 
+  const upcoming = resource.data.filter((order) => !isPast(order));
+  // Het recentste eerst: wie terugbladert, zoekt meestal vorige week en niet vorig jaar.
+  const past = resource.data
+    .filter(isPast)
+    .sort((a, b) => b.event.startsAt.localeCompare(a.event.startsAt));
+
   return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl refreshing={resource.refreshing} onRefresh={() => void resource.refresh()} />
-      }
-    >
-      {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
+    <>
+      <ScrollView
+        style={styles.root}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={resource.refreshing} onRefresh={() => void resource.refresh()} />
+        }
+      >
+        {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
 
-      {resource.data.length === 0 ? (
-        <Empty
-          title="Nog geen tickets"
-          hint="Wat je koopt, komt hier te staan en blijft ook zonder netwerk zichtbaar."
-          action={{ label: 'Naar de verkoop', onPress: onShop }}
-        />
-      ) : null}
+        {upcoming.length === 0 ? (
+          <Empty
+            title={past.length > 0 ? 'Geen tickets voor wat er komt' : 'Nog geen tickets'}
+            hint="Wat je koopt, komt hier te staan en blijft ook zonder netwerk zichtbaar."
+            action={{ label: 'Naar de verkoop', onPress: onShop }}
+          />
+        ) : null}
 
-      {resource.data.map((order) => (
-        <View key={order.id} style={styles.order}>
-          <SectionHeading>{order.event.title}</SectionHeading>
-          <Text style={styles.hint}>{formatDay(order.event.startsAt, locale)}</Text>
-          {order.event.location ? <Text style={styles.hint}>{order.event.location}</Text> : null}
-          <Text style={styles.hint}>Bestelling {order.orderNumber}</Text>
+        {upcoming.map((order) => (
+          <Order key={order.id} order={order} locale={locale} onEnlarge={setEnlarged} />
+        ))}
 
-          {order.tickets.map((ticket) => (
-            <TicketCard key={ticket.id} ticket={ticket} />
-          ))}
-        </View>
-      ))}
-    </ScrollView>
+        {past.length > 0 ? (
+          <Button
+            label={
+              showPast
+                ? 'Voorbije evenementen verbergen'
+                : `Voorbije evenementen tonen (${past.length})`
+            }
+            variant="ghost"
+            onPress={() => setShowPast(!showPast)}
+          />
+        ) : null}
+
+        {showPast
+          ? past.map((order) => (
+              <Order key={order.id} order={order} locale={locale} onEnlarge={setEnlarged} past />
+            ))
+          : null}
+      </ScrollView>
+
+      <TicketZoom
+        ticket={enlarged?.ticket ?? null}
+        title={enlarged?.title ?? ''}
+        onClose={() => setEnlarged(null)}
+      />
+    </>
   );
 }
 
-function TicketCard({ ticket }: { ticket: AppMyTicket }) {
+/**
+ * Wanneer een ticket bij "voorbij" hoort: een dag na de start van het evenement.
+ * De server stuurt enkel het begin mee, en een cantus die om tien uur begint,
+ * loopt tot diep in de nacht; tot de volgende avond staat hij dus nog vooraan.
+ */
+const PAST_AFTER_MS = 24 * 60 * 60 * 1000;
+
+function isPast(order: AppMyOrder): boolean {
+  return Date.parse(order.event.startsAt) < Date.now() - PAST_AFTER_MS;
+}
+
+type Enlarged = { ticket: AppMyTicket; title: string } | null;
+
+function Order({
+  order,
+  locale,
+  onEnlarge,
+  past = false,
+}: {
+  order: AppMyOrder;
+  locale: 'nl' | 'en';
+  onEnlarge: (next: Enlarged) => void;
+  past?: boolean;
+}) {
+  return (
+    <View style={[styles.order, past && styles.orderPast]}>
+      <SectionHeading>{order.event.title}</SectionHeading>
+      <Text style={styles.hint}>{formatDay(order.event.startsAt, locale)}</Text>
+      {order.event.location ? <Text style={styles.hint}>{order.event.location}</Text> : null}
+      <Text style={styles.hint}>Bestelling {order.orderNumber}</Text>
+
+      {order.tickets.map((ticket) => (
+        <TicketCard
+          key={ticket.id}
+          ticket={ticket}
+          onEnlarge={() => onEnlarge({ ticket, title: order.event.title })}
+        />
+      ))}
+    </View>
+  );
+}
+
+function TicketCard({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: () => void }) {
   const { width } = useWindowDimensions();
   const [open, setOpen] = useState(false);
 
-  const size = Math.min(260, width - SPACING.lg * 4);
+  const size = Math.min(220, width - SPACING.lg * 4);
   const used = Boolean(ticket.checkedInAt);
 
   return (
@@ -289,10 +363,20 @@ function TicketCard({ ticket }: { ticket: AppMyTicket }) {
         </View>
       ) : null}
 
-      <View style={styles.qrWrap}>
+      {/* Een tik vergroot de code tot over het hele scherm: aan een deur scant een
+          camera een grote QR op wit veel sneller dan een klein vierkant in een kaart. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Ticket vergroten om te laten scannen"
+        onPress={onEnlarge}
+        style={({ pressed }) => [styles.qrWrap, pressed && styles.pressed]}
+      >
         <VtkQr value={ticket.credential} size={size} />
-      </View>
-      <Text style={styles.code}>{ticket.publicId}</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={onEnlarge} hitSlop={8} style={styles.zoomHint}>
+        <Maximize2 color={COLORS.muted} size={13} />
+        <Text style={styles.code}>{ticket.publicId}, tik om te vergroten</Text>
+      </Pressable>
 
       <Button
         label={open ? 'Minder' : 'PDF en wallet'}
@@ -327,6 +411,73 @@ function TicketCard({ ticket }: { ticket: AppMyTicket }) {
         </>
       ) : null}
     </Card>
+  );
+}
+
+/**
+ * Eén ticket over het hele scherm, om te laten scannen.
+ *
+ * Wit en zo groot als het scherm toelaat, met de naam en het type erbij zodat
+ * wie aan de deur staat ook kan lezen wat hij scant. Het scherm blijft aan zolang
+ * dit openstaat (`expo-keep-awake` zit in `expo` zelf, dus in elke build). De
+ * helderheid zetten we niet hoger: daar is een native module voor nodig die niet
+ * in elke APK zit.
+ */
+function TicketZoom({
+  ticket,
+  title,
+  onClose,
+}: {
+  ticket: AppMyTicket | null;
+  title: string;
+  onClose: () => void;
+}) {
+  return (
+    <Modal visible={ticket !== null} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      {ticket ? <TicketZoomBody ticket={ticket} title={title} onClose={onClose} /> : null}
+    </Modal>
+  );
+}
+
+function TicketZoomBody({ ticket, title, onClose }: { ticket: AppMyTicket; title: string; onClose: () => void }) {
+  useKeepAwake();
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const size = Math.min(width - SPACING.xl * 2, height * 0.55);
+  const used = Boolean(ticket.checkedInAt);
+
+  return (
+    <Pressable
+      accessibilityLabel="Sluiten"
+      onPress={onClose}
+      style={[styles.zoom, { paddingTop: insets.top + SPACING.md, paddingBottom: insets.bottom + SPACING.xl }]}
+    >
+      <View style={styles.zoomTop}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Sluiten" onPress={onClose} hitSlop={14}>
+          <X color={COLORS.ink} size={26} />
+        </Pressable>
+      </View>
+      <View style={styles.zoomBody}>
+        <Text style={styles.zoomTitle} numberOfLines={2}>
+          {title}
+        </Text>
+        <Text style={styles.zoomType}>
+          {ticket.typeName}
+          {ticket.attendeeName ? `, ${ticket.attendeeName}` : ''}
+        </Text>
+        <View style={styles.zoomQr}>
+          <VtkQr value={ticket.credential} size={size} />
+        </View>
+        <Text style={styles.zoomCode}>{ticket.publicId}</Text>
+        {used ? (
+          <View style={styles.usedRow}>
+            <CircleCheck color={COLORS.muted} size={16} />
+            <Text style={styles.hint}>Al gescand</Text>
+          </View>
+        ) : null}
+      </View>
+      <Text style={styles.hint}>Tik ergens om te sluiten</Text>
+    </Pressable>
   );
 }
 
@@ -378,6 +529,7 @@ const styles = StyleSheet.create({
   ctaLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.paper },
 
   order: { gap: SPACING.sm },
+  orderPast: { opacity: 0.7 },
   cardTitle: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },
   hint: { ...TYPE.small, color: COLORS.muted },
@@ -385,4 +537,18 @@ const styles = StyleSheet.create({
   // De QR draagt zijn eigen navy kader, dus er hoeft geen tweede wit vlak omheen.
   qrWrap: { alignSelf: 'center', marginVertical: SPACING.sm },
   code: { ...TYPE.small, color: COLORS.muted, textAlign: 'center', letterSpacing: 1 },
+  zoomHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+
+  zoom: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: SPACING.xl,
+    alignItems: 'center',
+  },
+  zoomTop: { alignSelf: 'stretch', alignItems: 'flex-end' },
+  zoomBody: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SPACING.sm },
+  zoomTitle: { ...TYPE.heading, color: COLORS.ink, textAlign: 'center' },
+  zoomType: { ...TYPE.body, color: COLORS.body, textAlign: 'center' },
+  zoomQr: { marginVertical: SPACING.lg },
+  zoomCode: { fontFamily: FONTS.semibold, fontSize: 16, color: COLORS.ink, letterSpacing: 2 },
 });

@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 
 import * as WebBrowser from 'expo-web-browser';
-import { CalendarCheck, CalendarPlus, Star } from 'lucide-react-native';
+import { CalendarCheck, CalendarPlus, Smartphone, Star } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -39,14 +39,18 @@ import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
  *   vooraf. Het is geen inschrijving; de tekst eronder zegt dat ook, want een
  *   sterretje dat aanvoelt als een plaats reserveren is een misverstand met
  *   gevolgen.
- * - **In agenda** schrijft de afspraak in de agenda van je telefoon, met plaats
- *   en een herinnering. Dat is iets anders dan de ICS-feed op de site: die
- *   abonneert je op álles, dit is dit ene ding.
+ * - **In de agenda van je telefoon** schrijft de afspraak in de agenda van je
+ *   telefoon, met plaats en een herinnering. Dat is iets anders dan de ICS-feed
+ *   op de site: die abonneert je op álles, dit is dit ene ding.
  *
- * - **In mijn planning** zet het in de planning van Burgieclan, naast je lessen
+ * - **In je planning** zet het in de planning van Burgieclan, naast je lessen
  *   (Kalender, tabblad Planning) en in de agenda die die planning exporteert.
  *   Enkel zichtbaar wanneer je een lessenrooster koppelde: zonder is er geen
  *   planning om het in te zetten.
+ *
+ * Die twee staan als regels onder elkaar, elk met een zin uitleg, en niet als
+ * twee knoppen naast elkaar: "Zet in agenda" en "Zet in mijn planning" lazen
+ * als hetzelfde.
  *
  * Bij een **alumni-evenement** staat er onderaan wie er komt. Die lijst bevat
  * enkel wie op de site zelf aanvinkte zichtbaar te willen zijn; wie dat niet deed
@@ -201,8 +205,8 @@ export default function EventScreen() {
           />
         ) : null}
 
-        <View style={styles.actions}>
-          {viewer ? (
+        {viewer ? (
+          <View style={styles.actions}>
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ selected: event.interested }}
@@ -223,37 +227,7 @@ export default function EventScreen() {
                 {event.interested ? 'In mijn lijst' : 'Ik ga misschien'}
               </Text>
             </Pressable>
-          ) : null}
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="In de agenda van mijn telefoon zetten"
-            disabled={addingToCalendar}
-            onPress={() => void addToCalendar()}
-            style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
-          >
-            <CalendarPlus color={COLORS.navy} size={17} />
-            <Text style={styles.actionLabel}>Zet in agenda</Text>
-          </Pressable>
-        </View>
-
-        {plannable ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: inPlanning, busy: planning.busy }}
-            accessibilityLabel={inPlanning ? 'Uit mijn planning halen' : 'In mijn planning zetten'}
-            disabled={planning.busy}
-            onPress={togglePlanning}
-            style={({ pressed }) => [
-              styles.action,
-              styles.actionWide,
-              inPlanning && styles.actionActive,
-              (pressed || planning.busy) && styles.actionPressed,
-            ]}
-          >
-            <CalendarCheck color={COLORS.navy} size={17} />
-            <Text style={styles.actionLabel}>{inPlanning ? 'In mijn planning' : 'Zet in mijn planning'}</Text>
-          </Pressable>
+          </View>
         ) : null}
 
         {/* De server beslist over de drempel en stuurt hieronder niets mee zolang
@@ -270,6 +244,35 @@ export default function EventScreen() {
               : ''}
           </Text>
         ) : null}
+
+        {/* Twee verschillende plaatsen, dus twee regels met elk een zin uitleg.
+            Als twee knoppen naast elkaar ("Zet in agenda", "Zet in mijn
+            planning") was niet te zien wat het verschil was. */}
+        <View style={styles.saves}>
+          <SaveRow
+            icon={Smartphone}
+            label="In de agenda van je telefoon"
+            hint="Eén afspraak in Apple of Google Agenda, met een herinnering. Daarna staat ze los van de app."
+            action="Toevoegen"
+            busy={addingToCalendar}
+            onPress={() => void addToCalendar()}
+          />
+          {plannable ? (
+            <SaveRow
+              icon={inPlanning ? CalendarCheck : CalendarPlus}
+              label={inPlanning ? 'Staat in je planning' : 'In je planning, naast je lessen'}
+              hint={
+                inPlanning
+                  ? 'Onder Kalender > Planning en in de agenda die je planning exporteert.'
+                  : 'Komt onder Kalender > Planning tussen je lessen, en in de agenda die je planning exporteert.'
+              }
+              action={inPlanning ? 'Weghalen' : 'Toevoegen'}
+              active={inPlanning}
+              busy={planning.busy}
+              onPress={togglePlanning}
+            />
+          ) : null}
+        </View>
 
         {event.description ? (
           <View style={styles.about}>
@@ -327,6 +330,49 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
       <Text style={styles.factLabel}>{label}</Text>
       <View style={styles.factValue}>{children}</View>
     </View>
+  );
+}
+
+/**
+ * Een plaats waar je het evenement kan bewaren: wat het is, in één zin wat het
+ * doet, en rechts de handeling. `active` zegt dat het er al staat.
+ */
+function SaveRow({
+  icon: Icon,
+  label,
+  hint,
+  action,
+  active = false,
+  busy = false,
+  onPress,
+}: {
+  icon: typeof Star;
+  label: string;
+  hint: string;
+  action: string;
+  active?: boolean;
+  busy?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${label}. ${action}`}
+      accessibilityHint={hint}
+      accessibilityState={{ selected: active, busy }}
+      disabled={busy}
+      onPress={onPress}
+      style={({ pressed }) => [styles.save, (pressed || busy) && styles.actionPressed]}
+    >
+      <Icon color={COLORS.navy} size={20} />
+      <View style={styles.saveText}>
+        <Text style={styles.saveLabel}>{label}</Text>
+        <Text style={styles.saveHint}>{hint}</Text>
+      </View>
+      <View style={[styles.saveAction, active && styles.saveActionActive]}>
+        <Text style={styles.saveActionLabel}>{action}</Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -395,13 +441,35 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.line2,
   },
-  actionWide: { flex: 0 },
   actionPrimary: { backgroundColor: COLORS.ink, borderColor: COLORS.ink },
   actionActive: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
   actionPressed: { opacity: 0.8 },
   actionLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink },
   actionLabelPrimary: { color: COLORS.paper },
   note: { ...TYPE.small, color: COLORS.muted },
+
+  saves: { borderTopWidth: 1, borderTopColor: COLORS.line2 },
+  save: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    paddingVertical: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.line,
+  },
+  saveText: { flex: 1, gap: 2 },
+  saveLabel: { fontFamily: FONTS.semibold, fontSize: 15, lineHeight: 20, color: COLORS.ink },
+  saveHint: { ...TYPE.small, color: COLORS.muted },
+  saveAction: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: RADIUS.pill,
+    borderWidth: 1,
+    borderColor: COLORS.line2,
+    backgroundColor: COLORS.surface,
+  },
+  saveActionActive: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
+  saveActionLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.ink },
 
   about: { gap: SPACING.md, marginTop: SPACING.md },
   attendees: { marginTop: SPACING.xs, borderTopWidth: 1, borderTopColor: COLORS.line },

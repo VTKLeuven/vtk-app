@@ -1,6 +1,4 @@
 import { Image } from 'expo-image';
-import { useLocalSearchParams } from 'expo-router';
-
 import { CircleAlert } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -18,22 +16,18 @@ import {
 import { messageFor, useResource } from '../api/useResource';
 import { DatePin } from '../components/DatePin';
 import { PageHead } from '../components/PageHead';
-import { PassCode } from '../components/PassCode';
 import { Stepper } from '../components/Stepper';
 import { Button, Card, Empty, ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
 import { formatDate, formatDay, formatEuro, formatTime, formatTimeRange } from '../format';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
-import { useTabParam } from '../useTabParam';
-
-type Tab = 'bestellen' | 'afhalen';
 
 /** Onder dit aantal zegt de voorraad iets; daarboven staat ze er niet, zoals op /theokot. */
 const LOW_STOCK = 5;
 
 /**
- * Broodjes: bestellen en afhalen, in de vorm van de bestelpagina van /theokot.
+ * Broodjes: bestellen, in de vorm van de bestelpagina van /theokot.
  *
  * Eén verkoopdag tegelijk, gekozen met de datumpinnen bovenaan; het broodje van
  * de week uitgelicht met zijn foto; het aanbod als lijst met een stapper; en het
@@ -44,36 +38,18 @@ const LOW_STOCK = 5;
  * scherm rekent er wel mee, maar enkel om knoppen uit te schakelen; het beslist
  * niets. Is het hier soepeler dan op de server, dan is dat een bug in dit scherm.
  *
- * **Afhalen is een eigen tabblad.** Aan de balie sta je met een rij achter je;
- * dan wil je twee tikken en een code op het scherm, niet scrollen door het aanbod
- * van morgen.
+ * **Er is geen tabblad Afhalen.** Aan de balie van het Theokot scant men je
+ * studentenkaart en geen QR-code; een code tonen heeft daar geen zin. Wat je
+ * besteld hebt, staat bij de verkoopdag zelf, met het afhaaluur erbij. Een oud
+ * adres met `?tab=afhalen` (een pushbericht, een taak op Home) komt dus gewoon
+ * hier uit.
  */
 export default function BroodjesScreen() {
   const router = useTabRouter();
-  const params = useLocalSearchParams<{ tab?: string }>();
   const { locale, viewer, gate, refresh: refreshApp } = useApp();
   const resource = useResource('theokot', () => fetchTheokot(locale), locale);
-  const [tab, setTab] = useState<Tab>(params.tab === 'afhalen' ? 'afhalen' : 'bestellen');
-  useTabParam<Tab>(params.tab, ['bestellen', 'afhalen'], setTab);
 
-  const head = (badge?: number) => (
-    <PageHead
-      title="Broodjes"
-      subtitle="Bij het Theokot"
-      tabs={
-        viewer && !gate
-          ? {
-              value: tab,
-              onChange: setTab,
-              options: [
-                { value: 'bestellen', label: 'Bestellen' },
-                { value: 'afhalen', label: 'Afhalen', badge },
-              ],
-            }
-          : undefined
-      }
-    />
-  );
+  const head = () => <PageHead title="Broodjes" subtitle="Bij het Theokot" />;
 
   if (!viewer) {
     return (
@@ -122,28 +98,20 @@ export default function BroodjesScreen() {
     );
   }
 
-  // Enkel wat er af te halen valt hoort in het tweede tabblad.
-  const open = resource.data.sessions.filter((session) => session.order !== null);
-
   return (
     <View style={styles.root}>
-      {head(open.length)}
-
-      {tab === 'afhalen' ? (
-        <Pickup sessions={open} locale={locale} onOrder={() => setTab('bestellen')} />
-      ) : (
-        <Ordering
-          data={resource.data}
-          stale={resource.stale}
-          refreshing={resource.refreshing}
-          onRefresh={() => void resource.refresh()}
-          locale={locale}
-          onChanged={() => {
-            void resource.refresh();
-            void refreshApp();
-          }}
-        />
-      )}
+      {head()}
+      <Ordering
+        data={resource.data}
+        stale={resource.stale}
+        refreshing={resource.refreshing}
+        onRefresh={() => void resource.refresh()}
+        locale={locale}
+        onChanged={() => {
+          void resource.refresh();
+          void refreshApp();
+        }}
+      />
     </View>
   );
 }
@@ -248,64 +216,6 @@ function Ordering({
       maxWeeklySpecial={maxWeeklySpecialPerOrder}
       onChanged={onChanged}
     />
-  );
-}
-
-/**
- * Afhalen: je bestelling en de code die de balie scant.
- *
- * De code vervangt het intikken van je r-nummer. Aan de andere kant staat
- * dezelfde afhaalbalie als op de site; die herkent een pas aan zijn vorm en zoekt
- * er dezelfde bestelling mee op (`lib/theokot-pickup.ts`).
- */
-function Pickup({
-  sessions,
-  locale,
-  onOrder,
-}: {
-  sessions: AppTheokotSession[];
-  locale: AppLocale;
-  onOrder: () => void;
-}) {
-  if (sessions.length === 0) {
-    return (
-      <ScrollView contentContainerStyle={styles.content} style={styles.root}>
-        <Empty
-          title="Niets af te halen"
-          hint="Zodra je iets besteld hebt, staat hier de code die de balie scant."
-          action={{ label: 'Naar het aanbod', onPress: onOrder }}
-        />
-      </ScrollView>
-    );
-  }
-
-  return (
-    <ScrollView contentContainerStyle={styles.content} style={styles.root}>
-      <PassCode caption="Laat dit scannen aan de afhaalbalie van het Theokot." />
-
-      {sessions.map((session) => {
-        const order = session.order;
-        if (!order) return null;
-        return (
-          <View key={session.id} style={styles.pickup}>
-            <View style={styles.pickupHead}>
-              <DatePin iso={session.date} locale={locale} size="sm" month={false} />
-              <View style={styles.flex}>
-                <Text style={styles.title}>{formatDay(session.date, locale)}</Text>
-                <Text style={styles.hint}>
-                  Afhalen {formatTimeRange(session.pickupStart, session.pickupEnd, locale)}
-                </Text>
-              </View>
-            </View>
-            <OrderLines order={order} label="Te betalen" />
-            <Text style={styles.hint}>
-              Je betaalt bij het afhalen. Heb je genoeg bonnetjes staan, dan kan de balie die
-              gebruiken.
-            </Text>
-          </View>
-        );
-      })}
-    </ScrollView>
   );
 }
 
@@ -851,15 +761,6 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.45 },
   pressed: { opacity: 0.8 },
 
-  pickup: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    padding: SPACING.lg,
-    gap: SPACING.md,
-  },
-  pickupHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
 
   // Het totaal en de knop, vast onderaan zoals op /theokot op een gsm.
   bar: {

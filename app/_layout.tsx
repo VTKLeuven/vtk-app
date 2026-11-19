@@ -20,6 +20,16 @@ import { COLORS, SCANNER } from '../src/theme/tokens';
 void SplashScreen.preventAutoHideAsync();
 
 /**
+ * De app opent op de tabs, en niet op een oud adres.
+ *
+ * Zonder anker kiest expo-router 58 het eerste scherm van een stack door de
+ * routes te sorteren: groepen eerst, daarna de kortste naam. `(oud)` is korter
+ * dan `(tabs)`, en binnen `(oud)` is `pocs` de kortste; de app startte dus op de
+ * omleiding naar de POC's. Het anker zet `(tabs)` vooraan, wat er ook bijkomt.
+ */
+export const unstable_settings = { anchor: '(tabs)' };
+
+/**
  * De wortel. Elke route staat hier expliciet in de `<Stack>`; zo is in één blik
  * te zien welke schermen er zijn.
  */

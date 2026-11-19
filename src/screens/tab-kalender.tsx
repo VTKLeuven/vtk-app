@@ -1,4 +1,5 @@
 
+import { useLocalSearchParams } from 'expo-router';
 import { Bell } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -17,17 +18,18 @@ import { getPref, setPref } from '../storage';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { useTabParam } from '../useTabParam';
 import { groupByWeek } from '../weeks';
 
-type Weergave = 'lijst' | 'maand' | 'planning';
+/** De tabbladen in de kop. */
+type Tab = 'planning' | 'agenda' | 'mijn';
+/** Hoe Agenda getoond wordt: als lijst of als maandrooster. */
+type Weergave = 'lijst' | 'maand';
 
 const VIEW_KEY = 'kalender-weergave';
 
-/** De filterchip die enkel toont wat je zelf aanduidde. */
-const MINE = '__mijn__';
-
 /**
- * De kalender, in twee weergaven, in de vorm van /kalender op de site: de
+ * De kalender, in de vorm van /kalender op de site: de
  * eventtegel met de gele datumpin, per week een kop, en de thema's als chips.
  * De tegels zijn lager dan op de site (`compact`), zodat er meer onder elkaar
  * past op een telefoon.
@@ -37,12 +39,20 @@ const MINE = '__mijn__';
  * wanneer je iets plant en wil zien welke avonden al vol zitten. Dat zijn twee
  * verschillende vragen, en geen van beide weergaven beantwoordt ze allebei goed.
  *
- * De keuze blijft bewaard. Wie de maandweergave verkiest, wil die niet elke keer
- * opnieuw aanzetten.
+ * Lijst en Maand zijn twee weergaven van hetzelfde tabblad **Agenda**, met een
+ * schakelaar boven de inhoud, en geen twee tabbladen: het is dezelfde agenda. De
+ * keuze tussen die twee blijft bewaard. Wie de maandweergave verkiest, wil die
+ * niet elke keer opnieuw aanzetten.
  *
  * **Planning** is iets anders: de planning van Burgieclan (lessenrooster,
  * deadlines en de VTK-evenementen die je erin zette) als drie dagen naast
  * elkaar. Ze staat naast de kalender en vervangt hem niet; zie `PlanningView`.
+ * Wie ze kan zien, komt er standaard op uit: je lessen open je vaker dan de
+ * agenda van VTK. Dat wordt bewust niet bewaard; wie even naar Agenda keek, vindt
+ * bij de volgende start opnieuw zijn planning.
+ *
+ * De kop is hier lager dan op andere schermen (`compact`): de planning heeft
+ * elke verticale pixel nodig voor de uren van de dag.
  *
  * De twee halen ook andere gegevens op: de lijst vraagt alles vanaf nu, de
  * maandweergave precies het zichtbare rooster, inclusief het verleden. Anders zou
@@ -65,10 +75,21 @@ export default function KalenderScreen() {
   // Enkel wanneer de server met Burgieclan gekoppeld is; zie `abilities.planning`.
   const planningAvailable = viewer !== null && bootstrap?.abilities?.planning === true;
 
-  const [view, setViewState] = useState<Weergave>(() => {
-    const saved = getPref(VIEW_KEY);
-    return saved === 'maand' || saved === 'planning' ? saved : 'lijst';
-  });
+  const params = useLocalSearchParams<{ tab?: string }>();
+  // `null` zolang er niets gekozen is: dan Planning wanneer die er is, anders
+  // Agenda. Zo komt wie net inlogde (en de bootstrap pas daarna binnenkrijgt)
+  // ook op de planning uit.
+  const [chosen, setChosen] = useState<Tab | null>(() =>
+    params.tab === 'planning' || params.tab === 'agenda' || params.tab === 'mijn' ? params.tab : null,
+  );
+  useTabParam<Tab>(params.tab, ['planning', 'agenda', 'mijn'], setChosen);
+  const fallback: Tab = planningAvailable ? 'planning' : 'agenda';
+  // De planning en "Mijn lijst" vragen een login; uitgelogd valt dat terug op Agenda.
+  const allowed = (option: Tab | null) =>
+    option !== null && !(option === 'planning' && !planningAvailable) && !(option === 'mijn' && !viewer);
+  const tab: Tab = chosen !== null && allowed(chosen) ? chosen : fallback;
+
+  const [view, setViewState] = useState<Weergave>(() => (getPref(VIEW_KEY) === 'maand' ? 'maand' : 'lijst'));
   const [category, setCategory] = useState<string | null>(null);
   const [anchor, setAnchor] = useState<MonthAnchor>(() => anchorOf(todayKey()));
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -78,10 +99,10 @@ export default function KalenderScreen() {
     setViewState(next);
   };
 
-  // De planning vraagt een login; uitgelogd valt een bewaarde keuze terug op de lijst.
-  const planning = view === 'planning' && planningAvailable;
-  const range = view === 'maand' ? gridRange(anchor) : null;
-  const mine = category === MINE;
+  const planning = tab === 'planning';
+  const mine = tab === 'mijn';
+  const month = tab === 'agenda' && view === 'maand';
+  const range = month ? gridRange(anchor) : null;
 
   const resource = useResource(
     'kalender',
@@ -92,7 +113,7 @@ export default function KalenderScreen() {
         van: range?.from,
         tot: range?.to,
       }),
-    `${locale}:${category ?? ''}:${range ? `${range.from}-${range.to}` : 'nu'}`,
+    `${locale}:${mine ? 'mijn' : (category ?? '')}:${range ? `${range.from}-${range.to}` : 'nu'}`,
   );
 
   /**
@@ -133,20 +154,12 @@ export default function KalenderScreen() {
   const weeks = useMemo(() => groupByWeek(events, (event) => displayStart(event), locale), [events, locale]);
 
   const headTabs = {
-    onChange: (next: 'lijst' | 'maand' | 'mijn' | 'planning') => {
-      if (next === 'mijn') {
-        setView('lijst');
-        setCategory(MINE);
-      } else {
-        setView(next);
-        if (mine) setCategory(null);
-      }
-    },
+    value: tab,
+    onChange: setChosen,
     options: [
-      { value: 'lijst' as const, label: 'Agenda' },
-      { value: 'maand' as const, label: 'Maand' },
-      ...(viewer ? [{ value: 'mijn' as const, label: 'Mijn lijst' }] : []),
       ...(planningAvailable ? [{ value: 'planning' as const, label: 'Planning' }] : []),
+      { value: 'agenda' as const, label: 'Agenda' },
+      ...(viewer ? [{ value: 'mijn' as const, label: 'Mijn lijst' }] : []),
     ],
   };
 
@@ -166,13 +179,7 @@ export default function KalenderScreen() {
   if (planning) {
     return (
       <View style={styles.root}>
-        <PageHead
-          title="Kalender"
-          subtitle="Je lessen en VTK in één agenda"
-          back={false}
-          right={bell}
-          tabs={{ ...headTabs, value: 'planning' }}
-        />
+        <PageHead title="Kalender" back={false} compact right={bell} tabs={headTabs} />
         <PlanningView locale={locale} onOpenEvent={(id) => router.push(`/evenement/${id}`)} />
       </View>
     );
@@ -186,9 +193,6 @@ export default function KalenderScreen() {
   }
 
   const { categories, filteredByAudience } = resource.data;
-  // "Mijn lijst" staat als derde tabblad in de kop: het is een andere lijst, geen
-  // thema om op te filteren.
-  const headTab: 'lijst' | 'maand' | 'mijn' = mine ? 'mijn' : view === 'maand' ? 'maand' : 'lijst';
 
   return (
     <View style={styles.root}>
@@ -204,13 +208,23 @@ export default function KalenderScreen() {
         }
       >
         <View style={styles.overscroll} />
-        <PageHead
-          title="Kalender"
-          subtitle="Alles wat er bij VTK te doen is"
-          back={false}
-          right={bell}
-          tabs={{ ...headTabs, value: headTab }}
-        />
+        <PageHead title="Kalender" back={false} compact right={bell} tabs={headTabs} />
+
+        {!mine ? (
+          <View style={styles.viewRow}>
+            <Segmented
+              value={view}
+              onChange={(next) => {
+                setView(next);
+                setSelectedDay(null);
+              }}
+              options={[
+                { value: 'lijst', label: 'Lijst' },
+                { value: 'maand', label: 'Maand' },
+              ]}
+            />
+          </View>
+        ) : null}
 
         {categories.length > 0 && !mine ? (
           <ScrollView
@@ -234,7 +248,7 @@ export default function KalenderScreen() {
         {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
 
         <View style={styles.content}>
-          {view === 'maand' && !mine ? (
+          {month ? (
             <>
               <MonthView
                 anchor={anchor}
@@ -320,6 +334,40 @@ export default function KalenderScreen() {
   );
 }
 
+/**
+ * Lijst of Maand, onder het tabblad Agenda. Een schakelaar op papier en geen
+ * pillen in de kop: het is een andere weergave van dezelfde agenda, geen ander
+ * tabblad.
+ */
+function Segmented<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (next: T) => void;
+}) {
+  return (
+    <View style={styles.segmented} accessibilityRole="tablist">
+      {options.map((option) => {
+        const active = option.value === value;
+        return (
+          <Pressable
+            key={option.value}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
+            onPress={() => onChange(option.value)}
+            style={[styles.segment, active && styles.segmentActive]}
+          >
+            <Text style={[styles.segmentLabel, active && styles.segmentLabelActive]}>{option.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 /** Een themafilter zoals de chips van /tickets: wit, met de kleur als stip, actief in inkt. */
 function Chip({
   label,
@@ -361,7 +409,21 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.sm, gap: SPACING.md },
   week: { gap: SPACING.md, marginTop: SPACING.sm },
 
-  chips: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.lg, paddingBottom: SPACING.xs, gap: SPACING.sm },
+  viewRow: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.lg, flexDirection: 'row' },
+  segmented: {
+    flexDirection: 'row',
+    padding: 3,
+    borderRadius: RADIUS.pill,
+    borderWidth: 1,
+    borderColor: COLORS.line2,
+    backgroundColor: COLORS.surface,
+  },
+  segment: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: RADIUS.pill },
+  segmentActive: { backgroundColor: COLORS.ink },
+  segmentLabel: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.body },
+  segmentLabelActive: { color: COLORS.paper },
+
+  chips: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.md, paddingBottom: SPACING.xs, gap: SPACING.sm },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',

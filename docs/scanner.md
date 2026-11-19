@@ -23,13 +23,13 @@ Waar hij staat:
 | Ingang | Voor wie | Opent |
 |---|---|---|
 | het scanicoon in de kop van **Tickets** | `scanTickets` | `deur.tsx` |
-| **Meer → Aan de deur** | `scanTickets` | `deur.tsx` |
+| **Meer → Tickets scannen** | `scanTickets` | `deur.tsx` |
 | een taak op **Home**, "Aan de deur: ..." | wie een `SCANNER`-toekenning heeft op een event dat binnen 24 uur begint | de scanner zelf |
 | **Meer → Code scannen** | iedereen die ingelogd is | de camera voor de uitnodiging, de fakbar en de pas |
 
 `Code scannen` (`scannen.tsx`) blijft voor iedereen, want de fakbar-QR en de
 uitnodiging scant een gewone student zelf. Een ticket dat daar gescand wordt,
-telt niet mee; het scherm verwijst naar Aan de deur.
+telt niet mee; het scherm verwijst naar Tickets scannen.
 
 Na een uitnodiging haalt de app de bootstrap opnieuw op, zodat `scanTickets`
 meteen klopt en het icoon in Tickets verschijnt. Twaalf uur na het event valt het
@@ -62,7 +62,7 @@ deur.tsx  ──▶  /scan/<eventId>  (app/scan/[eventId].tsx, fullScreenModal)
 
 | Endpoint | Wanneer |
 |---|---|
-| `GET /api/app/v1/scan/events` | het keuzescherm Aan de deur |
+| `GET /api/app/v1/scan/events` | het keuzescherm Tickets scannen |
 | `GET /api/tickets/events/{id}/scanner/bootstrap` | bij het openen van een event: ingangen, stand, manifest |
 | `POST /api/tickets/events/{id}/scan` | één scan, online |
 | `POST /api/tickets/events/{id}/scan/batch` | de wachtrij leegmaken, max 100 per keer |

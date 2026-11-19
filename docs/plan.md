@@ -658,3 +658,27 @@ Kort ervoor kwam het tabblad **Planning** onder Kalender: de planner van
 Burgieclan (lessenrooster, deadlines, VTK-evenementen erin) als drie dagen naast
 elkaar. Zie `docs/burgieclan-planning.md` in vtk-website-new.
 
+## November 2026: tien puntjes na een week gebruik
+
+- **De app opende op de POC's.** expo-router 58 kiest zonder anker het eerste
+  scherm van een stack door te sorteren (groepen eerst, dan de kortste naam):
+  `(oud)` won van `(tabs)`, en daarin `pocs` van de rest. `app/_layout.tsx` zet nu
+  `unstable_settings.anchor` op `(tabs)`.
+- **Home** toont je lessen van vandaag (`TodayLessons`) voor wie een
+  lessenrooster koppelde, onder "Voor jou".
+- **Kalender** opent op Planning voor wie die heeft. Maand is geen tabblad meer
+  maar een weergave onder Agenda (Lijst/Maand), en de kop is lager
+  (`PageHead compact`), zonder ondertitel, zodat de planning meer uren toont.
+- **Een les in de planning** opent een rustiger blad: afvinken, verplicht en
+  verbergen als drie knoppen met hun stand, de wekelijkse regels achter "Elke
+  week op dit uur".
+- **Evenement**: "In de agenda van je telefoon" en "In je planning" staan als
+  twee regels onder elkaar, elk met een zin over wat ze doen.
+- **Tickets**: een tik op een ticket vergroot de QR tot over het hele scherm;
+  tickets van een evenement dat al meer dan een dag begonnen is, staan achter
+  "Voorbije evenementen tonen".
+- **Broodjes** heeft geen tabblad Afhalen meer: aan het Theokot scant men je
+  studentenkaart, geen QR.
+- **Aan de deur** heet nu **Tickets scannen**.
+- **Werkgroepen**: de beschrijving gaat door `Prose` (Markdown), de kicker "Mee
+  bouwen" is weg.

@@ -7,6 +7,7 @@ import { fetchToday, setEventInterest } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { EventTile } from '../components/EventTile';
 import { PageHead } from '../components/PageHead';
+import { TodayLessons } from '../components/planning/TodayLessons';
 import { Prose } from '../components/Prose';
 import { ServiceList } from '../components/ServiceList';
 import { TaskCard } from '../components/TaskCard';
@@ -20,7 +21,9 @@ import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
  * Home: **vandaag**, in de banden van de homepage.
  *
  * Dit scherm beantwoordt de twee vragen waarmee iemand de app opent: *wat is er
- * open* en *wat wacht er op mij*. In die volgorde, allebei boven de vouw.
+ * open* en *wat wacht er op mij*. In die volgorde, allebei boven de vouw. Wie een
+ * lessenrooster koppelde, ziet onder "Voor jou" ook zijn lessen van vandaag
+ * (`TodayLessons`).
  *
  * De opbouw volgt de homepage van vtk.be (voorstel A van november 2026): een
  * navy kop met het technische patroon en de gele onderlijn, met de openingsuren
@@ -34,7 +37,7 @@ import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
  */
 export default function HomeScreen() {
   const router = useTabRouter();
-  const { locale, viewer, gate, refresh: refreshApp } = useApp();
+  const { locale, viewer, gate, bootstrap, refresh: refreshApp } = useApp();
   const resource = useResource('vandaag', () => fetchToday(locale), locale);
 
   if (resource.loading) return <Loading label="VTK openen" />;
@@ -132,6 +135,15 @@ export default function HomeScreen() {
               ))}
             </View>
           </View>
+        ) : null}
+
+        {/* Je lessen van vandaag, voor wie een lessenrooster koppelde. Zonder
+            rooster of zonder lessen vandaag tekent dit niets. */}
+        {viewer && bootstrap?.abilities?.planning === true ? (
+          <TodayLessons
+            locale={locale}
+            onOpen={() => router.push({ pathname: '/kalender', params: { tab: 'planning' } })}
+          />
         ) : null}
 
         {today.announcement ? (

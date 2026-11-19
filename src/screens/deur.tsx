@@ -14,7 +14,7 @@ import { useApp } from '../state/app';
 import { COLORS, SPACING, TYPE } from '../theme/tokens';
 
 /**
- * Aan de deur: de evenementen die jij mag scannen.
+ * Tickets scannen (vroeger "Aan de deur"): de evenementen die jij mag scannen.
  *
  * Hier landen het scanicoon in de kop van Tickets en de regel onder Meer, en
  * beide bestaan enkel voor wie iets te scannen heeft (`abilities.scanTickets`).
@@ -56,7 +56,7 @@ export default function DeurScreen() {
   if (!viewer) {
     return (
       <>
-        <PageHead title="Aan de deur" />
+        <PageHead title="Tickets scannen" />
         <View style={styles.root}>
           <Empty
             title="Log eerst in"
@@ -70,7 +70,7 @@ export default function DeurScreen() {
 
   return (
     <>
-      <PageHead title="Aan de deur" subtitle="Kies het evenement waar je scant" />
+      <PageHead title="Tickets scannen" subtitle="Kies het evenement waar je scant" />
       <ScrollView
         style={styles.root}
         contentContainerStyle={styles.content}

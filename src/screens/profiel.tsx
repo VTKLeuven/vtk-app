@@ -124,7 +124,7 @@ export default function ProfielScreen() {
         <Row
           icon={<Sandwich color={COLORS.navy} size={20} />}
           label="Mijn broodjes"
-          onPress={() => router.push('/broodjes?tab=afhalen')}
+          onPress={() => router.push('/broodjes')}
         />
         <Row
           icon={<Coins color={COLORS.navy} size={20} />}

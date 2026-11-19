@@ -79,7 +79,7 @@ export default function ScannenScreen() {
               already: invite.alreadyHadAccess,
             });
             // De rechten opnieuw ophalen: wie net scanner werd, hoort vanaf nu
-            // Aan de deur te zien in Tickets en onder Meer.
+            // Tickets scannen te zien in Tickets en onder Meer.
             void refresh();
           })
           .catch((error) => setResult({ kind: 'error', message: scanError(error) }));
@@ -162,7 +162,7 @@ export default function ScannenScreen() {
         {/* Enkel voor wie iets te scannen heeft. Een gewone student krijgt
             deze knop pas na een uitnodiging, en dan ook meteen het event. */}
         {mayScanTickets && !result ? (
-          <Button label="Tickets scannen aan de deur" variant="ghost" onPress={() => router.push('/deur')} />
+          <Button label="Tickets scannen" variant="ghost" onPress={() => router.push('/deur')} />
         ) : null}
       </ScrollView>
     </>
@@ -198,10 +198,10 @@ function Result({
         </View>
         <Text style={styles.body}>
           {mayScanTickets
-            ? 'Tickets scan je aan de deur: kies daar het evenement, dan telt de scan ook mee.'
+            ? 'Tickets scan je onder Tickets scannen: kies daar het evenement, dan telt de scan ook mee.'
             : 'Tickets scant wie aan de deur staat. Kom je helpen? Vraag de organisator om de uitnodigings-QR en scan die hier.'}
         </Text>
-        {mayScanTickets ? <Button label="Naar Aan de deur" onPress={onOpenDoor} /> : null}
+        {mayScanTickets ? <Button label="Naar Tickets scannen" onPress={onOpenDoor} /> : null}
         <Button label="Opnieuw scannen" variant="ghost" onPress={onClose} />
       </Card>
     );

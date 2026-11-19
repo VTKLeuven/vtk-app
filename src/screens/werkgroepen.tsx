@@ -5,12 +5,16 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { fetchWerkgroepen } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { PageHead } from '../components/PageHead';
+import { Prose } from '../components/Prose';
 import { Card, Empty, ErrorState, Loading } from '../components/ui';
 import { useApp } from '../state/app';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 
 /**
  * De werkgroepen, per werkingsjaar.
+ *
+ * De beschrijving is Markdown uit het CMS, net als op de site, en gaat dus door
+ * `Prose` en niet als platte tekst op het scherm.
  *
  * Een werkgroep zonder leden dit jaar blijft in de lijst staan met een lege
  * ploeg; hij bestaat wel degelijk, en hem verzwijgen laat lijken alsof hij
@@ -39,7 +43,6 @@ export default function WerkgroepenScreen() {
       <PageHead
         title="Werkgroepen"
         subtitle={data.year ? `Werkingsjaar ${data.year}-${data.year + 1}` : undefined}
-        kicker="Mee bouwen"
       />
       <ScrollView style={styles.root} contentContainerStyle={styles.content}>
         {data.years.length > 1 ? (
@@ -71,7 +74,7 @@ export default function WerkgroepenScreen() {
               <Image source={{ uri: group.imageUrl }} style={styles.photo} contentFit="cover" />
             ) : null}
             <Text style={styles.groupName}>{group.name}</Text>
-            {group.description ? <Text style={styles.body}>{group.description}</Text> : null}
+            {group.description ? <Prose>{group.description}</Prose> : null}
             {group.people.length === 0 ? (
               <Text style={styles.hint}>Dit jaar nog niemand ingevuld.</Text>
             ) : (
@@ -115,7 +118,6 @@ const styles = StyleSheet.create({
   yearLabelActive: { color: COLORS.ink, fontFamily: TYPE.cardTitle.fontFamily },
   photo: { width: '100%', height: 140, borderRadius: RADIUS.sm, backgroundColor: COLORS.paper2 },
   groupName: { ...TYPE.sectionTitle, color: COLORS.ink },
-  body: { ...TYPE.body, color: COLORS.body },
   hint: { ...TYPE.small, color: COLORS.muted },
   people: { gap: SPACING.md, marginTop: SPACING.sm },
   person: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
