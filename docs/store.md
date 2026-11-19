@@ -59,7 +59,7 @@ VTK is the student association of the engineering students at KU Leuven (Belgium
 
 Sign in: tap Meer (More), then the sign-in row at the top. On the sign-in page, below the KU Leuven button, tap "klik hier" next to "Geen KU Leuven student (meer):" and sign in with the email address and password of the demo account below. Most students use KU Leuven single sign-on, which requires a university account.
 
-Payments: tickets and sandwiches are physical goods and services used outside the app (events, food). Payment happens on the Mollie checkout page in the browser, in line with guideline 3.1.3(e).
+Payments: tickets are for physical events and are paid on the Mollie checkout page in the browser, in line with guideline 3.1.3(e). Sandwiches are paid at the counter when they are picked up; the app only places the order.
 
 Ticket scanner: the door scanner is only visible to accounts that have been granted scanning rights for an event; the demo account does not have them.
 
