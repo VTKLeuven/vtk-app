@@ -23,15 +23,25 @@ export const COLORS = {
   surface: '#FFFFFF',
   line: 'rgba(14, 26, 54, 0.10)',
   line2: 'rgba(14, 26, 54, 0.18)',
+  /** Rand rond invoervelden en knoppen met voldoende contrast (WCAG 2.2 AA). */
+  controlBorder: 'rgba(14, 26, 54, 0.5)',
+  /** Rand rond bedieningselementen op een donkere band. */
+  onDarkControlBorder: 'rgba(239, 242, 248, 0.48)',
   /** Het enige accent. Spaarzaam gebruiken. */
   yellow: '#FFD23F',
   yellowDeep: '#EDBD22',
+  /** Rand van een drankbon-muntje, donker genoeg om op het gele vlak leesbaar te blijven. */
+  coinRim: '#805B00',
   muted: '#5C667F',
   body: '#34405E',
   /** Gedempte tekst op een donkere band. */
   onDarkMuted: '#B7C0DC',
   /** Wit op een donkere band; `paper` en niet puur wit, zoals op de site. */
   onDark: '#EFF2F8',
+  /** Fout- en waarschuwingsvlakken, zoals uitschrijven of een ongeldig veld. */
+  dangerBg: '#FDECEA',
+  dangerInk: '#B42318',
+  dangerLine: '#D92D20',
 } as const;
 
 /**

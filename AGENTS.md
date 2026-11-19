@@ -51,14 +51,15 @@ Lokaal testen vraagt HTTPS, want de weblogin doet KU Leuven-SSO. Draai
 vtk-website-new achter een cloudflared-tunnel en vul die URL in bij
 **Meer -> je naam -> Server**. Zie `docs/architecture.md`.
 
-**De camera, de agenda, de fotobibliotheek en de scanner gaan niet mee met `eas update`.**
-`expo-camera`, `expo-calendar`, `expo-media-library` en de modules van de scanner
-(`expo-crypto`, `expo-haptics`, `expo-network`) zijn native. In Expo Go zitten ze
-al ingebouwd, dus daar kan je de scanner, "In agenda" en het bewaren van een foto
-wel gewoon testen. Op een APK moet de module in de build zelf zitten; wie een
-oudere APK heeft, krijgt daar een rood scherm. Laad zo'n module nooit vanuit iets
-dat bij de start geladen wordt, anders valt niet één scherm maar de hele app om;
-zie `docs/scanner.md`.
+**De camera, de agenda, de fotobibliotheek, locatie en de scanner gaan niet mee met `eas update`.**
+`expo-camera`, `expo-calendar`, `expo-media-library`, `expo-location` (gebruikt
+door `lokalen.tsx`) en de modules van de scanner (`expo-crypto`, `expo-haptics`,
+`expo-network`) zijn native. In Expo Go zitten ze al ingebouwd, dus daar kan je
+de scanner, "In agenda", de wandelroute naar een lokaal en het bewaren van een
+foto wel gewoon testen. Op een APK moet de module in de build zelf zitten; wie
+een oudere APK heeft, krijgt daar een rood scherm. Laad zo'n module nooit vanuit
+iets dat bij de start geladen wordt, anders valt niet één scherm maar de hele
+app om; zie `docs/scanner.md`.
 
 **Voeg je een native dependency toe, bouw dan voor je publiceert.**
 `runtimeVersion` staat op `"exposdk:58.0.0"`, dezelfde waarde voor élke SDK
@@ -73,9 +74,10 @@ opent, en Expo Go laadt enkel een `exposdk`-runtime. Zet dit niet op
 één keer gebeurd en legde de hele iOS-kant stil.
 
 **Voeg geen module toe die niet in Expo Go zit.** Alles wat we vandaag gebruiken
-zit erin (camera, agenda, fotobibliotheek, sqlite, bestanden, delen, webview,
-svg, crypto, haptics, netwerk, keep-awake). Iets anders erbij betekent dat niemand de app nog op een iPhone kan
-bekijken. Push is de bestaande uitzondering: die werkt in Expo Go niet.
+zit erin (camera, agenda, fotobibliotheek, locatie, sqlite, bestanden, delen,
+webview, svg, crypto, haptics, netwerk, keep-awake). Iets anders erbij betekent
+dat niemand de app nog op een iPhone kan bekijken. Push is de bestaande
+uitzondering: die werkt in Expo Go niet.
 
 ## Regels
 
@@ -119,7 +121,7 @@ bekijken. Push is de bestaande uitzondering: die werkt in Expo Go niet.
    want elke route controleert het daarna nog eens zelf.
 12. **Publiceer altijd een EAS Update na het pushen naar main.** Niets in deze
    repo deployt vanzelf: GitHub Actions draait enkel de checks. Wijzigingen aan de
-   app moeten dus altijd via `npx eas update --branch preview --environment preview --message "..."` naar het
+   app moeten dus altijd via `npx eas-cli@latest update --branch preview --environment preview --message "..."` naar het
    preview-kanaal gepubliceerd worden zodat ze direct op toestellen en in Expo Go
    verschijnen.
 
@@ -164,9 +166,12 @@ bekijken. Push is de bestaande uitzondering: die werkt in Expo Go niet.
   achterlopen en een pushbericht van vorige week draagt nog het oude pad; dat mag
   niet op een leeg scherm eindigen. Ook deze worden gemaakt.
 - `app/(tabs)/_layout.tsx` is wél met de hand geschreven: **Home, Kalender,
-  Studeren, Tickets, Meer**, met hun iconen. Tickets heeft twee tabbladen (Kopen/Mijne) als
-  pillen in de kop (`tabs` op `PageHead`), net als Broodjes (Bestellen/Afhalen).
-  Broodjes staat als snelkoppeling op Home.
+  Studeren, Tickets, Meer**, met hun iconen. Tickets heeft twee tabbladen
+  (Kopen/Mijne) als pillen in de kop (`tabs` op `PageHead`), net als Broodjes
+  (Bestellen/Afhalen) en Kalender (Lijst/Maand, plus het tabblad **Planning**
+  voor de Burgieclan-koppeling via `src/components/planning/PlanningView.tsx`;
+  zie `docs/burgieclan-planning.md` in `vtk-website-new`). Broodjes staat als
+  snelkoppeling op Home.
 - `app/_layout.tsx` draagt enkel nog de tabs plus drie modals (inloggen, de
   onboardingpoort, de serverinstelling) en de scanner aan de deur
   (`app/scan/[eventId].tsx`, als `fullScreenModal`). Die liggen bewust wél over de
@@ -176,8 +181,13 @@ bekijken. Push is de bestaande uitzondering: die werkt in Expo Go niet.
 - `src/auth/` - wie er ingelogd is (er wordt geen token bewaard; zie
   `src/api/client.ts`) en de twee poorten uit `proxy.ts`.
 - `src/state/` - `AppProvider`, de schil: viewer, tabs, aankondiging.
-- `src/components/`, `src/theme/tokens.ts` - UI en tokens. `Prose` rendert alle
-  Markdown (pagina's, aankondigingen, evenement- en ticketbeschrijvingen).
+- `src/components/`, `src/theme/tokens.ts` - UI en tokens. `src/theme/tokens.ts`
+  volgt `:root` in `vtk-base.css` op de site, inclusief de WCAG 2.2 AA
+  contrasttokens (`controlBorder`, `onDarkControlBorder`, `dangerLine`,
+  `coinRim`). `Prose` rendert alle Markdown (pagina's, aankondigingen,
+  evenement- en ticketbeschrijvingen).
+- `src/campus/` - geografie, positiebepaling (`expo-location`) en wandelroutes
+  op campus Arenberg voor de lokalenzoeker (`src/screens/lokalen.tsx`).
 - `src/api/useResource.ts` - het patroon van elk scherm dat gegevens ophaalt:
   cache tonen, ophalen, en het zeggen wanneer die verversing niet lukte.
 - `src/format.ts` - datums, uren en geld, altijd in `Europe/Brussels`.
@@ -188,8 +198,10 @@ bekijken. Push is de bestaande uitzondering: die werkt in Expo Go niet.
   zomertijdsprong een dag kan verschuiven.
 - `src/navigation.ts` - de kaart van tabs en schermen, plus `useTabRouter`. De
   enige plek waar staat welk scherm in welke tab hoort.
-- `src/screens/` - de schermen zelf. Een bestand hier is een gewone component; het
-  weet niet in welke tab het getekend wordt, en dat hoort ook niet.
+- `src/screens/` - de schermen zelf (onder meer `lokalen.tsx` voor de
+  lokalenzoeker en `peilingen.tsx` voor stemmen op actieve peilingen). Een
+  bestand hier is een gewone component; het weet niet in welke tab het getekend
+  wordt, en dat hoort ook niet.
 - `src/nativeRoute.ts` - vertaalt een pad uit het CMS naar een scherm in de app.
   Het CMS kent de app niet en zet "Piano reserveren" als link naar `/piano`;
   zonder deze tabel zou dat in een browser openen terwijl er een scherm voor
