@@ -9,6 +9,21 @@ import { COLORS, SPACING, TYPE } from '../theme/tokens';
 
 const IN_WEBVIEW_SCHEMES = new Set(['http:', 'https:', 'about:', 'data:', 'blob:']);
 
+/**
+ * HTTPS-links die als Android App Link / iOS Universal Link een externe app
+ * moeten openen in plaats van in deze WebView te laden.
+ *
+ * KU Leuven Authenticator (`be.kuleuven.icts.authenticator`) gebruikt een
+ * `https://`-App Link op `icts.kuleuven.be/apps/authenticator/...`. Laadt die
+ * URL in de WebView zelf, dan toont KU Leuven de terugvalpagina "KU Leuven
+ * Authenticator cannot be opened". Door ze aan `Linking.openURL` te geven,
+ * opent het OS de app en blijft de loginpagina op `idp.kuleuven.be` (inclusief
+ * haar WebSocket) gewoon openstaan.
+ */
+const EXTERNAL_APP_LINKS: readonly RegExp[] = [
+  /^https:\/\/icts\.kuleuven\.be\/apps\/authenticator\//i,
+];
+
 function getUrlScheme(url: string): string | null {
   const match = /^([a-z][a-z0-9+.-]*:)/i.exec(url);
   return match ? match[1].toLowerCase() : null;
@@ -78,6 +93,11 @@ async function openIntentUrl(url: string): Promise<void> {
  * zodat ze niet stuklopen op `ERR_UNKNOWN_URL_SCHEME`.
  */
 function handleShouldStartLoad(requestUrl: string): boolean {
+  if (EXTERNAL_APP_LINKS.some((pattern) => pattern.test(requestUrl))) {
+    void Linking.openURL(requestUrl).catch(() => {});
+    return false;
+  }
+
   const scheme = getUrlScheme(requestUrl);
   if (!scheme || IN_WEBVIEW_SCHEMES.has(scheme)) return true;
 
