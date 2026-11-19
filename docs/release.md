@@ -84,9 +84,11 @@ npx eas-cli@latest build --profile production --platform android
 npx eas-cli@latest submit --platform ios --latest
 ```
 
-Dat maakt de app aan in App Store Connect als ze er nog niet is (de naam moet
-uniek zijn in de hele App Store; "VTK" is vrijwel zeker al bezet, neem "VTK
-Leuven") en zet de build in TestFlight. Test eerst via TestFlight op een echte
+De app staat al in App Store Connect als "VTK Leuven" ("VTK" was bezet; onder
+het icoon staat wel "VTK", dat komt uit `app.json`). Haar Apple ID staat als
+`ascAppId` in `eas.json`, zodat `eas submit` ze niet zelf probeert aan te maken:
+dat lukte niet, omdat Apple bij de eerste app van een team een bedrijfsnaam
+vraagt die EAS niet meegeeft. Het commando zet de build in TestFlight. Test eerst via TestFlight op een echte
 iPhone: dat is de eerste keer dat de app als eigen build op iOS draait, met push,
 camera en agenda. Daarna in App Store Connect:
 
