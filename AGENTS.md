@@ -67,9 +67,16 @@ app om; zie `docs/scanner.md`.
 niet heeft; `requireNativeModule` gooit dan op het scherm waar die import hangt.
 Bouw eerst, verspreid de APK, en vraag om de vorige te vervangen.
 
-**Die policy staat er om Expo Go.** Er is geen Apple Developer-account en dus geen
-iOS-build; de enige weg naar een iPhone is Expo Go dat een gepubliceerde update
-opent, en Expo Go laadt enkel een `exposdk`-runtime. Zet dit niet op
+**De stores.** Sinds november 2026 is er een Apple Developer-account en gaat de
+app naar de App Store en de Play Store. `app.config.ts` geeft een
+productiebuild (`APP_VARIANT=production`) de `fingerprint`-policy; de preview
+houdt `exposdk:58.0.0`. Een update naar de stores gaat apart en bewust:
+`npx eas-cli@latest update --branch production --environment production`. Alles
+daarover staat in `docs/release.md`.
+
+**De policy van de preview staat er om Expo Go.** Voor wie de preview op een
+iPhone test, is Expo Go dat een gepubliceerde update opent de weg, en Expo Go
+laadt enkel een `exposdk`-runtime. Zet de preview niet op
 `{ "policy": "fingerprint" }` zonder eerst `docs/architecture.md` te lezen: dat is
 één keer gebeurd en legde de hele iOS-kant stil.
 

@@ -39,3 +39,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Sleutels voor de stores (eas submit); nooit committen
+google-service-account.json

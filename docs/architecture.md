@@ -115,8 +115,8 @@ lucht, native modules niet.
 horen bij elkaar wanneer die waarde gelijk is, en `exposdk:58.0.0` is de waarde
 van **Expo Go** voor SDK 58.
 
-Dat is geen detail maar de hele iOS-kant. Er is geen Apple Developer-account, dus
-er bestaat geen iOS-build en die is er ook nooit geweest. De enige manier waarop
+Dat is geen detail maar de hele iOS-kant. Tot november 2026 was er geen Apple
+Developer-account, dus geen iOS-build. De enige manier waarop
 deze app vandaag op een iPhone draait, is Expo Go dat een gepubliceerde update van
 het `preview`-kanaal opent, na inloggen met het `vtk-it`-account. **Expo Go laadt
 enkel een update met een `exposdk`-runtime**; een fingerprint-hash zegt die client
@@ -155,6 +155,14 @@ vorige SDK krijgt geen enkele update meer aangeboden. Geen rood scherm, geen
 melding, de app blijft gewoon staan waar ze stond. De volgorde is daarom: eerst
 bouwen en de APK verspreiden, dan pas publiceren, en er expliciet bij zeggen dat
 iedereen herinstalleert.
+
+**Sinds november 2026: twee runtimes.** Er is nu een Apple Developer-account en
+de app gaat naar de stores. `app.config.ts` kiest de `runtimeVersion` per
+variant: de preview en Expo Go houden `exposdk:58.0.0`, een build met
+`APP_VARIANT=production` (het profiel `production` en de EAS-omgeving
+`production`) krijgt de `fingerprint`-policy. Wat hieronder over fingerprint
+staat, geldt dus voor de stores; wat hierboven staat, voor de preview. Zie
+`docs/release.md`.
 
 **Wanneer dit moet wijzigen.** Zodra er builds in de wereld staan die we niet meer
 kunnen vragen om te herinstalleren, dus bij TestFlight of de stores, is

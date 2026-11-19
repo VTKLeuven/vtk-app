@@ -9,7 +9,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "be.vtk.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -20,7 +20,14 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundColor": "#0E1A36"
       },
-      "package": "be.vtk.app"
+      "package": "be.vtk.app",
+      "blockedPermissions": [
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       [
@@ -46,29 +53,35 @@
         {
           "savePhotosPermission": "VTK bewaart een foto uit een album in je fotobibliotheek.",
           "photosPermission": "VTK bewaart een foto uit een album in je fotobibliotheek.",
-          "isAccessMediaLocationEnabled": false
+          "isAccessMediaLocationEnabled": false,
+          "granularPermissions": []
         }
       ],
       [
         "expo-camera",
         {
           "cameraPermission": "VTK gebruikt je camera enkel om een QR-code te scannen: een ticket aan de deur, een uitnodiging om te mogen scannen, de code aan de fakbar of de pas van een student.",
-          "recordAudioAndroid": false
+          "recordAudioAndroid": false,
+          "microphonePermission": false
         }
       ],
       [
         "expo-calendar",
         {
-          "calendarPermission": "VTK zet een evenement in je agenda wanneer je daarop tikt. Er wordt niets gelezen of gewijzigd zonder dat je het vraagt."
+          "calendarPermission": "VTK zet een evenement in je agenda wanneer je daarop tikt. Er wordt niets gelezen of gewijzigd zonder dat je het vraagt.",
+          "remindersPermission": false
         }
       ],
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "VTK gebruikt je locatie enkel om de wandelroute naar een lokaal vanaf je eigen positie te tekenen. Er wordt niets bewaard of doorgestuurd.",
+          "locationAlwaysAndWhenInUsePermission": false,
           "locationWhenInUsePermission": "VTK gebruikt je locatie enkel om de wandelroute naar een lokaal vanaf je eigen positie te tekenen. Er wordt niets bewaard of doorgestuurd.",
           "isAndroidBackgroundLocationEnabled": false,
-          "isAndroidForegroundServiceEnabled": false
+          "isAndroidForegroundServiceEnabled": false,
+          "locationAlwaysPermission": false,
+          "motionUsagePermission": false,
+          "locationFullAccuracyPermission": false
         }
       ],
       "expo-image",

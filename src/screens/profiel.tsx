@@ -201,6 +201,14 @@ export default function ProfielScreen() {
             variant="ghost"
             onPress={() => void WebBrowser.openBrowserAsync(`${baseUrl()}/account`)}
           />
+          {/* Apple eist dat je je account vanuit de app kan verwijderen (richtlijn
+              5.1.1(v)). Dat formulier staat op de site, met zijn eigen bevestiging;
+              een rechtstreekse link ernaartoe is wat Apple toelaat. */}
+          <Button
+            label="Account verwijderen"
+            variant="ghost"
+            onPress={() => void WebBrowser.openBrowserAsync(`${baseUrl()}/account#privacy`)}
+          />
         </Card>
 
         <Settings
