@@ -1,11 +1,94 @@
 import { useRouter } from 'expo-router';
 import { X } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView, type WebViewNavigation } from 'react-native-webview';
 
 import { COLORS, SPACING, TYPE } from '../theme/tokens';
+
+const IN_WEBVIEW_SCHEMES = new Set(['http:', 'https:', 'about:', 'data:', 'blob:']);
+
+function getUrlScheme(url: string): string | null {
+  const match = /^([a-z][a-z0-9+.-]*:)/i.exec(url);
+  return match ? match[1].toLowerCase() : null;
+}
+
+/**
+ * Opent een Android `intent://`-URL via het besturingssysteem.
+ *
+ * Sommige Android-toestellen weigeren de ruwe `intent://`-URI rechtstreeks via
+ * `Linking.openURL`. In dat geval valt deze helper terug op het uitpakken van
+ * `scheme=...` en desnoods `S.browser_fallback_url=...` uit het
+ * `#Intent;...;end`-blok.
+ */
+async function openIntentUrl(url: string): Promise<void> {
+  try {
+    await Linking.openURL(url);
+    return;
+  } catch {
+    // Val terug op het parsen van `#Intent;...;end`.
+  }
+
+  const hashIndex = url.indexOf('#Intent;');
+  if (hashIndex === -1) return;
+
+  const beforeIntent = url.slice(0, hashIndex);
+  const pathWithoutIntentPrefix = beforeIntent.replace(/^intent:\/\//i, '');
+  const paramsPart = url.slice(hashIndex + '#Intent;'.length);
+
+  let scheme: string | null = null;
+  let fallbackUrl: string | null = null;
+
+  for (const part of paramsPart.split(';')) {
+    if (part === 'end') break;
+    if (part.startsWith('scheme=')) {
+      scheme = part.slice('scheme='.length);
+    } else if (part.startsWith('S.browser_fallback_url=')) {
+      const raw = part.slice('S.browser_fallback_url='.length);
+      try {
+        fallbackUrl = decodeURIComponent(raw);
+      } catch {
+        fallbackUrl = raw;
+      }
+    }
+  }
+
+  if (scheme) {
+    try {
+      await Linking.openURL(`${scheme}://${pathWithoutIntentPrefix}`);
+      return;
+    } catch {
+      // Val door naar de eventuele browser-fallback.
+    }
+  }
+
+  if (fallbackUrl) {
+    try {
+      await Linking.openURL(fallbackUrl);
+    } catch {
+      // Geen app of browser kon de fallback openen.
+    }
+  }
+}
+
+/**
+ * Laat gewone webpagina's in de WebView laden en geeft eigen app-schema's
+ * (zoals KU Leuven Authenticator of `intent://` op Android) door aan het OS,
+ * zodat ze niet stuklopen op `ERR_UNKNOWN_URL_SCHEME`.
+ */
+function handleShouldStartLoad(requestUrl: string): boolean {
+  const scheme = getUrlScheme(requestUrl);
+  if (!scheme || IN_WEBVIEW_SCHEMES.has(scheme)) return true;
+
+  if (scheme === 'intent:') {
+    void openIntentUrl(requestUrl);
+    return false;
+  }
+
+  void Linking.openURL(requestUrl).catch(() => {});
+  return false;
+}
 
 /**
  * Een stuk website in de app.
@@ -60,6 +143,12 @@ export function WebFlow({
 
       <WebView
         source={{ uri: url }}
+        originWhitelist={['*']}
+        // Houdt `target="_blank"` en `window.open()` in deze WebView zodat
+        // externe SSO- en authenticatorlinks langs `onShouldStartLoadWithRequest`
+        // passeren in plaats van stil te verdwijnen.
+        setSupportMultipleWindows={false}
+        onShouldStartLoadWithRequest={(request) => handleShouldStartLoad(request.url)}
         onNavigationStateChange={handleNavigation}
         onLoadEnd={() => setLoading(false)}
         onLoadStart={() => setLoading(true)}
