@@ -13,7 +13,7 @@ import { metres, type LatLng } from './geo';
  *
  * `expo-location` zit in de Expo SDK en dus in Expo Go. Dat is hier geen detail:
  * een module die daar niet in zit, maakt de app onbereikbaar op iPhone (zie
- * `mobile/AGENTS.md`). **Een APK van voor deze wijziging heeft de module niet**,
+ * `AGENTS.md`). **Een APK van voor deze wijziging heeft de module niet**,
  * en `runtimeVersion` is voor elke SDK 54-build dezelfde, dus die krijgt deze
  * update ook aangeboden: bouw en verspreid een nieuwe APK voor je publiceert.
  */

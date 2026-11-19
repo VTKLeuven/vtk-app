@@ -59,7 +59,7 @@ const MOMENTS_VISIBLE = 7;
 
 export default function EventScreen() {
   const router = useTabRouter();
-  const { locale, viewer } = useApp();
+  const { locale, viewer, bootstrap } = useApp();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [addingToCalendar, setAddingToCalendar] = useState(false);
   const [allDays, setAllDays] = useState(false);
@@ -117,7 +117,11 @@ export default function EventScreen() {
     }
   };
 
-  const plannable = viewer !== null && planning.data?.available === true && planning.data.subscribed;
+  const plannable =
+    viewer !== null &&
+    bootstrap?.abilities?.planning === true &&
+    planning.data?.available === true &&
+    planning.data.subscribed;
   const inPlanning = planning.data?.vtkEvents.some((item) => item.id === event.id) ?? false;
   const togglePlanning = () =>
     void planning.run({ op: inPlanning ? 'removeVtkEvent' : 'addVtkEvent', vtkEventId: event.id });

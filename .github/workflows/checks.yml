@@ -1,0 +1,63 @@
+name: Checks
+
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
+  schedule:
+    - cron: '0 6 * * 1' # Maandag 08:00 in Brussel, voor de audit
+  workflow_dispatch:
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Types, lint en routes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run type-check
+      - run: npm run lint
+      - run: npm run routes:check
+      # Het contract met de site vergelijkt enkel lokaal, met vtk-website-new
+      # ernaast (scripts/contract.mjs); hier slaat het zichzelf over.
+      - run: npm run contract:check
+
+  npm-audit:
+    name: Audit dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+
+      - name: Report high and critical advisories
+        run: |
+          {
+            echo '## npm audit (high en hoger)'
+            echo '```'
+            npm audit --audit-level high || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail on critical advisories
+        run: npm audit --audit-level critical

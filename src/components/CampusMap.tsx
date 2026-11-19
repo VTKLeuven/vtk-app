@@ -19,7 +19,7 @@ import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
  *
  * **Waarom hier geen kaartbibliotheek staat.** `react-native-maps` en
  * `expo-maps` zijn native modules die niet in Expo Go zitten, en Expo Go is de
- * enige weg naar een iPhone (zie `mobile/AGENTS.md`). Een WebView met Leaflet
+ * enige weg naar een iPhone (zie `AGENTS.md`). Een WebView met Leaflet
  * zou regel 2 omzeilen. Wat overblijft is dit, en het is niet de armste maar de
  * beste optie: we hebben echte voetafdrukken en een echt padennet, en een eigen
  * tekening kan het gezochte gebouw in geel zetten en de rest laten zwijgen. Een

@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "routes": "node scripts/genereer-routes.mjs",
     "routes:check": "node scripts/controleer-routes.mjs",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "contract:sync": "node scripts/contract.mjs sync",
+    "contract:check": "node scripts/contract.mjs check",
+    "check": "npm run type-check && npm run lint && npm run routes:check && npm run contract:check"
   },
   "dependencies": {
     "@expo-google-fonts/instrument-serif": "^0.4.1",

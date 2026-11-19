@@ -25,14 +25,26 @@ heeft, ziet hem. Alles daarover staat in `docs/scanner.md`.
 logboek (welke fase waar staat), `docs/architecture.md` legt uit hoe de app met
 de site praat.
 
+## Een eigen repo
+
+Tot november 2026 stond de app in `mobile/` in de repo van vtk-website-new; nu
+heeft ze deze eigen repo, met de volledige historiek van die map. De site en de
+app delen geen code meer, enkel een contract dat hier een kopie is (zie
+"Gekopieerd uit vtk-website-new"). Clone vtk-website-new naast deze repo (of zet
+`VTK_WEBSITE_DIR`), anders kan `npm run contract:check` niets vergelijken.
+Handleiding: `docs/ontwikkelen.md`.
+
 ## Draaien
 
 ```
 npm start          # expo start (dev build, niet Expo Go: react-native-webview)
+npm run check      # alles hieronder samen; draai dit voor je pusht
 npm run type-check # tsc --noEmit, moet 0 fouten geven
 npm run lint
 npm run routes     # schrijft app/(tabs)/** en app/(oud)/** uit src/navigation.ts
 npm run routes:check # loopt dat gelijk, en bestaat elk adres waar de app naartoe duwt
+npm run contract:sync  # haalt src/api/contract.ts uit vtk-website-new
+npm run contract:check # faalt wanneer de twee verschillen
 ```
 
 Lokaal testen vraagt HTTPS, want de weblogin doet KU Leuven-SSO. Draai
@@ -105,9 +117,9 @@ bekijken. Push is de bestaande uitzondering: die werkt in Expo Go niet.
 11. **Toon geen knop die "geen toegang" antwoordt.** `bootstrap.abilities` zegt
    wat deze gebruiker mag; verberg de rest. Dat is netheid en geen beveiliging,
    want elke route controleert het daarna nog eens zelf.
-12. **Publiceer altijd een EAS Update na het pushen naar main.** De CI-pipeline
-   van GitHub Actions deployt enkel de website; wijzigingen aan de mobiele app
-   moeten dus altijd via `npx eas update --branch preview --environment preview --message "..."` naar het
+12. **Publiceer altijd een EAS Update na het pushen naar main.** Niets in deze
+   repo deployt vanzelf: GitHub Actions draait enkel de checks. Wijzigingen aan de
+   app moeten dus altijd via `npx eas update --branch preview --environment preview --message "..."` naar het
    preview-kanaal gepubliceerd worden zodat ze direct op toestellen en in Expo Go
    verschijnen.
 
@@ -220,8 +232,10 @@ wrapper zou daar niets doen dan doorgeven, of erger, de helft vergeten.
 ## Gekopieerd uit vtk-website-new
 
 Deze bestanden zijn bewust een kopie en geen import; wijzigt het origineel, dan
-wijzigt dit mee. De contracttest in `apps/web/test/appApiContract.test.ts`
-vergelijkt de eerste rij byte voor byte wanneer beide repo's naast elkaar staan.
+wijzigt dit mee. De eerste rij wordt byte voor byte vergeleken wanneer beide
+repo's naast elkaar staan: hier door `npm run contract:check`, op de site door
+`apps/web/test/appApiContract.test.ts`. **Het origineel is de bron**: pas het
+contract aan in vtk-website-new en haal het met `npm run contract:sync`.
 
 | Hier | Origineel |
 |---|---|

@@ -1,30 +1,12 @@
-const path = require('node:path');
 const { getDefaultConfig } = require('expo/metro-config');
 
 /**
- * Metro, afgeschermd van de rest van de monorepo.
+ * Metro met de standaardinstelling van Expo.
  *
- * De app staat in `mobile/`, binnen een repo die zelf al een npm-workspace is
- * (`apps/*`, `packages/*`). Metro zoekt `node_modules` van beneden naar boven,
- * dus zonder deze regel kan hij bij een pakket dat hier ontbreekt doorschuiven
- * naar dat van de website. Dan krijg je bijvoorbeeld de `react` van Next in een
- * React Native-bundel: twee kopieën van React, en fouten ("invalid hook call")
- * die niets met je code te maken hebben.
- *
- * De oplossing is **blokkeren en niet uitschakelen**. `disableHierarchicalLookup`
- * lijkt de knop ervoor, maar die zet ook het zoeken in geneste `node_modules`
- * uit, en een deel van de Expo-pakketten zit daar (`expo/node_modules/expo-asset`).
- * Wat hier staat laat dat met rust en sluit enkel de map van de verdieping erboven
- * af, zodat een ontbrekende dependency een duidelijke fout geeft in plaats van
- * stilletjes de verkeerde versie.
- *
- * `mobile/` staat daarom ook buiten `apps/`: alles onder `apps/*` wordt
- * automatisch een workspace en zou wél mee gehoist worden.
+ * Tot november 2026 stond de app in `mobile/` binnen de monorepo van de website,
+ * en blokkeerde dit bestand de `node_modules` van de verdieping erboven: anders
+ * kon Metro bij een ontbrekend pakket doorschuiven naar de `react` van Next, met
+ * twee kopieën van React als gevolg. Sinds de app een eigen repo heeft, is er
+ * geen verdieping erboven meer om voor op te passen.
  */
-const config = getDefaultConfig(__dirname);
-
-const websiteModules = path.resolve(__dirname, '..', 'node_modules');
-const escaped = websiteModules.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-config.resolver.blockList = [new RegExp(`^${escaped}[/\\\\].*$`)];
-
-module.exports = config;
+module.exports = getDefaultConfig(__dirname);

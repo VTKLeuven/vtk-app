@@ -61,7 +61,9 @@ const MINE = '__mijn__';
  */
 export default function KalenderScreen() {
   const router = useTabRouter();
-  const { locale, viewer } = useApp();
+  const { locale, viewer, bootstrap } = useApp();
+  // Enkel wanneer de server met Burgieclan gekoppeld is; zie `abilities.planning`.
+  const planningAvailable = viewer !== null && bootstrap?.abilities?.planning === true;
 
   const [view, setViewState] = useState<Weergave>(() => {
     const saved = getPref(VIEW_KEY);
@@ -77,7 +79,7 @@ export default function KalenderScreen() {
   };
 
   // De planning vraagt een login; uitgelogd valt een bewaarde keuze terug op de lijst.
-  const planning = view === 'planning' && viewer !== null;
+  const planning = view === 'planning' && planningAvailable;
   const range = view === 'maand' ? gridRange(anchor) : null;
   const mine = category === MINE;
 
@@ -143,12 +145,8 @@ export default function KalenderScreen() {
     options: [
       { value: 'lijst' as const, label: 'Agenda' },
       { value: 'maand' as const, label: 'Maand' },
-      ...(viewer
-        ? [
-            { value: 'mijn' as const, label: 'Mijn lijst' },
-            { value: 'planning' as const, label: 'Planning' },
-          ]
-        : []),
+      ...(viewer ? [{ value: 'mijn' as const, label: 'Mijn lijst' }] : []),
+      ...(planningAvailable ? [{ value: 'planning' as const, label: 'Planning' }] : []),
     ],
   };
 

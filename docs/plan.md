@@ -643,3 +643,18 @@ overgenomen (ontwerpbord: https://claude.ai/artifact/Nn9fxsQCeMZcZ35hQ4XwY8):
   marge van de site, de onderdelen als de tegels van een categoriepagina.
 - **Praesidium** bleef zoals het was: de muur van gezichten was op een telefoon
   geen verbetering.
+
+## November 2026: een eigen repo
+
+De app verhuisde uit `mobile/` in vtk-website-new naar deze repo, `vtk-app`, met
+de volledige historiek van die map (`git subtree split`). Wat daarvoor veranderde:
+`metro.config.js` blokkeert geen `node_modules` van een verdieping erboven meer,
+het contract wordt vergeleken met `npm run contract:check` (en aan de kant van de
+site enkel nog wanneer deze repo ernaast staat), de checks en `npm audit` draaien
+in `.github/workflows/checks.yml`, en Renovate heeft hier zijn eigen
+`renovate.json`. De handleiding staat in `docs/ontwikkelen.md`.
+
+Kort ervoor kwam het tabblad **Planning** onder Kalender: de planner van
+Burgieclan (lessenrooster, deadlines, VTK-evenementen erin) als drie dagen naast
+elkaar. Zie `docs/burgieclan-planning.md` in vtk-website-new.
+
