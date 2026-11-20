@@ -18,6 +18,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png",
         "backgroundColor": "#0E1A36"
       },
       "package": "be.vtk.app",
