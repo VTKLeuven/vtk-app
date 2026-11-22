@@ -1,39 +1,44 @@
-
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react-native';
+import { Check, Ticket } from 'lucide-react-native';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import type { AppShiftYear, AppVoucherEntry } from '../api/contract';
 import { fetchVouchers } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { PageHead } from '../components/PageHead';
 import { PassCode } from '../components/PassCode';
-import { Button, Card, ErrorState, Loading, StaleNotice } from '../components/ui';
-import { formatDate, formatVouchers } from '../format';
+import { RewardCoins } from '../components/RewardCoins';
+import { Button, Card, ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
+import { formatShortDate, formatVouchers } from '../format';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
-import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 
 /**
- * Bonnetjes: wat je verdiende met shiften en wat je ermee kan.
+ * Bonnetjes: je shiften van dit jaar, wat ze opleverden en wat je ermee kan.
+ *
+ * De vorm komt van /shift/history op de site: je titel groot bovenaan met de
+ * ladder van 3 tot 50 shiften en waar jij staat, daaronder je saldo met wat er
+ * ooit verdiend en al gebruikt is, en wat er recent afging. De pas om mee te
+ * betalen staat tussen het saldo en de lijst, want daarvoor open je dit scherm
+ * aan een toog.
  *
  * **Eén bonnetje per begonnen uur shift**, en dat is een kringregel die op de
- * server leeft (`lib/shift/rewards.ts`). Hier staat enkel het getal.
+ * server leeft (`lib/shift/rewards.ts`), net als de titels en de telling
+ * (`buildShiftHistory`). Hier staan enkel de uitkomsten.
  *
  * De naam is bewust "bonnetjes" en niet iets nieuws. De admin, de mails en de
- * afhaalbalie zeggen het al zo; er een tweede woord naast zetten levert precies
- * het soort discussie op waar aan een toog geen tijd voor is.
+ * afhaalbalie zeggen het al zo.
  *
- * **De historiek telt niet op naar het saldo, en dat staat er ook bij.** Een
- * beheerder die bonnetjes in geld uitbetaalt, verhoogt enkel `rewardPaid` en laat
- * hier niets achter; een lijst die niet klopt met het getal erboven zonder uitleg
- * is erger dan geen lijst.
+ * Een server van voor november 2026 stuurt `shiftYear`, `earned` en `used` niet;
+ * dan valt de ladder weg en blijft het saldo met de lijst.
  */
 export default function BonnetjesScreen() {
   const router = useTabRouter();
   const { locale, viewer } = useApp();
   const resource = useResource(
     'bonnetjes',
-    () => (viewer ? fetchVouchers() : Promise.reject(new Error('Niet ingelogd'))),
-    viewer?.id ?? 'anon',
+    () => (viewer ? fetchVouchers(locale) : Promise.reject(new Error('Niet ingelogd'))),
+    `${viewer?.id ?? 'anon'}:${locale}`,
   );
 
   if (!viewer) {
@@ -41,11 +46,13 @@ export default function BonnetjesScreen() {
       <>
         <PageHead title="Bonnetjes" />
         <ScrollView contentContainerStyle={styles.content} style={styles.root}>
-          <Card>
-            <Text style={styles.title}>Log eerst in</Text>
-            <Text style={styles.body}>Je bonnetjes hangen aan je shiften en dus aan je account.</Text>
-            <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
-          </Card>
+          <View style={styles.pad}>
+            <Card>
+              <Text style={styles.title}>Log eerst in</Text>
+              <Text style={styles.body}>Je bonnetjes hangen aan je shiften en dus aan je account.</Text>
+              <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+            </Card>
+          </View>
         </ScrollView>
       </>
     );
@@ -58,7 +65,9 @@ export default function BonnetjesScreen() {
     );
   }
 
-  const { balance, earnedThisYear, history } = resource.data;
+  const { balance, earned, used, shiftYear, history } = resource.data;
+  const spent = history.filter((entry) => entry.kind === 'spent').slice(0, 8);
+  const earnedEntries = history.filter((entry) => entry.kind === 'earned').slice(0, 8);
 
   return (
     <>
@@ -67,116 +76,327 @@ export default function BonnetjesScreen() {
         contentContainerStyle={styles.content}
         style={styles.root}
         refreshControl={
-          <RefreshControl
-            refreshing={resource.refreshing}
-            onRefresh={() => void resource.refresh()}
-          />
+          <RefreshControl refreshing={resource.refreshing} onRefresh={() => void resource.refresh()} />
         }
       >
         {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
 
-        <Card style={styles.balanceCard}>
-          <Text style={styles.balanceValue}>{formatVouchers(balance, locale)}</Text>
-          <Text style={styles.balanceLabel}>
-            {balance === 1 ? 'bonnetje staat open' : 'bonnetjes staan open'}
-          </Text>
-          {earnedThisYear > 0 ? (
-            <Text style={styles.hint}>{earnedThisYear} verdiend dit academiejaar</Text>
-          ) : null}
-        </Card>
+        {shiftYear ? (
+          <View style={styles.pad}>
+            <Hero year={shiftYear} locale={locale} />
+          </View>
+        ) : null}
 
-        {balance > 0 ? (
-          <>
-            <PassCode caption="Laat dit scannen om ermee te betalen." />
-            <Text style={styles.hint}>
-              Aan de toog en aan de afhaalbalie van het Theokot. Wie aanvaardt, ziet eerst je naam
-              en je saldo en tikt dan pas een aantal in.
-            </Text>
-          </>
-        ) : (
-          <Card>
-            <Text style={styles.body}>
-              Je hebt nog geen openstaande bonnetjes. Ze komen er vanzelf bij zodra een shift
-              waarop je stond, voorbij is.
-            </Text>
-            <Button label="Shiften bekijken" variant="ghost" onPress={() => router.push('/shiften')} />
-          </Card>
-        )}
-
-        {history.length > 0 ? (
-          <>
-            <Text style={styles.sectionTitle}>Historiek</Text>
-            <View style={styles.list}>
-              {history.map((entry) => (
-                <View key={entry.id} style={styles.entry}>
-                  <View style={styles.entryIcon}>
-                    {entry.kind === 'earned' ? (
-                      <ArrowDownLeft color={COLORS.navy} size={16} />
-                    ) : (
-                      <ArrowUpRight color={COLORS.muted} size={16} />
-                    )}
-                  </View>
-                  <View style={styles.entryText}>
-                    <Text style={styles.entryLabel} numberOfLines={2}>
-                      {entry.label}
-                    </Text>
-                    <Text style={styles.hint}>{formatDate(entry.at, locale)}</Text>
-                  </View>
-                  <Text style={entry.kind === 'earned' ? styles.plus : styles.minus}>
-                    {entry.kind === 'earned' ? '+' : '-'}
-                    {formatVouchers(entry.amount, locale)}
-                  </Text>
-                </View>
-              ))}
+        <View style={[styles.pad, styles.section]}>
+          <SectionHeading>Je bonnetjes</SectionHeading>
+          <View style={styles.balanceRow}>
+            <View style={styles.balance}>
+              <RewardCoins
+                display={formatVouchers(balance, locale)}
+                label={`${formatVouchers(balance, locale)} ${balance === 1 ? 'bonnetje' : 'bonnetjes'} open`}
+                size="lg"
+              />
+              <Text style={styles.hint}>{balance === 1 ? 'staat open' : 'staan open'}</Text>
             </View>
-            <Text style={styles.hint}>
-              Deze lijst telt niet op naar het getal hierboven. Bonnetjes die een beheerder in geld
-              uitbetaalde, gaan wel van je saldo af maar staan hier niet in.
-            </Text>
-          </>
+            {earned !== undefined && used !== undefined ? (
+              <View style={styles.sums}>
+                <Sum label="Ooit verdiend" value={formatVouchers(earned, locale)} />
+                <Sum label="Al gebruikt" value={formatVouchers(used, locale)} />
+              </View>
+            ) : null}
+          </View>
+        </View>
+
+        <View style={styles.pad}>
+          {balance > 0 ? (
+            <View style={styles.passBlock}>
+              <PassCode caption="Laat dit scannen om ermee te betalen." />
+              <Text style={styles.hint}>
+                Aan de toog en aan de afhaalbalie van het Theokot. Wie aanvaardt, ziet eerst je naam
+                en je saldo en tikt dan pas een aantal in.
+              </Text>
+            </View>
+          ) : (
+            <Card>
+              <Text style={styles.body}>
+                Je hebt geen openstaande bonnetjes. Ze komen er vanzelf bij zodra een shift waarop
+                je stond, voorbij is.
+              </Text>
+              <Button label="Shiften bekijken" variant="ghost" onPress={() => router.push('/shiften')} />
+            </Card>
+          )}
+        </View>
+
+        {spent.length > 0 ? (
+          <Register title="Recent gebruikt" entries={spent} locale={locale} />
+        ) : null}
+        {earnedEntries.length > 0 ? (
+          <Register title="Recent verdiend" entries={earnedEntries} locale={locale} />
+        ) : null}
+
+        {history.length > 0 && earned === undefined ? (
+          <Text style={[styles.hint, styles.pad]}>
+            Deze lijst telt niet op naar het getal hierboven. Bonnetjes die een beheerder in geld
+            uitbetaalde, gaan wel van je saldo af maar staan hier niet in.
+          </Text>
         ) : null}
       </ScrollView>
     </>
   );
 }
 
+function shifts(n: number): string {
+  return n === 1 ? '1 shift' : `${n} shiften`;
+}
+
+/**
+ * Je titel en de ladder, zoals de bovenste kaart van /shift/history. Op een
+ * telefoon staat de ladder rechtop, van laag naar hoog, met "Jij" ertussen op de
+ * plaats waar je nu staat.
+ */
+function Hero({ year, locale }: { year: AppShiftYear; locale: 'nl' | 'en' }) {
+  const { count, tier, next } = year;
+  const lede = [`Je deed dit werkingsjaar ${shifts(count)}.`];
+  if (!next) lede.push('Hoger dan dit gaat de ladder niet.');
+  else {
+    const left = next.min - count;
+    const unlocksPresale = next.min === year.presaleAt && !year.inPraesidiumNow;
+    lede.push(
+      unlocksPresale
+        ? `Nog ${shifts(left)} tot ${next.name}, en dan zit je in de voorverkoop.`
+        : `Nog ${shifts(left)} tot ${next.name}.`,
+    );
+  }
+  if (year.inPraesidiumNow) lede.push('Als praesidiumlid zit je al in de voorverkoop.');
+  else if (count >= year.presaleAt) lede.push('Je zit in de voorverkoop.');
+
+  // De ladder van laag naar hoog, met "Jij" voor de eerste titel die je nog niet hebt.
+  const rows: ({ kind: 'tier'; min: number; name: string } | { kind: 'you' })[] = [];
+  let placed = false;
+  for (const step of year.tiers) {
+    if (!placed && step.min > count) {
+      rows.push({ kind: 'you' });
+      placed = true;
+    }
+    rows.push({ kind: 'tier', ...step });
+  }
+  if (!placed) rows.push({ kind: 'you' });
+
+  return (
+    <View style={styles.hero}>
+      <View style={styles.heroTop}>
+        <View style={styles.flex}>
+          <Text style={styles.eyebrow}>WERKINGSJAAR {year.label}</Text>
+          <Text style={[styles.tier, !tier && styles.tierEmpty]}>{tier ? tier.name : 'Nog geen titel'}</Text>
+        </View>
+        <View style={styles.earned}>
+          <RewardCoins
+            display={formatVouchers(year.vouchers, locale)}
+            label={`${formatVouchers(year.vouchers, locale)} bonnetjes verdiend dit werkingsjaar`}
+            size="lg"
+            withheld={year.praesidium}
+          />
+          <Text style={[styles.hint, styles.right]}>
+            {year.praesidium ? 'geen bonnetjes in een praesidiumjaar' : 'verdiend dit jaar'}
+          </Text>
+        </View>
+      </View>
+      <Text style={styles.body}>{lede.join(' ')}</Text>
+
+      <View style={styles.ladder} accessibilityLabel="Titels per aantal shiften">
+        <View style={styles.rail} />
+        {rows.map((row) => {
+          if (row.kind === 'you') {
+            return (
+              <View key="you" style={styles.step}>
+                <View style={[styles.node, styles.nodeYou]} />
+                <View style={styles.youPill}>
+                  <Text style={styles.youText}>Jij: {shifts(count)}</Text>
+                </View>
+              </View>
+            );
+          }
+          const state = count >= row.min ? 'done' : next?.min === row.min ? 'next' : 'todo';
+          return (
+            <View
+              key={row.min}
+              style={styles.step}
+              accessible
+              accessibilityLabel={`${row.name}, vanaf ${shifts(row.min)}${state === 'done' ? ', gehaald' : ''}`}
+            >
+              <View
+                style={[
+                  styles.node,
+                  state === 'done' && styles.nodeDone,
+                  state === 'next' && styles.nodeNext,
+                ]}
+              >
+                {state === 'done' ? <Check color={COLORS.ink} size={12} strokeWidth={3} /> : null}
+              </View>
+              <Text style={styles.stepMin}>{row.min}</Text>
+              <Text style={[styles.stepName, state !== 'todo' && styles.stepNameOn]} numberOfLines={1}>
+                {row.name}
+              </Text>
+              {row.min === year.presaleAt ? (
+                <View style={styles.presale}>
+                  <Ticket color={COLORS.ink} size={12} />
+                  <Text style={styles.presaleText}>Voorverkoop</Text>
+                </View>
+              ) : null}
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function Sum({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.sum}>
+      <Text style={styles.sumLabel}>{label}</Text>
+      <Text style={styles.sumValue}>{value}</Text>
+    </View>
+  );
+}
+
+/** Een afschrift met haarlijnen, zoals "Recent gebruikt" op de site: wanneer, wat, hoeveel. */
+function Register({
+  title,
+  entries,
+  locale,
+}: {
+  title: string;
+  entries: AppVoucherEntry[];
+  locale: 'nl' | 'en';
+}) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.pad}>
+        <SectionHeading>{title}</SectionHeading>
+      </View>
+      <View style={styles.register}>
+        {entries.map((entry) => (
+          <View key={entry.id} style={styles.entry}>
+            <Text style={styles.entryWhen}>{formatShortDate(entry.at, locale, false)}</Text>
+            <Text style={styles.entryWhat} numberOfLines={2}>
+              {entry.id.startsWith('theokot:') ? 'Broodje aan de afhaalbalie' : entry.label}
+            </Text>
+            <Text style={entry.kind === 'earned' ? styles.plus : styles.minus}>
+              {entry.kind === 'earned' ? '+' : '-'}
+              {formatVouchers(entry.amount, locale)}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
-  content: { padding: SPACING.lg, gap: SPACING.lg, paddingBottom: SPACING.xxl },
+  content: { paddingTop: SPACING.xl, gap: SPACING.xl, paddingBottom: SPACING.xxl },
+  pad: { paddingHorizontal: SPACING.xl - 4 },
+  section: { gap: SPACING.md },
+  flex: { flex: 1 },
+  right: { textAlign: 'right' },
 
-  balanceCard: { alignItems: 'center', gap: SPACING.xs, paddingVertical: SPACING.xl },
-  balanceValue: { fontFamily: TYPE.pageTitle.fontFamily, fontSize: 46, lineHeight: 52, color: COLORS.ink },
-  balanceLabel: { ...TYPE.body, color: COLORS.body },
-
-  sectionTitle: { ...TYPE.sectionTitle, color: COLORS.ink },
-  list: {
+  hero: {
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
+    borderRadius: RADIUS.lg,
     borderWidth: 1,
     borderColor: COLORS.line,
-    overflow: 'hidden',
+    padding: SPACING.lg + 2,
+    gap: SPACING.md,
   },
+  heroTop: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md },
+  eyebrow: { ...TYPE.kicker, color: COLORS.muted },
+  tier: {
+    fontFamily: FONTS.semibold,
+    fontSize: 34,
+    lineHeight: 38,
+    letterSpacing: -1,
+    color: COLORS.ink,
+    marginTop: 4,
+  },
+  tierEmpty: { color: COLORS.muted, fontSize: 26, lineHeight: 32 },
+  earned: { alignItems: 'flex-end', gap: 2, maxWidth: 130 },
+
+  ladder: { marginTop: SPACING.xs, gap: 2 },
+  // De lijn achter de knopen, van de eerste tot de laatste.
+  rail: {
+    position: 'absolute',
+    left: 10,
+    top: 12,
+    bottom: 12,
+    width: 2,
+    backgroundColor: COLORS.paper2,
+  },
+  step: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, minHeight: 32 },
+  node: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: COLORS.line2,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nodeDone: { backgroundColor: COLORS.yellow, borderColor: COLORS.coinRim },
+  nodeNext: { borderWidth: 3, borderColor: COLORS.ink },
+  nodeYou: { width: 12, height: 12, borderRadius: 6, marginHorizontal: 5, borderWidth: 0, backgroundColor: COLORS.ink },
+  stepMin: {
+    width: 24,
+    fontFamily: FONTS.semibold,
+    fontSize: 14,
+    color: COLORS.ink,
+    fontVariant: ['tabular-nums'],
+    textAlign: 'right',
+  },
+  stepName: { ...TYPE.body, color: COLORS.muted, flexShrink: 1 },
+  stepNameOn: { color: COLORS.ink, fontFamily: FONTS.semibold },
+  presale: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.paper2,
+    borderRadius: RADIUS.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  presaleText: { fontFamily: FONTS.semibold, fontSize: 11.5, color: COLORS.ink },
+  youPill: {
+    backgroundColor: COLORS.ink,
+    borderRadius: RADIUS.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  youText: { fontFamily: FONTS.semibold, fontSize: 12.5, color: COLORS.paper },
+
+  balanceRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: SPACING.lg },
+  balance: { gap: 2 },
+  sums: { gap: SPACING.sm, alignItems: 'flex-end' },
+  sum: { alignItems: 'flex-end' },
+  sumLabel: { ...TYPE.small, color: COLORS.muted },
+  sumValue: { fontFamily: FONTS.semibold, fontSize: 17, color: COLORS.ink, fontVariant: ['tabular-nums'] },
+
+  passBlock: { gap: SPACING.md },
+
+  register: { borderTopWidth: 1, borderTopColor: COLORS.line },
   entry: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: SPACING.xl - 4,
     paddingVertical: SPACING.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.line,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.line,
   },
-  entryIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.paper2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  entryText: { flex: 1, gap: 1 },
-  entryLabel: { ...TYPE.body, color: COLORS.ink },
-  plus: { ...TYPE.cardTitle, color: COLORS.ink },
-  minus: { ...TYPE.cardTitle, color: COLORS.muted },
+  entryWhen: { width: 56, ...TYPE.small, color: COLORS.muted, fontVariant: ['tabular-nums'] },
+  entryWhat: { flex: 1, ...TYPE.body, color: COLORS.ink },
+  plus: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink, fontVariant: ['tabular-nums'] },
+  minus: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.muted, fontVariant: ['tabular-nums'] },
 
   title: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },

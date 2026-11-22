@@ -664,6 +664,17 @@ elkaar. Zie `docs/burgieclan-planning.md` in vtk-website-new.
   scherm van een stack door te sorteren (groepen eerst, dan de kortste naam):
   `(oud)` won van `(tabs)`, en daarin `pocs` van de rest. `app/_layout.tsx` zet nu
   `unstable_settings.anchor` op `(tabs)`.
+- **Laden** is een spinner in het midden zonder tekst; het label blijft voor
+  VoiceOver en TalkBack.
+- **Verversen zonder trekken** (`reload` in `useResource`) zet de
+  `RefreshControl` niet meer aan. Op iOS liet dat een lege strook boven
+  Studeren staan tot je scrolde.
+- **Bonnetjes** volgt /shift/history: je titel en de ladder, je saldo met wat
+  er ooit verdiend en al gebruikt is, en wat er recent afging en bijkwam.
+  **Shiften** tonen wat ze opleveren en wie er al op staat (`roster`, `shiftYear`,
+  `earned` en `used` in het contract, allemaal optioneel).
+- **Broodjes** zonder lege fotovakjes; **een evenement** zet de link van de
+  redacteur (registratie) meteen onder "Ik ga misschien".
 - **Home** toont je volgende drie lessen (`useUpcomingLessons`) voor wie een
   lessenrooster koppelde, onder "Voor jou": vandaag, of anders de eerstvolgende
   dag met lessen. Staat er niets tussen de kop en de aankomende evenementen, dan

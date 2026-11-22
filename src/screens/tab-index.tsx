@@ -58,7 +58,7 @@ export default function HomeScreen() {
   const toggleInterest = (id: string, next: boolean) => {
     void setEventInterest(id, next)
       .catch(() => undefined)
-      .then(() => resource.refresh());
+      .then(() => resource.reload());
   };
 
   const dayLabel = new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'nl-BE', {
@@ -88,7 +88,7 @@ export default function HomeScreen() {
             tintColor={COLORS.onDark}
             onRefresh={() => {
               void resource.refresh();
-              void upcoming.resource.refresh();
+              void upcoming.resource.reload();
               void refreshApp();
             }}
           />

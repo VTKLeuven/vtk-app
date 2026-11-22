@@ -108,7 +108,7 @@ export default function BroodjesScreen() {
         onRefresh={() => void resource.refresh()}
         locale={locale}
         onChanged={() => {
-          void resource.refresh();
+          void resource.reload();
           void refreshApp();
         }}
       />
@@ -517,11 +517,11 @@ function SessionView({
                 const { quantity, available, max } = limitFor(item);
                 return (
                   <View key={item.id} style={styles.item}>
+                    {/* Het Theokot werkt zonder foto's; een leeg vakje ervoor las als een
+                        afbeelding die niet laadde. Zet iemand er toch een, dan staat ze er. */}
                     {item.imageUrl ? (
                       <Image source={{ uri: item.imageUrl }} style={styles.thumb} contentFit="cover" />
-                    ) : (
-                      <View style={styles.thumb} />
-                    )}
+                    ) : null}
                     <View style={styles.flex}>
                       <Text style={styles.itemName}>{item.name}</Text>
                       {item.ingredients ? (

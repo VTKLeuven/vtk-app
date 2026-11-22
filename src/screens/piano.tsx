@@ -67,10 +67,10 @@ export default function PianoScreen() {
       } else {
         await reservePianoSlot(slot.startsAt);
       }
-      void resource.refresh();
+      void resource.reload();
     } catch (error) {
       Alert.alert('Dat lukte niet', pianoErrorText(error));
-      void resource.refresh();
+      void resource.reload();
     } finally {
       setBusy(null);
     }

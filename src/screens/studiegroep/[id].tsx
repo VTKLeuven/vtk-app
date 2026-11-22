@@ -69,7 +69,7 @@ export default function StudiegroepScreen() {
     setBusy(true);
     try {
       await updateStudyGroup(group.id, { weeklyGoalMinutes: minutes });
-      await resource.refresh();
+      await resource.reload();
     } catch (error) {
       Alert.alert('Dat lukte niet', groupErrorText(error));
     } finally {
@@ -90,7 +90,7 @@ export default function StudiegroepScreen() {
           onPress: async () => {
             try {
               await leaveStudyGroup(group.id, member.userId);
-              await resource.refresh();
+              await resource.reload();
             } catch (error) {
               Alert.alert('Dat lukte niet', groupErrorText(error));
             }

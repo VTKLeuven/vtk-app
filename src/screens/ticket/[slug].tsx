@@ -57,7 +57,7 @@ export default function TicketShopScreen() {
       viewerEmail={viewer?.email ?? ''}
       onNeedsLogin={() => router.push('/inloggen')}
       onDone={() => {
-        void resource.refresh();
+        void resource.reload();
         router.replace('/mijn-tickets');
       }}
     />

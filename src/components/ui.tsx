@@ -163,11 +163,15 @@ export function ErrorState({
   );
 }
 
+/**
+ * Een spinner in het midden van wat er vrij is, zonder tekst: een app die
+ * "Shiften ophalen" schrijft, leest als een website. Het label blijft wel voor
+ * VoiceOver en TalkBack, die anders enkel "bezig" zeggen.
+ */
 export function Loading({ label = 'Bezig met laden' }: { label?: string }) {
   return (
-    <View style={styles.state}>
-      <ActivityIndicator color={COLORS.navy} />
-      <Text style={styles.stateHint}>{label}</Text>
+    <View style={styles.loading} accessible accessibilityRole="progressbar" accessibilityLabel={label}>
+      <ActivityIndicator size="large" color={COLORS.navy} />
     </View>
   );
 }
@@ -287,6 +291,13 @@ const styles = StyleSheet.create({
   buttonLabelOnDarkGhost: { color: COLORS.onDark },
 
   state: { padding: SPACING.xl, gap: SPACING.md, alignItems: 'flex-start' },
+  loading: {
+    flex: 1,
+    minHeight: 160,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.xl,
+  },
   stateTitle: { ...TYPE.cardTitle, color: COLORS.ink },
   stateHint: { ...TYPE.body, color: COLORS.muted },
 

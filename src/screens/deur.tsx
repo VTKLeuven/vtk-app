@@ -40,7 +40,7 @@ export default function DeurScreen() {
 
   // Terug uit de scanner: de stand en de wachtrij zijn net veranderd. De eerste
   // keer niet, want dan haalt `useResource` zelf al op.
-  const { refresh } = events;
+  const { reload } = events;
   const firstFocus = useRef(true);
   useFocusEffect(
     useCallback(() => {
@@ -49,8 +49,8 @@ export default function DeurScreen() {
         return;
       }
       setWaiting(queueSizes());
-      void refresh();
-    }, [refresh]),
+      void reload();
+    }, [reload]),
   );
 
   if (!viewer) {

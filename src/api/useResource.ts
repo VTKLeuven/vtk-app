@@ -25,7 +25,15 @@ export type Resource<T> = {
   /** Wat je ziet komt uit de cache; de verversing is niet gelukt. */
   stale: boolean;
   error: Error | null;
+  /** Omlaag getrokken: zet `refreshing` aan, zodat de spinner blijft staan. */
   refresh: () => Promise<void>;
+  /**
+   * Stil opnieuw ophalen: na een actie, of bij terugkomen naar het scherm. Raakt
+   * `refreshing` niet. Een `RefreshControl` die aangaat zonder dat iemand trok,
+   * schuift op iOS de inhoud een spinnerhoogte omlaag zonder spinner te tonen,
+   * en die witte strook bleef staan tot je scrolde.
+   */
+  reload: () => Promise<void>;
 };
 
 export function useResource<T>(
@@ -57,7 +65,7 @@ export function useResource<T>(
   const key = `${cacheKey}:${deps}`;
 
   const load = useCallback(
-    async (mode: 'initial' | 'refresh') => {
+    async (mode: 'initial' | 'refresh' | 'reload') => {
       if (!enabled) return;
       if (mode === 'refresh') setRefreshing(true);
       try {
@@ -101,6 +109,7 @@ export function useResource<T>(
   // Stabiel, zodat een scherm `refresh` in de afhankelijkheden van een effect of
   // van `useFocusEffect` kan zetten zonder bij elke render opnieuw op te halen.
   const refresh = useCallback(() => load('refresh'), [load]);
+  const reload = useCallback(() => load('reload'), [load]);
 
   return {
     data,
@@ -109,6 +118,7 @@ export function useResource<T>(
     stale,
     error,
     refresh,
+    reload,
   };
 }
 

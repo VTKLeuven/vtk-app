@@ -75,13 +75,13 @@ export function PlanningView({ locale, onOpenEvent }: { locale: AppLocale; onOpe
   const [showHidden, setShowHiddenState] = useState(() => getPref(SHOW_HIDDEN_KEY) === '1');
 
   // Terug op dit scherm (na een evenement in je planning gezet te hebben): opnieuw.
-  const refresh = resource.refresh;
+  const reload = resource.reload;
   const focusedOnce = useRef(false);
   useFocusEffect(
     useCallback(() => {
-      if (focusedOnce.current) void refresh();
+      if (focusedOnce.current) void reload();
       focusedOnce.current = true;
-    }, [refresh]),
+    }, [reload]),
   );
 
   const days = useMemo(() => (data ? dayRange(data) : []), [data]);

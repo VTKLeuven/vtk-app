@@ -301,8 +301,9 @@ export function setCategoryFollow(category: string, follow: boolean): Promise<No
 
 // ── Bonnetjes ───────────────────────────────────────────────────────────────
 
-export function fetchVouchers(): Promise<AppVouchers> {
-  return apiFetch<AppVouchers>(appApi('/mijn/bonnetjes'));
+/** `locale` geeft de titels van de shiftladder (`shiftYear`) in die taal. */
+export function fetchVouchers(locale?: AppLocale): Promise<AppVouchers> {
+  return apiFetch<AppVouchers>(appApi('/mijn/bonnetjes', { locale }));
 }
 
 /** Wie hoort bij deze pas, en hoeveel staat er open. Nog niets afgeboekt. */

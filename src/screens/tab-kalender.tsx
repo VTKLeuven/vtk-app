@@ -124,7 +124,7 @@ export default function KalenderScreen() {
   const toggleInterest = (id: string, next: boolean) => {
     void setEventInterest(id, next)
       .catch(() => undefined)
-      .then(() => resource.refresh());
+      .then(() => resource.reload());
   };
 
   // Een reeks die al loopt, staat op haar eerstvolgende moment; de server sorteert

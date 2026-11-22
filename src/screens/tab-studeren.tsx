@@ -165,7 +165,7 @@ export default function StuderenScreen() {
   // een groep bijgekomen of verdwenen zijn.
   useFocusEffect(
     useCallback(() => {
-      if (viewer) void resource.refresh();
+      if (viewer) void resource.reload();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [viewer?.id]),
   );

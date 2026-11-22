@@ -95,7 +95,7 @@ export default function EventScreen() {
   const toggleInterest = () => {
     void setEventInterest(event.id, !event.interested)
       .catch(() => undefined)
-      .then(() => resource.refresh());
+      .then(() => resource.reload());
   };
 
   const addToCalendar = async () => {
@@ -245,6 +245,18 @@ export default function EventScreen() {
           </Text>
         ) : null}
 
+        {event.url ? (
+          // De redacteur kiest zelf wat er op deze knop staat ("Inschrijflink",
+          // "Ticketverkoop"); de server stuurt ze al in de juiste taal mee. Bij de
+          // andere handelingen bovenaan en niet onder de beschrijving: wie zich
+          // wil registreren, zocht die knop onderaan de pagina.
+          <Button
+            label={event.urlLabel ?? 'Meer info'}
+            variant="ghost"
+            onPress={() => void WebBrowser.openBrowserAsync(event.url as string)}
+          />
+        ) : null}
+
         {/* Twee verschillende plaatsen, dus twee regels met elk een zin uitleg.
             Als twee knoppen naast elkaar ("Zet in agenda", "Zet in mijn
             planning") was niet te zien wat het verschil was. */}
@@ -309,15 +321,6 @@ export default function EventScreen() {
           </View>
         ) : null}
 
-        {event.url ? (
-          // De redacteur kiest zelf wat er op deze knop staat ("Inschrijflink",
-          // "Ticketverkoop"); de server stuurt ze al in de juiste taal mee.
-          <Button
-            label={event.urlLabel ?? 'Meer info'}
-            variant="ghost"
-            onPress={() => void WebBrowser.openBrowserAsync(event.url as string)}
-          />
-        ) : null}
       </View>
     </ScrollView>
   );

@@ -13,6 +13,7 @@ import {
 import { messageFor, useResource } from '../api/useResource';
 import { DatePin } from '../components/DatePin';
 import { PageHead } from '../components/PageHead';
+import { RewardCoins } from '../components/RewardCoins';
 import { Prose } from '../components/Prose';
 import { Button, Card, Empty, ErrorState, Loading, StaleNotice, WeekHead } from '../components/ui';
 import { formatDay, formatTime } from '../format';
@@ -111,7 +112,7 @@ export default function ShiftenScreen() {
                     key={shift.id}
                     shift={shift}
                     locale={locale}
-                    onChanged={() => void resource.refresh()}
+                    onChanged={() => void resource.reload()}
                   />
                 ))}
               </View>
@@ -226,12 +227,21 @@ function ShiftRow({
           <Text style={styles.shiftName} numberOfLines={1}>
             {shift.name}
           </Text>
-          <Text style={styles.hint} numberOfLines={1}>
-            {shift.location}{'  '}
-            <Text style={styles.count}>
-              {shift.takenSpots}/{shift.maxParticipants}
+          <View style={styles.meta}>
+            <Text style={[styles.hint, styles.metaText]} numberOfLines={1}>
+              {shift.location}{'  '}
+              <Text style={styles.count}>
+                {shift.takenSpots}/{shift.maxParticipants}
+              </Text>
             </Text>
-          </Text>
+            {shift.reward > 0 ? (
+              <RewardCoins
+                display={String(shift.reward)}
+                label={`${shift.reward} ${shift.reward === 1 ? 'bonnetje' : 'bonnetjes'}`}
+                size="sm"
+              />
+            ) : null}
+          </View>
         </View>
         {shift.registered ? (
           <View style={styles.tag}>
@@ -264,6 +274,51 @@ function ShiftRow({
           ) : null}
           {shift.description ? <Text style={styles.body}>{shift.description}</Text> : null}
           {shift.instructions ? <Prose>{shift.instructions}</Prose> : null}
+
+          <View style={styles.factRow}>
+            <Text style={styles.factLabel}>Levert op</Text>
+            {shift.reward > 0 ? (
+              <RewardCoins
+                display={String(shift.reward)}
+                label={`${shift.reward} ${shift.reward === 1 ? 'bonnetje' : 'bonnetjes'}`}
+              />
+            ) : (
+              // Nul is wat de shift jou oplevert, meestal omdat je dat werkingsjaar in
+              // het praesidium zit; de server zegt niet waarom, dus de app ook niet.
+              <Text style={styles.hint}>Levert jou geen bonnetjes op</Text>
+            )}
+          </View>
+
+          {/* Wie er al op staat: enkel namen, geen foto's, zoals op /shift. */}
+          {shift.roster ? (
+            <View style={styles.roster}>
+              <Text style={styles.factLabel}>
+                Ingeschreven ({shift.takenSpots}/{shift.maxParticipants})
+              </Text>
+              {shift.roster.length === 0 ? (
+                <Text style={styles.hint}>Nog niemand.</Text>
+              ) : (
+                <View style={styles.people}>
+                  {shift.roster.map((person, index) => (
+                    <View
+                      key={`${index}-${person.name}`}
+                      style={[styles.person, person.isSelf && styles.personSelf]}
+                    >
+                      <View style={styles.initial}>
+                        <Text style={styles.initialText}>
+                          {person.name.trim().slice(0, 1).toUpperCase() || '?'}
+                        </Text>
+                      </View>
+                      <Text style={styles.personName} numberOfLines={1}>
+                        {person.name}
+                        {person.isSelf ? <Text style={styles.hint}> (jij)</Text> : null}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          ) : null}
 
           {shift.replaceableOption && (shift.registered || shift.canRegister) ? (
             <View style={styles.switchRow}>
@@ -395,6 +450,35 @@ const styles = StyleSheet.create({
 
   details: { paddingHorizontal: SPACING.md, paddingBottom: SPACING.md, gap: SPACING.sm },
   factRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  factLabel: { ...TYPE.kicker, color: COLORS.muted, textTransform: 'uppercase' },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  metaText: { flexShrink: 1 },
+  roster: { gap: SPACING.sm, marginTop: SPACING.xs },
+  people: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  person: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    maxWidth: '100%',
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    borderRadius: RADIUS.pill,
+    paddingLeft: 3,
+    paddingRight: 10,
+    paddingVertical: 3,
+  },
+  // Jezelf: de gele rand, zoals je eigen shift de gele rail krijgt.
+  personSelf: { borderColor: COLORS.yellow },
+  initial: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: COLORS.paper2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initialText: { fontFamily: FONTS.semibold, fontSize: 11, color: COLORS.ink },
+  personName: { ...TYPE.small, color: COLORS.ink, flexShrink: 1 },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   switchLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink },
 });

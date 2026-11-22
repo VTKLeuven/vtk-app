@@ -95,7 +95,7 @@ export default function PeilingenScreen() {
         ) : null}
 
         {polls.map((poll) => (
-          <PollCard key={poll.id} poll={poll} onSaved={() => void resource.refresh()} />
+          <PollCard key={poll.id} poll={poll} onSaved={() => void resource.reload()} />
         ))}
       </ScrollView>
     </>
