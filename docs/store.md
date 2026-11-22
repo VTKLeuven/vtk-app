@@ -16,7 +16,7 @@ niet opnieuw moet beginnen. Pas het hier aan wanneer je het daar aanpast.
 
 **What's New in This Version** (per versie, verplicht vanaf de tweede):
 
-- **1.1.0**: Een nieuw icoon met het VTK-schild. Home toont nu je volgende drie
+- **1.1.0**: Een nieuw icoon: het VTK-logo in navy op geel. Home toont nu je volgende drie
   lessen, ook als je vandaag geen les meer hebt.
 
 **Keywords** (100, komma's zonder spaties; de woorden uit de naam tellen al mee):
