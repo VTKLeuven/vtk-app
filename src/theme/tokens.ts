@@ -63,15 +63,16 @@ export const DARK_GLASS = {
  * uitgelichte kaart op de site; een verplichte les de rode rail van Burgieclan.
  */
 export const PLANNING = {
-  lectureBg: '#eef1f8',
-  lectureBorder: '#c5cde0',
-  lectureText: '#1d2b52',
-  practiceBg: '#ecf4f2',
-  practiceBorder: '#b4d2cc',
-  practiceText: '#24524c',
-  otherBg: '#f3f3f5',
-  otherBorder: '#d3d4db',
-  otherText: '#484a55',
+  // Hoorcolleges hemelsblauw, practica en oefenzittingen teal, de rest lavendel.
+  lectureBg: '#e8f2fd',
+  lectureBorder: '#a9cdf3',
+  lectureText: '#0b4f8c',
+  practiceBg: '#e2f5ef',
+  practiceBorder: '#94d6c2',
+  practiceText: '#0b5c4c',
+  otherBg: '#f0effc',
+  otherBorder: '#c9c4f3',
+  otherText: '#463c9f',
   /** De rail van een verplichte les en de nu-lijn, `--color-danger` bij Burgieclan. */
   danger: '#dc2626',
   dangerText: '#b91c1c',
