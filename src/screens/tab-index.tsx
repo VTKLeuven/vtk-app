@@ -7,7 +7,7 @@ import { fetchToday, setEventInterest } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { EventTile } from '../components/EventTile';
 import { PageHead } from '../components/PageHead';
-import { TodayLessons } from '../components/planning/TodayLessons';
+import { UpcomingLessonsList, useUpcomingLessons } from '../components/planning/UpcomingLessons';
 import { Prose } from '../components/Prose';
 import { ServiceList } from '../components/ServiceList';
 import { TaskCard } from '../components/TaskCard';
@@ -22,8 +22,8 @@ import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
  *
  * Dit scherm beantwoordt de twee vragen waarmee iemand de app opent: *wat is er
  * open* en *wat wacht er op mij*. In die volgorde, allebei boven de vouw. Wie een
- * lessenrooster koppelde, ziet onder "Voor jou" ook zijn lessen van vandaag
- * (`TodayLessons`).
+ * lessenrooster koppelde, ziet onder "Voor jou" ook zijn volgende drie lessen
+ * (`useUpcomingLessons`), vandaag of anders de eerstvolgende dag.
  *
  * De opbouw volgt de homepage van vtk.be (voorstel A van november 2026): een
  * navy kop met het technische patroon en de gele onderlijn, met de openingsuren
@@ -39,6 +39,7 @@ export default function HomeScreen() {
   const router = useTabRouter();
   const { locale, viewer, gate, bootstrap, refresh: refreshApp } = useApp();
   const resource = useResource('vandaag', () => fetchToday(locale), locale);
+  const upcoming = useUpcomingLessons(locale, Boolean(viewer) && bootstrap?.abilities?.planning === true);
 
   if (resource.loading) return <Loading label="VTK openen" />;
   if (!resource.data) {
@@ -68,6 +69,14 @@ export default function HomeScreen() {
   }).format(new Date(today.now));
   const kicker = dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1);
 
+  // Staat er niets tussen de kop en de aankomende evenementen, dan sluit die band
+  // meteen aan op de kop. Anders bleef er een witte strook van niets over.
+  const somethingAboveEvents =
+    resource.stale ||
+    today.tasks.length > 0 ||
+    upcoming.lessons.length > 0 ||
+    Boolean(today.announcement);
+
   return (
     <View style={styles.root}>
       <ScrollView
@@ -79,6 +88,7 @@ export default function HomeScreen() {
             tintColor={COLORS.onDark}
             onRefresh={() => {
               void resource.refresh();
+              void upcoming.resource.refresh();
               void refreshApp();
             }}
           />
@@ -137,14 +147,12 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
-        {/* Je lessen van vandaag, voor wie een lessenrooster koppelde. Zonder
-            rooster of zonder lessen vandaag tekent dit niets. */}
-        {viewer && bootstrap?.abilities?.planning === true ? (
-          <TodayLessons
-            locale={locale}
-            onOpen={() => router.push({ pathname: '/kalender', params: { tab: 'planning' } })}
-          />
-        ) : null}
+        {/* Je volgende lessen, voor wie een lessenrooster koppelde. Zonder
+            rooster of zonder komende lessen tekent dit niets. */}
+        <UpcomingLessonsList
+          upcoming={upcoming}
+          onOpen={() => router.push({ pathname: '/kalender', params: { tab: 'planning' } })}
+        />
 
         {today.announcement ? (
           <View style={[styles.section, styles.pad]}>
@@ -165,7 +173,7 @@ export default function HomeScreen() {
         ) : null}
 
         {today.upcomingEvents.length > 0 ? (
-          <View style={styles.band}>
+          <View style={[styles.band, !somethingAboveEvents && styles.bandFlush]}>
             <View style={styles.pad}>
               <SectionHeading
                 right={
@@ -352,6 +360,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xl,
     gap: SPACING.lg,
   },
+  bandFlush: { marginTop: 0 },
   link: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.navy },
   carousel: { gap: SPACING.md, paddingHorizontal: SPACING.xl - 4 },
 

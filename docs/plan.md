@@ -664,8 +664,10 @@ elkaar. Zie `docs/burgieclan-planning.md` in vtk-website-new.
   scherm van een stack door te sorteren (groepen eerst, dan de kortste naam):
   `(oud)` won van `(tabs)`, en daarin `pocs` van de rest. `app/_layout.tsx` zet nu
   `unstable_settings.anchor` op `(tabs)`.
-- **Home** toont je lessen van vandaag (`TodayLessons`) voor wie een
-  lessenrooster koppelde, onder "Voor jou".
+- **Home** toont je volgende drie lessen (`useUpcomingLessons`) voor wie een
+  lessenrooster koppelde, onder "Voor jou": vandaag, of anders de eerstvolgende
+  dag met lessen. Staat er niets tussen de kop en de aankomende evenementen, dan
+  sluit die band zonder witte strook aan op de kop.
 - **Kalender** opent op Planning voor wie die heeft. Maand is geen tabblad meer
   maar een weergave onder Agenda (Lijst/Maand), en de kop is lager
   (`PageHead compact`), zonder ondertitel, zodat de planning meer uren toont.

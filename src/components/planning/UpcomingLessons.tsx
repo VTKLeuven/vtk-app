@@ -1,45 +1,77 @@
 import { ChevronRight, Flag } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { AppLocale, AppPlanningSession } from '../../api/contract';
+import type { AppLocale, AppPlanning, AppPlanningSession } from '../../api/contract';
 import { fetchPlanning } from '../../api/endpoints';
-import { useResource } from '../../api/useResource';
-import { TYPE_LABELS } from '../../planning/grid';
+import { useResource, type Resource } from '../../api/useResource';
+import { addDays, shortDay, TYPE_LABELS } from '../../planning/grid';
 import { nowInLeuven } from '../../planning/now';
 import { COLORS, FONTS, PLANNING, SPACING, TYPE } from '../../theme/tokens';
 import { SectionHeading } from '../ui';
 
+/** Hoeveel lessen Home vooruit kijkt. */
+const COUNT = 3;
+
+export type UpcomingLessons = {
+  lessons: AppPlanningSession[];
+  /** Vandaag in Leuven, zoals `nowInLeuven` het las. */
+  today: string;
+  now: number;
+  resource: Resource<AppPlanning>;
+};
+
 /**
- * Je lessen van vandaag, op Home.
+ * Je volgende drie lessen, voor Home.
  *
- * Home beantwoordt "wat wacht er op mij", en voor wie een lessenrooster koppelde
- * is dat in de eerste plaats waar je vandaag moet zitten. Het is een register in
- * de vorm van "Voor jou": uur, vak, lokaal, met haarlijnen en geen kaart per les.
- * Een tik opent de planning onder Kalender, waar je afvinkt of verbergt; hier
- * wordt enkel gelezen.
+ * Een hook en geen component, zodat Home weet of er iets komt: staat er niets
+ * tussen de kop en de aankomende evenementen, dan sluit die band zonder witte
+ * strook aan op de kop.
  *
  * Dezelfde gegevens als de planning en dezelfde sleutel in de leescache
  * (`planning:<locale>`), dus wat Kalender ophaalde, staat hier meteen en omgekeerd.
- * Verborgen lessen staan er niet bij, net zoals in de planning standaard. Is er
- * vandaag niets (een weekend, geen rooster gekoppeld, de server zonder
- * Burgieclan), dan toont dit niets: een lege band op Home is ruis.
+ * Verborgen lessen staan er niet bij, net zoals in de planning standaard. Wat
+ * vandaag al voorbij is, telt niet meer; wat nu bezig is, wel. Is er vandaag
+ * niets, dan zijn het die van morgen of later. Pas zonder enige komende les (geen
+ * rooster gekoppeld, het semester voorbij, de server zonder Burgieclan) blijft de
+ * lijst leeg.
  *
- * Wat voorbij is, staat er nog, maar gedempt; wat nu bezig is, krijgt de gele
- * rail. Het uur wordt bij elke render opnieuw gelezen, en Home rendert opnieuw
- * bij elke verversing; tot op de minuut hoeft het niet te kloppen.
+ * De klok van nu en niet `planning.today`: wat in de leescache staat, kan van
+ * gisteren zijn. Het uur wordt bij elke render opnieuw gelezen, en Home rendert
+ * opnieuw bij elke verversing; tot op de minuut hoeft het niet te kloppen.
  */
-export function TodayLessons({ locale, onOpen }: { locale: AppLocale; onOpen: () => void }) {
-  const resource = useResource('planning', () => fetchPlanning(locale), locale);
+export function useUpcomingLessons(locale: AppLocale, enabled: boolean): UpcomingLessons {
+  const resource = useResource('planning', () => fetchPlanning(locale), locale, enabled);
+  const { date: today, minutes: now } = nowInLeuven();
   const planning = resource.data;
-  if (!planning?.available || !planning.subscribed) return null;
+  if (!enabled || !planning?.available || !planning.subscribed) {
+    return { lessons: [], today, now, resource };
+  }
 
-  // De klok van nu en niet `planning.today`: wat in de leescache staat, kan van
-  // gisteren zijn.
-  const now = nowInLeuven();
-  const today = now.date;
   const lessons = planning.sessions
-    .filter((session) => session.date === today && session.hidden === null)
-    .sort((a, b) => a.startMin - b.startMin);
+    .filter(
+      (session) =>
+        session.hidden === null &&
+        (session.date > today || (session.date === today && session.endMin > now)),
+    )
+    .sort((a, b) => (a.date === b.date ? a.startMin - b.startMin : a.date < b.date ? -1 : 1))
+    .slice(0, COUNT);
+  return { lessons, today, now, resource };
+}
+
+/**
+ * De lessen uit `useUpcomingLessons`, als register in de vorm van "Voor jou":
+ * uur, vak, dag en lokaal, met haarlijnen en geen kaart per les. Een tik opent de
+ * planning onder Kalender, waar je afvinkt of verbergt; hier wordt enkel gelezen.
+ * Wat nu bezig is, krijgt de gele rail.
+ */
+export function UpcomingLessonsList({
+  upcoming,
+  onOpen,
+}: {
+  upcoming: UpcomingLessons;
+  onOpen: () => void;
+}) {
+  const { lessons, today, now } = upcoming;
   if (lessons.length === 0) return null;
 
   return (
@@ -52,31 +84,54 @@ export function TodayLessons({ locale, onOpen }: { locale: AppLocale; onOpen: ()
             </Pressable>
           }
         >
-          Lessen vandaag
+          {lessons.every((session) => session.date === today) ? 'Lessen vandaag' : 'Komende lessen'}
         </SectionHeading>
       </View>
       <View style={styles.register}>
         {lessons.map((session) => (
-          <Lesson key={session.uid} session={session} now={now.minutes} onPress={onOpen} />
+          <Lesson
+            key={session.uid}
+            session={session}
+            current={session.date === today && session.startMin <= now}
+            day={dayLabel(session.date, today)}
+            onPress={onOpen}
+          />
         ))}
       </View>
     </View>
   );
 }
 
-function Lesson({ session, now, onPress }: { session: AppPlanningSession; now: number; onPress: () => void }) {
-  const over = session.endMin <= now;
-  const current = session.startMin <= now && now < session.endMin;
+/** "Vandaag", "Morgen", of "di 24 nov". */
+function dayLabel(date: string, today: string): string {
+  if (date === today) return 'Vandaag';
+  if (date === addDays(today, 1)) return 'Morgen';
+  const label = shortDay(date);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function Lesson({
+  session,
+  current,
+  day,
+  onPress,
+}: {
+  session: AppPlanningSession;
+  current: boolean;
+  day: string;
+  onPress: () => void;
+}) {
   const type = TYPE_LABELS[session.type] ?? TYPE_LABELS.other;
+  const when = current ? 'Nu' : day;
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={[
+        when,
         `${session.start}${session.end ? ` tot ${session.end}` : ''}`,
         session.course,
         session.location,
-        current ? 'nu bezig' : null,
         session.done ? 'afgevinkt' : null,
       ]
         .filter(Boolean)
@@ -85,7 +140,7 @@ function Lesson({ session, now, onPress }: { session: AppPlanningSession; now: n
       style={({ pressed }) => [
         styles.row,
         current && styles.current,
-        (over || session.done) && styles.over,
+        session.done && styles.over,
         pressed && styles.pressed,
       ]}
     >
@@ -98,7 +153,7 @@ function Lesson({ session, now, onPress }: { session: AppPlanningSession; now: n
           {session.course}
         </Text>
         <Text style={styles.detail} numberOfLines={1}>
-          {[current ? 'Nu' : null, type, session.location].filter(Boolean).join(', ')}
+          {[when, type, session.location].filter(Boolean).join(', ')}
         </Text>
       </View>
       {session.mandatory ? <Flag color={PLANNING.danger} size={15} /> : null}

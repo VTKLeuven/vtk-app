@@ -36,6 +36,11 @@ export function useResource<T>(
    * Hou het een string; een array of object verandert bij elke render.
    */
   deps: string = '',
+  /**
+   * `false`: niets ophalen en niets uit de cache lezen; `data` blijft `null`.
+   * Voor een hook die onvoorwaardelijk moet draaien maar niet voor iedereen telt.
+   */
+  enabled: boolean = true,
 ): Resource<T> {
   const cached = useRef<{ key: string; value: T } | null>(null);
   const [data, setData] = useState<T | null>(null);
@@ -53,6 +58,7 @@ export function useResource<T>(
 
   const load = useCallback(
     async (mode: 'initial' | 'refresh') => {
+      if (!enabled) return;
       if (mode === 'refresh') setRefreshing(true);
       try {
         const value = await fetcherRef.current();
@@ -71,10 +77,18 @@ export function useResource<T>(
         setRefreshing(false);
       }
     },
-    [key],
+    [key, enabled],
   );
 
   useEffect(() => {
+    if (!enabled) {
+      cached.current = null;
+      setData(null);
+      setLoading(false);
+      setStale(false);
+      setError(null);
+      return;
+    }
     const fromCache = readCache<T>(key);
     cached.current = fromCache ? { key, value: fromCache.value } : null;
     setData(fromCache?.value ?? null);
@@ -82,7 +96,7 @@ export function useResource<T>(
     setStale(false);
     setError(null);
     void load('initial');
-  }, [key, load]);
+  }, [key, load, enabled]);
 
   // Stabiel, zodat een scherm `refresh` in de afhankelijkheden van een effect of
   // van `useFocusEffect` kan zetten zonder bij elke render opnieuw op te halen.
