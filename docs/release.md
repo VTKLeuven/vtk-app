@@ -141,6 +141,21 @@ icoon 512 x 512, feature graphic 1024 x 500, minstens twee telefoonscreenshots.
 - Google: van intern naar gesloten test (en de 14 dagen, zie hoger) en dan naar
   productie. De eerste review kan enkele dagen duren.
 
+## Een nieuwe versie naar de stores
+
+Zo ging 1.1.0 (november 2026, nieuw icoon): versie 1.0.0 was ingediend bij Apple
+maar nog niet vrijgegeven, en een versie die Apple al goedkeurde kan je niet
+opnieuw indienen. Dus:
+
+1. `version` in `app.json` omhoog. Het buildnummer en de `versionCode` doet EAS.
+2. `npx eas-cli@latest build --profile production --platform all`.
+3. `npx eas-cli@latest submit --platform ios --latest` en, eens het
+   serviceaccount er is, hetzelfde voor `android`.
+4. In App Store Connect een nieuwe versie met hetzelfde nummer, de nieuwe build
+   eraan koppelen, "What's New" uit `docs/store.md`, en **Submit for Review**.
+   Stond de vorige versie nog in review of was ze nog niet vrijgegeven, trek ze
+   dan eerst terug of hernoem ze naar het nieuwe nummer.
+
 ## Na de release
 
 **JavaScript-wijzigingen** blijven over de lucht gaan, maar naar de stores pas

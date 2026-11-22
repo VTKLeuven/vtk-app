@@ -11,8 +11,13 @@ niet opnieuw moet beginnen. Pas het hier aan wanneer je het daar aanpast.
 
 **Promotional Text** (170, wijzigbaar zonder review):
 
-> Je lessen van vandaag, tickets aan de deur en broodjes van het Theokot: alles
+> Je volgende lessen, tickets aan de deur en broodjes van het Theokot: alles
 > van VTK, de kring van de ingenieursstudenten in Leuven, in je broekzak.
+
+**What's New in This Version** (per versie, verplicht vanaf de tweede):
+
+- **1.1.0**: Een nieuw icoon met het VTK-schild. Home toont nu je volgende drie
+  lessen, ook als je vandaag geen les meer hebt.
 
 **Keywords** (100, komma's zonder spaties; de woorden uit de naam tellen al mee):
 
@@ -26,7 +31,7 @@ kuleuven,ingenieur,student,studentenvereniging,tickets,cantus,theokot,broodjes,l
 De app van VTK, de studentenvereniging van de ingenieursstudenten aan de KU Leuven. Alles wat je met je telefoon in de hand doet, op één plek.
 
 VANDAAG
-Zie meteen wat er open is (het Theokot, de cursusdienst en Elixir), je lessen van vandaag en wat er op jou wacht: een broodje om af te halen, een ticket voor vanavond, een shift.
+Zie meteen wat er open is (het Theokot, de cursusdienst en Elixir), je volgende lessen en wat er op jou wacht: een broodje om af te halen, een ticket voor vanavond, een shift.
 
 KALENDER EN PLANNING
 Alle activiteiten van VTK per week of per maand. Duid aan wat je interesseert en krijg een dag vooraf een herinnering. Koppel je KU Leuven-lessenrooster en zie je lessen, deadlines en VTK-evenementen samen in één planning, dezelfde als op Burgieclan.
@@ -73,3 +78,16 @@ Location is only used on the device to draw a walking route to a classroom and i
 **Korte beschrijving** (80): Tickets, broodjes, je lessen en alles van VTK Leuven in één app.
 
 **Volledige beschrijving**: dezelfde als de Description hierboven.
+
+**Release notes** (500 per taal): dezelfde als "What's New" hierboven. Voor de
+eerste release volstaat "Eerste versie van de app van VTK Leuven."
+
+**Afbeeldingen**, gemaakt uit `assets/icon.png` en `assets/splash-icon.png`:
+
+- icoon 512 x 512: `store/play/icon-512.png`;
+- feature graphic 1024 x 500: `store/play/feature-graphic-1024x500.png`.
+
+De telefoonscreenshots mogen dezelfde zijn als die voor Apple, maar Google
+weigert een beeld waarvan de lange zijde meer dan twee keer de korte is. De
+6.9"-screenshots van Apple (1320 x 2868) zijn net te lang; snij ze bij tot
+1320 x 2640 of lever ze apart aan (bv. 1080 x 1920).
