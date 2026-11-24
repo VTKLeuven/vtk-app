@@ -17,10 +17,13 @@ import { COLORS, FONTS } from '../../src/theme/tokens';
  * - **Home** is vandaag: wat is er open, en wat wacht er op mij.
  * - **Kalender** is wat er te doen is, met een ster om iets in je eigen lijst te
  *   zetten en in de agenda van je telefoon.
- * - **Studeren** is samen blokken: wie van je vrienden er nu zit, en je eigen
- *   teller. Het is niet iets onder Meer, omdat je hem tijdens de
- *   blok meerdere keren per dag opent; dat is precies het criterium waarmee de
- *   andere gekozen zijn.
+ * - **Studies** is alles rond je vakken, in drie tabbladen in de kop: samen
+ *   blokken (wie van je vrienden er nu zit, en je eigen teller), de
+ *   cursusdienst (reserveren en afhalen) en Burgieclan (de documenten van je
+ *   vakken). Het is niet iets onder Meer, omdat je het tijdens het semester en
+ *   de blok meerdere keren per dag opent; dat is precies het criterium waarmee de
+ *   andere gekozen zijn. Tot november 2026 heette de tab Studeren en had ze enkel
+ *   het eerste; `/studeren` verwijst nog door.
  * - **Tickets** is kopen én tonen, in twee segmenten. Ze staan samen omdat het in
  *   het hoofd van wie ze opent één zaak is; ze uit elkaar trekken zou betekenen
  *   dat je moet weten in welke van twee tabs je moet zijn voor je iets ziet.
@@ -70,9 +73,9 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="studeren"
+        name="studies"
         options={{
-          title: 'Studeren',
+          title: 'Studies',
           tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
         }}
       />

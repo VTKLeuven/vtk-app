@@ -66,6 +66,30 @@ geld, en die willen we niet nabouwen.
 Alles wat gewone inhoud is, wordt native. De `ComingSoon`-schermen zijn
 overgangsschermen per tab, geen vierde categorie.
 
+Sinds november 2026 is er een vierde plek, en ze is bewust smal:
+`src/screens/web.tsx`. Daarin opent **een onderdeel van de admin** (het
+dashboard en de lijst zijn native, onder Meer › Beheer) en **twee eenmalige
+stappen op cudi** die bij je account horen: de voorwaarden aanvaarden en je
+vakken aanduiden. Enkel `*.vtk.be` laadt daar. Op een pagina van de site zet de
+app `data-vtk-app` op `<html>` voor ze laadt, en dan laat de site haar kop, voet
+en adminzijbalk weg (`vtk-site-chrome.css`, `vtk-admin.css`): de app heeft al
+een kop.
+
+## Met cudi en Burgieclan praten
+
+De app kent cudi en Burgieclan niet en logt er niet in. vtk.be doet dat namens
+het lid, met een HMAC-handtekening over methode, pad, tijdstip, wie en de body,
+net als bij de planning:
+
+- **Burgieclan**: `lib/burgieclan/` op de site, `VtkServiceAuthenticator` en
+  `VtkAppController` bij Burgieclan. Zie `docs/burgieclan-planning.md` op de site.
+- **cudi**: `lib/cudi/` op de site, `lib/vtk-app/` bij cudi. Een eigen geheim
+  (`CUDI_APP_SECRET` hier, `VTK_APP_SECRET` daar), want het laat bestellen toe.
+  Zie `docs/cursusdienst-integratie.md` op de site.
+
+Zonder geheim zegt de route `available: false` en tonen de tabbladen dat de
+koppeling er niet is, in plaats van een fout.
+
 ## Wat er op het toestel staat
 
 `src/storage.ts`, SQLite, en niet meer dan twee dingen:

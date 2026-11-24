@@ -14,7 +14,14 @@ zien wat er open is, plannen wat je gaat doen, een ticket kopen en tonen, een
 broodje bestellen en afhalen, en aan een balie een code laten scannen. De hele
 inhoud van de site zit er nog steeds in, maar onder Meer en niet vooraan.
 
-**De admin hoort hier niet in** en blijft op het web.
+**De admin zit erin, maar als dashboard en niet nagebouwd.** Sinds november 2026
+ziet wie rechten heeft onder Meer › Beheer zijn tegels, de deurknop, wat zijn
+post nog naar het BO moet brengen en de onderdelen van zijn zijbalk; een
+onderdeel zelf opent als de pagina van de site, zonder haar kop. Zie regel 3.
+
+**Je studies staan in één tab**: samen blokken, de cursusdienst (cudi.vtk.be) en
+Burgieclan, als native schermen. vtk.be spreekt namens jou met cudi en
+Burgieclan; de app logt daar niet apart in. Zie "Studies" onder Structuur.
 
 **De ticketscanner voor aan de deur zit hier ook in**, met zijn offline-werking,
 zijn wachtrij en zijn donkere scherm. Tot november 2026 was dat een aparte app,
@@ -94,10 +101,22 @@ uitzondering: die werkt in Expo Go niet.
 2. **Alles native, behalve identiteit en geld.** Een WebView is toegelaten voor
    inloggen, de onboarding-poorten en betalen (Mollie). Al de rest wordt een echt
    scherm. Een browser openen voor eigen inhoud is een bug, geen keuze; enkel
-   adressen op een andere site (cudi, Career, Burgieclan) horen daar.
-3. **Geen admin.** Ook niet voor wie er rechten voor heeft. De scanner aan de
-   deur is geen admin: het scannerspaneel kan enkel de rol `SCANNER` geven, aan
-   de deur, aan wie komt bijspringen.
+   adressen op een andere site (Career, logistiek.vtk.be om een rit aan te
+   vragen, uploaden op Burgieclan, tijdsloten en tweedehands op cudi) horen
+   daar. Sinds november 2026 is er één uitzondering bij, `src/screens/web.tsx`:
+   een onderdeel van de admin (zie 3), en de twee eenmalige stappen op cudi die
+   bij je account horen (voorwaarden aanvaarden, je vakken aanduiden). Enkel
+   `*.vtk.be` opent daar.
+3. **De admin niet nabouwen.** Tot november 2026 stond hier "geen admin". Nu
+   heeft wie in het beheer mag (dezelfde regel als de link op de site: een recht
+   of superadmin, `abilities.admin`) onder Meer › Beheer een native dashboard:
+   de tegels, de deur, de BO-resultaten, en de zijbalk van /admin als lijst
+   (`/api/app/v1/beheer`, gefilterd door `visibleAdminNav` op de site). **Een
+   onderdeel zelf is de pagina van de site** in `web.tsx`, met `data-vtk-app` op
+   `<html>` zodat de site haar kop en zijbalk weglaat. Bouw geen adminscherm na:
+   tientallen tabellen en formulieren op twee plaatsen is ze twee keer kunnen
+   breken. De scanner aan de deur is geen admin: het scannerspaneel kan enkel de
+   rol `SCANNER` geven, aan de deur, aan wie komt bijspringen.
 4. **iOS en Android doen hetzelfde.** Geen platformspecifieke schermen.
 5. **Geen dependency die de Expo SDK al dekt.**
 6. **Geen emoji in de UI**; iconen komen uit `lucide-react-native`.
@@ -140,7 +159,7 @@ uitzondering: die werkt in Expo Go niet.
   `npm run routes` schrijft ze uit `TAB_ROUTES` in `src/navigation.ts`. De
   schermen zelf staan in `src/screens/`.
 - **Elke tab is een eigen stack**, met het tabscherm onderaan:
-  `app/(tabs)/(home)/`, `kalender/`, `studeren/`, `tickets/`, `meer/`. Dat is de
+  `app/(tabs)/(home)/`, `kalender/`, `studies/`, `tickets/`, `meer/`. Dat is de
   hele reden dat teruggaan werkt zoals het hoort, en het is één keer fout gegaan
   in drie pogingen, dus: **terugvegen popt een stack, en poppen kan enkel als er
   een scherm onder ligt.** Was er één gedeelde stack voor alle doorklikschermen,
@@ -175,7 +194,15 @@ uitzondering: die werkt in Expo Go niet.
   achterlopen en een pushbericht van vorige week draagt nog het oude pad; dat mag
   niet op een leeg scherm eindigen. Ook deze worden gemaakt.
 - `app/(tabs)/_layout.tsx` is wél met de hand geschreven: **Home, Kalender,
-  Studeren, Tickets, Meer**, met hun iconen. Tickets heeft twee tabbladen
+  Studies, Tickets, Meer**, met hun iconen. **Studies** (tot november 2026
+  Studeren; `/studeren` verwijst door, ook in een pushbericht) heeft drie
+  tabbladen als pillen in de kop: Blokken (samen blokken), Cursusdienst en
+  Burgieclan. Elk tabblad is een weergave in `src/components/studies/` die zijn
+  eigen `PageHead` tekent met dezelfde pillen; `routes:check` kijkt ook in die
+  map. Cudi en Burgieclan zijn gewone schermen op gegevens die vtk.be ondertekend
+  bij hen ophaalt (`lib/cudi/` en `lib/burgieclan/` op de site): reserveren en
+  annuleren bij cudi gaat door dezelfde functie als de webshop daar, een document
+  van Burgieclan opent als pdf in het systeemvenster. Tickets heeft twee tabbladen
   (Kopen/Mijne) als pillen in de kop (`tabs` op `PageHead`). Kalender heeft er
   drie (Planning, Agenda, Mijn lijst) en opent op **Planning** voor wie die
   heeft (de Burgieclan-koppeling via `src/components/planning/PlanningView.tsx`;
@@ -241,7 +268,9 @@ uitzondering: die werkt in Expo Go niet.
 ## Wat bewust op de site blijft
 
 Geen achterstand maar een beslissing: je gegevens wijzigen, verbonden apps,
-privacygegevens, formulieren, lesbezoeken en het contactformulier. Dat zijn
+privacygegevens, formulieren, lesbezoeken en het contactformulier. Ook de
+schermen van de admin zelf (zie regel 3), uploaden en stemmen op Burgieclan, en
+tijdsloten, tweedehands en printen op cudi. Dat zijn
 formulieren met eigen validatie en soms juridische gevolgen, en die op twee
 plaatsen hebben is twee keer kunnen mislopen.
 

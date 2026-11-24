@@ -34,7 +34,7 @@ const TAB_INDEX_SCREENS = readMap('TAB_INDEX_SCREENS');
 const TITLES = {
   '(home)': 'Home',
   kalender: 'Kalender',
-  studeren: 'Studeren',
+  studies: 'Studies',
   tickets: 'Tickets',
   meer: 'Meer',
 };
@@ -42,7 +42,7 @@ const TITLES = {
 const NAMES = {
   '(home)': 'Home',
   kalender: 'Kalender',
-  studeren: 'Studeren',
+  studies: 'Studies',
   tickets: 'Tickets',
   meer: 'Meer',
 };
@@ -146,6 +146,38 @@ export default function OudLayout() {
 }
 `,
 );
+
+/**
+ * Een tab die hernoemd werd. **Studeren heet sinds november 2026 Studies**: er
+ * kwamen de cursusdienst en Burgieclan bij, naast samen blokken. Een pushbericht
+ * ("Lotte is begonnen met studeren") draagt nog `/studeren`, en een oudere server
+ * stuurt dat pad nog jaren; dat mag niet op een leeg scherm eindigen.
+ */
+const RENAMED_TABS = { studeren: 'studies' };
+for (const [oud, nieuw] of Object.entries(RENAMED_TABS)) {
+  write(
+    join(root, 'app/(oud)', oud, 'index.tsx'),
+    `${GENERATED}
+import { Redirect } from 'expo-router';
+
+export default function OudeTab() {
+  return <Redirect href="/${nieuw}" withAnchor />;
+}
+`,
+  );
+  write(
+    join(root, 'app/(oud)', oud, '[...rest].tsx'),
+    `${GENERATED}
+import { Redirect, useLocalSearchParams } from 'expo-router';
+
+export default function OudAdresInTab() {
+  const { rest } = useLocalSearchParams<{ rest: string[] }>();
+  const path = Array.isArray(rest) ? rest.join('/') : (rest ?? '');
+  return <Redirect href={\`/${nieuw}/\${path}\`} withAnchor />;
+}
+`,
+  );
+}
 
 for (const [screen, target] of redirects) {
   const params = [...screen.matchAll(/\[(\w+)\]/g)].map((m) => m[1]);

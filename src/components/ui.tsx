@@ -8,7 +8,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 
 /**
  * De bouwstenen die op elk scherm terugkomen, in de taal van de site:
@@ -227,6 +227,70 @@ export function WeekHead({ name, range }: { name: string; range: string }) {
   );
 }
 
+/** Een link in een `MarginRegister`. */
+export type RegisterLink = {
+  label: string;
+  hint?: string;
+  /** Opent een andere site; krijgt een pijl en zegt dat tegen de screenreader. */
+  external?: boolean;
+  onPress: () => void;
+};
+
+/**
+ * Het register in de marge van de site: een kleine kop in kapitalen, een haarlijn
+ * links, gedempte links met lucht ertussen. Voor wat je opzoekt of wat elders
+ * staat, niet voor de hoofdzaak van een scherm. Meer gebruikt het voor zijn
+ * snelkoppelingen, Studies voor wat op cudi of Burgieclan zelf blijft.
+ */
+export function MarginRegister({
+  title,
+  links,
+  style,
+}: {
+  title?: string | null;
+  links: RegisterLink[];
+  style?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <View style={[styles.register, style]}>
+      {title ? <Text style={styles.registerTitle}>{title}</Text> : null}
+      <View style={styles.registerLine}>
+        {links.map((link) => (
+          <Pressable
+            key={link.label}
+            accessibilityRole={link.external ? 'link' : 'button'}
+            accessibilityLabel={link.external ? `${link.label}, opent een browser` : link.label}
+            onPress={link.onPress}
+            hitSlop={4}
+            style={({ pressed }) => [styles.registerRow, pressed && styles.registerPressed]}
+          >
+            <Text style={styles.registerLabel}>{link.label}</Text>
+            {link.hint || link.external ? (
+              <Text style={styles.registerHint} numberOfLines={1}>
+                {link.hint ?? ''}
+                {link.external ? ' ↗' : ''}
+              </Text>
+            ) : null}
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Een fout die blijft staan tot ze opgelost is, op de plek waar ze over gaat:
+ * de rode rail van de site. Voor een actie die mislukte terwijl je onderaan een
+ * lijst stond, hoort een `Alert`: die zie je, waar je ook gescrold bent.
+ */
+export function InlineError({ children }: { children: string }) {
+  return (
+    <View style={styles.inlineError} accessibilityRole="alert">
+      <Text style={styles.inlineErrorText}>{children}</Text>
+    </View>
+  );
+}
+
 export function SectionTitle({ children }: { children: string }) {
   return <Text style={styles.sectionTitle}>{children}</Text>;
 }
@@ -311,4 +375,34 @@ const styles = StyleSheet.create({
   staleText: { ...TYPE.small, color: COLORS.body },
 
   sectionTitle: { ...TYPE.sectionTitle, color: COLORS.ink },
+
+  register: { gap: SPACING.sm },
+  registerTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 11.5,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: COLORS.ink,
+  },
+  registerLine: { borderLeftWidth: 1, borderLeftColor: COLORS.line2, paddingLeft: 14 },
+  registerRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: SPACING.sm,
+    minHeight: 36,
+    paddingVertical: 7,
+  },
+  registerPressed: { opacity: 0.6 },
+  registerLabel: { ...TYPE.body, color: COLORS.body },
+  registerHint: { ...TYPE.small, fontSize: 12.5, color: COLORS.muted, flexShrink: 1 },
+
+  inlineError: {
+    backgroundColor: COLORS.dangerBg,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.dangerLine,
+    borderRadius: RADIUS.sm,
+    padding: SPACING.md,
+  },
+  inlineErrorText: { ...TYPE.small, color: COLORS.dangerInk },
 });

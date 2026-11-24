@@ -148,7 +148,7 @@ export class NetworkError extends Error {
 }
 
 type RequestOptions = {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   /** Milliseconden voor de aanvraag opgegeven wordt. */
   timeout?: number;

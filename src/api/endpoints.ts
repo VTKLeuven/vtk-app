@@ -1,9 +1,19 @@
 import { apiFetch, appApi } from './client';
 import type {
+  AppAdminDashboard,
   AppAlbumDetail,
+  AppBurgieclanCourse,
+  AppBurgieclanCourseDetail,
+  AppBurgieclanCourses,
+  AppBurgieclanFile,
   AppCalendar,
   AppCalendarEventDetail,
   AppCategory,
+  AppCudiCancelResult,
+  AppCudiCatalog,
+  AppCudiOrderInput,
+  AppCudiOrderResult,
+  AppCudiOverview,
   AppFakCheckin,
   AppGroups,
   AppLocale,
@@ -36,6 +46,7 @@ import type {
   AppTicketEvent,
   AppTicketEventDetail,
   AppToday,
+  AppTransportWeek,
   AppVoucherRedeemInput,
   AppVoucherRedeemResult,
   AppVouchers,
@@ -449,4 +460,87 @@ export function syncPlanning(locale: AppLocale): Promise<AppPlanning> {
 
 export function rotatePlanningFeed(locale: AppLocale): Promise<AppPlanning> {
   return apiFetch<AppPlanning>(appApi('/planning/feed-token', { locale }), { method: 'POST' });
+}
+
+// ── Beheer (de admin, voor wie er toegang toe heeft) ────────────────────────
+
+export function fetchAdminDashboard(locale: AppLocale): Promise<AppAdminDashboard> {
+  return apiFetch<AppAdminDashboard>(appApi('/beheer', { locale }));
+}
+
+/** De voordeur op afstand openen; de Pi kan even nodig hebben. */
+export function openDoor(): Promise<{ ok: true }> {
+  return apiFetch(appApi('/beheer/deur'), { method: 'POST', body: {}, timeout: 20_000 });
+}
+
+// ── Transport (Logistiek) ───────────────────────────────────────────────────
+
+/** De ritten van één week; `week` is een dag in die week (YYYY-MM-DD). */
+export function fetchTransportWeek(locale: AppLocale, week?: string): Promise<AppTransportWeek> {
+  return apiFetch<AppTransportWeek>(appApi('/vervoer', { locale, week }));
+}
+
+// ── Burgieclan: vakken en documenten ────────────────────────────────────────
+
+export function fetchBurgieclanCourses(locale: AppLocale): Promise<AppBurgieclanCourses> {
+  return apiFetch<AppBurgieclanCourses>(appApi('/burgieclan/vakken', { locale }), { timeout: 20_000 });
+}
+
+export function searchBurgieclanCourses(
+  locale: AppLocale,
+  q: string,
+  signal?: AbortSignal,
+): Promise<{ courses: AppBurgieclanCourse[] }> {
+  return apiFetch(appApi('/burgieclan/vakken/zoeken', { locale, q }), { signal, timeout: 20_000 });
+}
+
+export function fetchBurgieclanCourse(locale: AppLocale, id: string): Promise<AppBurgieclanCourseDetail> {
+  return apiFetch<AppBurgieclanCourseDetail>(appApi(`/burgieclan/vakken/${encodeURIComponent(id)}`, { locale }), {
+    timeout: 20_000,
+  });
+}
+
+export function setBurgieclanFavorite(
+  locale: AppLocale,
+  id: number,
+  favorite: boolean,
+): Promise<{ course: AppBurgieclanCourse }> {
+  return apiFetch(appApi(`/burgieclan/vakken/${id}/favoriet`, { locale }), {
+    method: favorite ? 'PUT' : 'DELETE',
+    body: favorite ? {} : undefined,
+  });
+}
+
+export function fetchBurgieclanFile(id: number): Promise<AppBurgieclanFile> {
+  return apiFetch<AppBurgieclanFile>(appApi(`/burgieclan/documenten/${id}/bestand`));
+}
+
+// ── Cursusdienst (cudi.vtk.be) ──────────────────────────────────────────────
+
+export function fetchCudiOverview(locale: AppLocale): Promise<AppCudiOverview> {
+  return apiFetch<AppCudiOverview>(appApi('/cudi', { locale }), { timeout: 20_000 });
+}
+
+export function fetchCudiCatalog(locale: AppLocale): Promise<AppCudiCatalog> {
+  return apiFetch<AppCudiCatalog>(appApi('/cudi/catalogus', { locale }), { timeout: 20_000 });
+}
+
+/** Bij drukte wacht cudi tot een halve minuut op een vrije plaats; vandaar de ruime timeout. */
+export function placeCudiOrder(locale: AppLocale, input: AppCudiOrderInput): Promise<AppCudiOrderResult> {
+  return apiFetch<AppCudiOrderResult>(appApi('/cudi/bestellen', { locale }), {
+    method: 'POST',
+    body: input,
+    timeout: 45_000,
+  });
+}
+
+export function cancelCudiLine(locale: AppLocale, orderItemId: string): Promise<AppCudiCancelResult> {
+  return apiFetch<AppCudiCancelResult>(appApi('/cudi/annuleren', { locale }), {
+    method: 'POST',
+    body: { orderItemId },
+  });
+}
+
+export function cudiCheckout(locale: AppLocale, orderId: string): Promise<{ checkoutUrl: string }> {
+  return apiFetch(appApi('/cudi/betalen', { locale }), { method: 'POST', body: { orderId }, timeout: 20_000 });
 }

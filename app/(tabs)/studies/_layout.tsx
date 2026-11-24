@@ -5,7 +5,7 @@ import { Stack } from 'expo-router';
 import { COLORS } from '../../../src/theme/tokens';
 
 /**
- * De stack van de tab **Studeren**.
+ * De stack van de tab **Studies**.
  *
  * Elke tab heeft er een, en dat is niet uit netheid: **terugvegen popt een stack,
  * dus er moet een scherm onder liggen**. Dat scherm is de tab zelf. Alles wat je
@@ -23,7 +23,7 @@ import { COLORS } from '../../../src/theme/tokens';
  */
 export const unstable_settings = { anchor: 'index' };
 
-export default function StuderenStackLayout() {
+export default function StudiesStackLayout() {
   return (
     <Stack
       screenOptions={{

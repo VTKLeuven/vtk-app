@@ -14,26 +14,27 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 
-import type { AppStudyGroup, AppStudyMemberState, AppStudyOverview } from '../api/contract';
+import type { AppStudyGroup, AppStudyMemberState, AppStudyOverview } from '../../api/contract';
 import {
   fetchStudyOverview,
   startStudySession,
   stopStudySession,
   updateStudySession,
-} from '../api/endpoints';
-import { messageFor, useResource } from '../api/useResource';
-import { PageHead } from '../components/PageHead';
+} from '../../api/endpoints';
+import { messageFor, useResource } from '../../api/useResource';
+import { PageHead } from '../../components/PageHead';
 import {
   Skyline,
   buildingFor,
   relativeBuildings,
   type Building,
-} from '../components/Skyline';
-import { Button, Card, ErrorState, Loading, StaleNotice } from '../components/ui';
-import { formatClock, formatSpan } from '../format';
-import { useApp } from '../state/app';
-import { useTabRouter } from '../navigation';
-import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+} from '../../components/Skyline';
+import { Button, Card, ErrorState, Loading, StaleNotice } from '../../components/ui';
+import { formatClock, formatSpan } from '../../format';
+import { useApp } from '../../state/app';
+import { useTabRouter } from '../../navigation';
+import { COLORS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
+import type { StudiesTabs } from './tabs';
 
 /**
  * Samen blokken.
@@ -60,7 +61,12 @@ const ROOM_REFRESH_MS = 45_000;
 /** De hoogte van het skylinepaneel; bepaalt hoeveel verdiepingen er passen. */
 const SKYLINE_HEIGHT = 126;
 
-export default function StuderenScreen() {
+/**
+ * Samen blokken, het eerste tabblad van Studies (`src/screens/tab-studies.tsx`).
+ * `tabs` zijn de pillen van de kop; elk tabblad tekent zijn eigen kop zodat de
+ * titelregel bij de inhoud past.
+ */
+export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
   const router = useTabRouter();
   const { viewer } = useApp();
 
@@ -173,7 +179,7 @@ export default function StuderenScreen() {
   if (!viewer) {
     return (
       <>
-        <PageHead title="Studeren" subtitle="Blok samen met je vrienden" back={false} />
+        <PageHead title="Studies" subtitle="Blok samen met je vrienden" back={false} tabs={tabs} />
         <ScrollView style={styles.root} contentContainerStyle={styles.content}>
           <Card>
             <Text style={styles.cardTitle}>Log eerst in</Text>
@@ -187,10 +193,20 @@ export default function StuderenScreen() {
     );
   }
 
-  if (resource.loading && !overview) return <Loading label="Studeren ophalen" />;
+  if (resource.loading && !overview) {
+    return (
+      <>
+        <PageHead title="Studies" subtitle="Blok samen met je vrienden" back={false} tabs={tabs} />
+        <Loading label="Studeren ophalen" />
+      </>
+    );
+  }
   if (!overview) {
     return (
-      <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
+      <>
+        <PageHead title="Studies" subtitle="Blok samen met je vrienden" back={false} tabs={tabs} />
+        <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
+      </>
     );
   }
 
@@ -199,10 +215,11 @@ export default function StuderenScreen() {
   return (
     <>
       <PageHead
-        title="Studeren"
+        title="Studies"
         kicker={group?.name ?? null}
         subtitle={roomLine(group, overview)}
         back={false}
+        tabs={tabs}
         right={
           group ? (
             <Pressable

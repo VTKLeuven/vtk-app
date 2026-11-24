@@ -1,5 +1,5 @@
 import { Search, X } from 'lucide-react-native';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 
@@ -20,6 +20,7 @@ export function SearchField({
   placeholder,
   label,
   autoFocus = false,
+  style,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -27,9 +28,11 @@ export function SearchField({
   /** Wat een screenreader voorleest; het veld heeft geen zichtbaar label. */
   label: string;
   autoFocus?: boolean;
+  /** Om het veld op de lijn van de inhoud eronder te zetten. */
+  style?: StyleProp<ViewStyle>;
 }) {
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, style]}>
       <Search color={COLORS.muted} size={18} />
       <TextInput
         value={value}

@@ -8,7 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { baseUrl } from '../api/client';
 import type { AppNavTab } from '../api/contract';
 import { PageHead } from '../components/PageHead';
-import { ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
+import { ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice, type RegisterLink } from '../components/ui';
 import { nativeRouteFor, pageSlugFor } from '../nativeRoute';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
@@ -37,11 +37,7 @@ import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
  * is de laatste optie, niet de eerste.
  */
 
-/** Wat op Cudi draait en dus buiten deze app en buiten deze site valt. */
-const CUDI = 'https://cudi.vtk.be';
-const BURGIECLAN = 'https://burgieclan.be';
-
-type Link = { label: string; hint?: string; onPress: () => void; external?: boolean };
+type Link = RegisterLink;
 
 export default function MeerScreen() {
   const router = useTabRouter();
@@ -80,25 +76,16 @@ export default function MeerScreen() {
     { label: "POC's", onPress: () => router.push('/pocs') },
     ...(viewer ? [{ label: 'Peilingen', onPress: () => router.push('/peilingen') }] : []),
   ];
-  const elders: Link[] = [
-    {
-      label: 'Cursusdienst',
-      hint: 'cudi.vtk.be',
-      external: true,
-      onPress: () => void WebBrowser.openBrowserAsync(`${CUDI}/vtk/shop`),
-    },
-    {
-      label: 'Tijdsloten cursusdienst',
-      hint: 'cudi.vtk.be',
-      external: true,
-      onPress: () => void WebBrowser.openBrowserAsync(`${CUDI}/vtk/account/slots`),
-    },
-    {
-      label: 'Burgieclan',
-      hint: 'burgieclan.be',
-      external: true,
-      onPress: () => void WebBrowser.openBrowserAsync(BURGIECLAN),
-    },
+  // Voor de kring: enkel voor wie er rechten voor heeft (`bootstrap.abilities`).
+  // De cursusdienst en Burgieclan staan sinds november 2026 onder Studies, als
+  // eigen schermen; hier stonden ze als link naar hun site.
+  const kring: Link[] = [
+    ...(bootstrap?.abilities?.admin
+      ? [{ label: 'Beheer', hint: 'De admin van vtk.be', onPress: () => router.push('/beheer') }]
+      : []),
+    ...(bootstrap?.abilities?.transport
+      ? [{ label: 'Transport', hint: 'De ritten van Logistiek', onPress: () => router.push('/vervoer') }]
+      : []),
   ];
 
   return (
@@ -145,16 +132,16 @@ export default function MeerScreen() {
         {stale ? <StaleNotice onRetry={() => void refresh()} /> : null}
 
         <View style={styles.columns}>
-          <Register title="Doen" links={doen} />
-          <Register title="Mensen" links={mensen} />
+          <MarginRegister title="Doen" links={doen} style={styles.flex} />
+          <MarginRegister title="Mensen" links={mensen} style={styles.flex} />
         </View>
         {viewer ? (
-          <Register
+          <MarginRegister
             title="Meldingen"
             links={[{ label: 'Wat je wil weten', hint: 'Broodjes, shiften, categorieën', onPress: () => router.push('/meldingen') }]}
           />
         ) : null}
-        <Register title="Elders" links={elders} />
+        {kring.length > 0 ? <MarginRegister title="Voor de kring" links={kring} style={styles.flex} /> : null}
 
         <View style={styles.tiles}>
           <SectionHeading>Alles van VTK</SectionHeading>
@@ -176,38 +163,6 @@ export default function MeerScreen() {
         </View>
       </ScrollView>
     </>
-  );
-}
-
-/**
- * Het register in de marge van de site: een kleine kop in kapitalen, een haarlijn
- * links, gedempte links met lucht ertussen.
- */
-function Register({ title, links }: { title: string; links: Link[] }) {
-  return (
-    <View style={styles.register}>
-      <Text style={styles.registerTitle}>{title}</Text>
-      <View style={styles.registerLine}>
-        {links.map((link) => (
-          <Pressable
-            key={link.label}
-            accessibilityRole={link.external ? 'link' : 'button'}
-            accessibilityLabel={link.external ? `${link.label}, opent een browser` : link.label}
-            onPress={link.onPress}
-            hitSlop={4}
-            style={({ pressed }) => [styles.registerRow, pressed && styles.pressed]}
-          >
-            <Text style={styles.registerLabel}>{link.label}</Text>
-            {link.hint ? (
-              <Text style={styles.registerHint} numberOfLines={1}>
-                {link.hint}
-                {link.external ? ' ↗' : ''}
-              </Text>
-            ) : null}
-          </Pressable>
-        ))}
-      </View>
-    </View>
   );
 }
 
@@ -364,24 +319,6 @@ const styles = StyleSheet.create({
   searchText: { ...TYPE.small, fontSize: 14, color: COLORS.muted },
 
   columns: { flexDirection: 'row', gap: SPACING.xl },
-  register: { flex: 1, gap: SPACING.sm },
-  registerTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 11.5,
-    letterSpacing: 1.1,
-    textTransform: 'uppercase',
-    color: COLORS.ink,
-  },
-  registerLine: { borderLeftWidth: 1, borderLeftColor: COLORS.line2, paddingLeft: 14 },
-  registerRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: SPACING.sm,
-    paddingVertical: 7,
-  },
-  registerLabel: { ...TYPE.body, color: COLORS.body },
-  registerHint: { ...TYPE.small, fontSize: 12.5, color: COLORS.muted, flexShrink: 1 },
 
   tiles: { gap: SPACING.md },
   tile: {

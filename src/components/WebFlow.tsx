@@ -92,7 +92,7 @@ async function openIntentUrl(url: string): Promise<void> {
  * (zoals KU Leuven Authenticator of `intent://` op Android) door aan het OS,
  * zodat ze niet stuklopen op `ERR_UNKNOWN_URL_SCHEME`.
  */
-function handleShouldStartLoad(requestUrl: string): boolean {
+export function handleShouldStartLoad(requestUrl: string): boolean {
   if (EXTERNAL_APP_LINKS.some((pattern) => pattern.test(requestUrl))) {
     void Linking.openURL(requestUrl).catch(() => {});
     return false;

@@ -695,3 +695,38 @@ elkaar. Zie `docs/burgieclan-planning.md` in vtk-website-new.
 - **Aan de deur** heet nu **Tickets scannen**.
 - **Werkgroepen**: de beschrijving gaat door `Prose` (Markdown), de kicker "Mee
   bouwen" is weg.
+
+## November 2026: Studies, Beheer en Transport
+
+Vier dingen die de app nog miste, allemaal in één ronde (site, cudi, Burgieclan
+en de app samen):
+
+- **Studeren heet Studies** en heeft drie tabbladen in de kop: Blokken (samen
+  blokken, zoals het was), **Cursusdienst** en **Burgieclan**. `/studeren` en
+  alles eronder verwijst door (`app/(oud)/studeren/`), want een pushbericht en
+  een oudere server dragen dat pad nog.
+- **Cursusdienst** is cudi.vtk.be als native scherm: de uren van deze week, wat
+  er voor je klaarligt en tot wanneer, de cursussen van je vakken met een
+  stapper en een vaste balk, en reserveren met een bevestigingsblad (betalen bij
+  het afhalen, of meteen online wanneer cudi dat vraagt). Al je bestellingen en
+  annuleren staan op `/cudi-bestellingen`. vtk.be spreekt ondertekend met cudi
+  (`lib/cudi/` op de site, `lib/vtk-app/` en `app/api/integrations/vtk-app/` bij
+  cudi), en cudi reserveert met **dezelfde functie als zijn webshop**
+  (`placeOrderForUser`, daarvoor uit de server action naar `lib/` verhuisd). De
+  voorwaarden aanvaarden en je vakken aanduiden gebeurt één keer op cudi zelf, in
+  `web.tsx`.
+- **Burgieclan** zijn de documenten van je vakken: je vakken (de ster is "Mijn
+  vakken" op Burgieclan), zoeken op naam of code, en per vak de documenten per
+  soort, als pdf te openen. Burgieclan kreeg daarvoor `VtkAppController`
+  (`/api/vtk_app/*`), naast de planner de enige plek waar de ondertekende
+  VTK-toegang geldt; uploaden, stemmen en moderatie blijven er buiten.
+- **Beheer** onder Meer, voor wie rechten heeft: de tegels van het dashboard
+  (met hun eigen pictogram en kleur), de deur op afstand, wat je post nog naar
+  het BO moet brengen, en de zijbalk van /admin als lijst. Een onderdeel opent
+  als de pagina van de site zonder haar kop (`data-vtk-app`). Regel 3 in
+  AGENTS.md is daarvoor herschreven.
+- **Transport** onder Meer, enkel voor het praesidium, werkgroepen,
+  jaarwerkingen en Logistiek: de ritten van logistiek.vtk.be per week en per dag,
+  per voertuig te filteren, met chauffeur, bijrijders en de post. Dezelfde laag
+  als `transportWeekForPraesidium` in apps/logistiek, zonder nummers, adressen of
+  nota's.

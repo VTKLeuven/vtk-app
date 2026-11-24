@@ -43,6 +43,13 @@ export type HeadTab<T extends string> = {
  * planning onder Kalender: een kleinere titel, geen ondertitel en minder lucht.
  * Het blijft dezelfde kop (navy, patroon, gele lijn, pillen); enkel lager.
  */
+/**
+ * Vanaf deze lengte is de titel een naam en geen kop: een vak ("Elektrische
+ * aandrijvingen; aanvullingen elektrische machines") of een lang evenement. Op 32
+ * pt liep zo'n naam over drie regels en duwde hij de inhoud van het scherm weg.
+ */
+const LONG_TITLE = 30;
+
 export function PageHead<T extends string = string>({
   title,
   subtitle,
@@ -101,7 +108,9 @@ export function PageHead<T extends string = string>({
       <View style={[styles.row, compact && styles.rowCompact]}>
         <View style={styles.text}>
           {kicker && !compact ? <Text style={styles.kicker}>{kicker}</Text> : null}
-          <Text style={[styles.title, compact && styles.titleCompact]}>{title}</Text>
+          <Text style={[styles.title, !compact && title.length > LONG_TITLE && styles.titleLong, compact && styles.titleCompact]}>
+            {title}
+          </Text>
           {subtitle && !compact ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
         </View>
         {right ? <View style={[styles.right, compact && styles.rightCompact]}>{right}</View> : null}
@@ -216,6 +225,7 @@ const styles = StyleSheet.create({
   kicker: { ...TYPE.small, color: COLORS.onDarkMuted },
   title: { ...TYPE.pageTitle, color: COLORS.onDark },
   titleCompact: { fontSize: 24, lineHeight: 28, letterSpacing: -0.6 },
+  titleLong: { fontSize: 24, lineHeight: 28, letterSpacing: -0.5 },
   subtitle: { ...TYPE.body, color: COLORS.onDarkMuted },
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.lg },
   tabsCompact: { marginTop: SPACING.md },

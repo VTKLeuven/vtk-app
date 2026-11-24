@@ -57,7 +57,7 @@ export const TAB_ROUTES = {
     'peilingen',
   ],
   kalender: ['evenement/[id]', 'ticket/[slug]', 'mijn-tickets', 'meldingen'],
-  studeren: ['studiegroep/[id]', 'studiegroep/nieuw', 'lokalen'],
+  studies: ['studiegroep/[id]', 'studiegroep/nieuw', 'lokalen', 'vak/[id]', 'cudi-bestellingen', 'web'],
   tickets: ['ticket/[slug]', 'mijn-tickets', 'scannen', 'deur'],
   meer: [
     'zoeken',
@@ -82,6 +82,9 @@ export const TAB_ROUTES = {
     'ticket/[slug]',
     'mijn-tickets',
     'broodjes',
+    'beheer',
+    'vervoer',
+    'web',
   ],
 } as const;
 
@@ -89,7 +92,7 @@ export const TAB_ROUTES = {
 export const TAB_INDEX_SCREENS = {
   '(home)': 'tab-index',
   kalender: 'tab-kalender',
-  studeren: 'tab-studeren',
+  studies: 'tab-studies',
   tickets: 'tab-tickets',
   meer: 'meer',
 } as const;
@@ -101,13 +104,13 @@ export type TabName = keyof typeof TAB_ROUTES;
  * huidige tab geen is. Home eerst: dat is waar iemand terechtkomt die van buiten
  * de app binnenkomt.
  */
-const TAB_ORDER: TabName[] = ['(home)', 'kalender', 'studeren', 'tickets', 'meer'];
+const TAB_ORDER: TabName[] = ['(home)', 'kalender', 'studies', 'tickets', 'meer'];
 
 /** Home is een routegroep en staat dus niet in het adres. */
 const PREFIX: Record<TabName, string> = {
   '(home)': '',
   kalender: '/kalender',
-  studeren: '/studeren',
+  studies: '/studies',
   tickets: '/tickets',
   meer: '/meer',
 };

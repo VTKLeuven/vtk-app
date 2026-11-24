@@ -39,7 +39,7 @@ function inhoud(dir) {
  * is minder omslachtig dan het lijkt: de bestanden zijn één regel lang en de
  * generator is de enige die ze schrijft.
  */
-const gemaakt = ['app/(tabs)/(home)', 'app/(tabs)/kalender', 'app/(tabs)/studeren', 'app/(tabs)/tickets', 'app/(tabs)/meer', 'app/(oud)'];
+const gemaakt = ['app/(tabs)/(home)', 'app/(tabs)/kalender', 'app/(tabs)/studies', 'app/(tabs)/tickets', 'app/(tabs)/meer', 'app/(oud)'];
 const voor = new Map(gemaakt.flatMap((d) => [...inhoud(join(root, d))]));
 execFileSync('node', [join(root, 'scripts/genereer-routes.mjs')], { stdio: 'pipe' });
 const na = new Map(gemaakt.flatMap((d) => [...inhoud(join(root, d))]));
@@ -132,7 +132,7 @@ const indexSchermen = {};
 const BUITEN = new Set([
   '/',
   '/kalender',
-  '/studeren',
+  '/studies',
   '/tickets',
   '/meer',
   '/inloggen',
@@ -141,17 +141,38 @@ const BUITEN = new Set([
   '/scan/*',
 ]);
 
-/** De adressen die één scherm duwt, genormaliseerd. */
-function duwtNaar(scherm) {
-  const bestand = join(root, 'src/screens', `${scherm}.tsx`);
+/** De adressen die één bestand duwt, genormaliseerd. */
+function adressenIn(bestand) {
   if (!existsSync(bestand)) return [];
   return [...readFileSync(bestand, 'utf8').matchAll(ADRES)].map(([, a, b]) =>
     (a ?? b).split('?')[0].replace(/\$\{[^}]*\}/g, '*').replace(/\/$/, ''),
   );
 }
 
+function duwtNaar(scherm) {
+  return adressenIn(join(root, 'src/screens', `${scherm}.tsx`));
+}
+
+/**
+ * De weergaven die een tabscherm tekent zonder dat ze een eigen route zijn: de
+ * tabbladen van Studies staan in `src/components/studies/`. Wat zij duwen, duwt
+ * het tabscherm, en moet dus ook in die tab bestaan.
+ */
+const WEERGAVEN = { studies: 'src/components/studies' };
+function weergavenVan(tab) {
+  const map = WEERGAVEN[tab];
+  if (!map || !existsSync(join(root, map))) return [];
+  return readdirSync(join(root, map))
+    .filter((naam) => naam.endsWith('.tsx'))
+    .flatMap((naam) => adressenIn(join(root, map, naam)));
+}
+
 for (const [tab, schermen] of Object.entries(kaart)) {
   const heeft = new Set(schermen.map((s) => `/${s.replace(/\[\w+\]/g, '*')}`));
+  for (const adres of weergavenVan(tab)) {
+    if (BUITEN.has(adres) || heeft.has(adres)) continue;
+    fouten.push(`${tab}: ${WEERGAVEN[tab]} duwt naar ${adres}, maar die tab draagt dat scherm niet.`);
+  }
   for (const scherm of [indexSchermen[tab], ...schermen]) {
     for (const adres of duwtNaar(scherm)) {
       if (BUITEN.has(adres) || heeft.has(adres)) continue;

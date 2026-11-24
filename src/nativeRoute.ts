@@ -30,6 +30,9 @@ const NATIVE_ROUTES: Record<string, string> = {
   // De webscanner. Wie de app heeft, hoort niet in een browser te belanden voor
   // iets waar hier een scherm voor bestaat.
   '/scan': '/deur',
+  // De admin. Het CMS of een aankondiging die naar /admin wijst, komt op Beheer
+  // uit; wie er geen rechten voor heeft, krijgt daar de melding van de server.
+  '/admin': '/beheer',
 };
 
 /**
