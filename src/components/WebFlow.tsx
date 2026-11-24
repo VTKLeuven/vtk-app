@@ -122,7 +122,10 @@ export function handleShouldStartLoad(requestUrl: string): boolean {
  *   zou dat moeten nadoen, en dan bouw je een tweede plek waar wachtwoorden
  *   langskomen.
  * - **onboarding en studiebevestiging**, de twee poorten uit `proxy.ts`.
- * - **betalen**, straks: Mollie hoort in een browser thuis.
+ * - **betalen** (sinds november 2026): de bestelpagina van vtk.be en Mollie. In
+ *   de systeembrowser ging dat mis, want die heeft het toegangscookie van de
+ *   bestelling en je login niet; deze WebView deelt ze met `fetch`. Een bankapp
+ *   (Bancontact, Payconiq) opent via `handleShouldStartLoad` buiten de app.
  *
  * Alles wat gewone inhoud is, wordt native. Een WebView is hier geen manier om
  * werk uit te stellen; staat er iets in dat er niet in hoort, dan is dat een bug.
@@ -133,11 +136,17 @@ export function WebFlow({
   /** Klaar zodra de WebView hier langskomt. Krijgt de nieuwe URL. */
   isDone,
   onDone,
+  onClose,
+  markAsApp = false,
 }: {
   url: string;
   title: string;
   isDone: (url: string) => boolean;
   onDone: () => void;
+  /** Wat het kruisje doet; standaard terug in de stack. */
+  onClose?: () => void;
+  /** Zet `data-vtk-app`, zodat een pagina van vtk.be haar kop en voet weglaat. */
+  markAsApp?: boolean;
 }) {
   const router = useRouter();
   useStatusBar('dark');
@@ -153,7 +162,7 @@ export function WebFlow({
     <View style={styles.root}>
       <View style={[styles.bar, { paddingTop: insets.top + SPACING.sm }]}>
         <Text style={styles.title}>{title}</Text>
-        <HeadButton accessibilityLabel="Sluiten" onPress={() => router.back()}>
+        <HeadButton accessibilityLabel="Sluiten" onPress={onClose ?? (() => router.back())}>
           <X color={COLORS.ink} size={21} />
         </HeadButton>
       </View>
@@ -165,6 +174,7 @@ export function WebFlow({
         // externe SSO- en authenticatorlinks langs `onShouldStartLoadWithRequest`
         // passeren in plaats van stil te verdwijnen.
         setSupportMultipleWindows={false}
+        injectedJavaScriptBeforeContentLoaded={markAsApp ? MARK_AS_APP : undefined}
         onShouldStartLoadWithRequest={(request) => handleShouldStartLoad(request.url)}
         onNavigationStateChange={handleNavigation}
         onLoadEnd={() => setLoading(false)}
@@ -184,6 +194,9 @@ export function WebFlow({
     </View>
   );
 }
+
+/** Zelfde vlag als in `web.tsx`; `true;` is wat iOS verwacht. */
+const MARK_AS_APP = `document.documentElement.setAttribute('data-vtk-app', '');true;`;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },

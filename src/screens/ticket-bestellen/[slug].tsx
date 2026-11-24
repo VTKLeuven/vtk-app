@@ -1,14 +1,15 @@
 import * as WebBrowser from 'expo-web-browser';
 import { useLocalSearchParams } from 'expo-router';
 import { Check } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { baseUrl } from '../../api/client';
 import type { AppTicketEventDetail, AppTicketType } from '../../api/contract';
 import { fetchOrderStatus, fetchTicketEvent, startTicketCheckout } from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
 import { PageHead } from '../../components/PageHead';
+import { WebFlow } from '../../components/WebFlow';
 import { QuestionField, type AnswerValue } from '../../components/QuestionField';
 import { Button, Card, CardList, ErrorState, Loading, SectionHeading } from '../../components/ui';
 import { formatEuro } from '../../format';
@@ -25,11 +26,14 @@ import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
  * wacht zonder dat je het ziet; hier staat het vooraan, met "Betalen" vast
  * onderaan.
  *
- * **Betalen gebeurt in de browser**, want dat is Mollie, en dat willen we niet
- * nabouwen: bankapps, Bancontact en 3D Secure horen in een echte browser. Na het
- * sluiten van die browser vragen we de server wat er van de bestelling geworden
- * is; we gokken niet op basis van of iemand terugkwam. Voorraad, limieten en of
- * een type nog te koop staat, controleert de checkout bindend.
+ * **Betalen gebeurt in een WebView in de app** (`WebFlow`): de bestelpagina van
+ * vtk.be, waar je de betaalwijze kiest, en daarna Mollie. Niet in de
+ * systeembrowser: die heeft het toegangscookie van de bestelling niet (dat zet
+ * de checkout op het antwoord aan de app) en je login evenmin, en toonde dus
+ * "deze pagina bestaat niet". Mollie nabouwen doen we niet. Komt de WebView
+ * terug op de bestelpagina met `?payment=`, of sluit je hem, dan vragen we de
+ * server wat er van de bestelling geworden is; we gokken niet. Voorraad,
+ * limieten en of een type nog te koop staat, controleert de checkout bindend.
  */
 export default function TicketOrderScreen() {
   const router = useTabRouter();
@@ -79,6 +83,9 @@ function Order({
   const [answers, setAnswers] = useState<Record<string, Record<string, AnswerValue>>>({});
   const [terms, setTerms] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [payment, setPayment] = useState<{ url: string; orderId: string } | null>(null);
+  /** Of de WebView de bestelpagina al verliet (naar Mollie of de Bancontact-QR). */
+  const leftOrder = useRef(false);
 
   /**
    * Eén regel per ticket, met een stabiele sleutel `<typeId>#<index>` die de
@@ -120,6 +127,20 @@ function Order({
           ? 'Aanvaard de voorwaarden'
           : null;
 
+  /** Wat er van de bestelling geworden is, gevraagd aan de server en niet geraden. */
+  const settle = async (orderId: string) => {
+    const status = await fetchOrderStatus(orderId).catch(() => null);
+    if (status?.status === 'PAID') {
+      onDone();
+    } else {
+      Alert.alert(
+        'Bestelling nog niet bevestigd',
+        'We zien nog geen betaling. Duurt dat langer dan een minuut, kijk dan bij Mijn tickets of in je mail.',
+        [{ text: 'Naar mijn tickets', onPress: onDone }, { text: 'Hier blijven' }],
+      );
+    }
+  };
+
   const submit = async () => {
     setBusy(true);
     try {
@@ -135,25 +156,24 @@ function Order({
           answers: answers[key] ?? {},
         })),
       });
-
-      await WebBrowser.openBrowserAsync(checkout.checkoutUrl);
-
-      // De browser sluiten zegt niets over de betaling; de server weet het wel.
+      // Gratis is meteen betaald; dan valt er niets te tonen.
       const status = await fetchOrderStatus(checkout.orderId).catch(() => null);
-      if (status?.status === 'PAID') {
-        onDone();
-      } else {
-        Alert.alert(
-          'Bestelling nog niet bevestigd',
-          'We zien nog geen betaling. Duurt dat langer dan een minuut, kijk dan bij Mijn tickets of in je mail.',
-          [{ text: 'Naar mijn tickets', onPress: onDone }, { text: 'Hier blijven' }],
-        );
+      if (status?.status === 'PAID') onDone();
+      else {
+        leftOrder.current = false;
+        setPayment({ url: checkout.checkoutUrl, orderId: checkout.orderId });
       }
     } catch (error) {
       Alert.alert('Bestellen lukte niet', checkoutErrorText(error));
     } finally {
       setBusy(false);
     }
+  };
+
+  const closePayment = () => {
+    const orderId = payment?.orderId;
+    setPayment(null);
+    if (orderId) void settle(orderId);
   };
 
   return (
@@ -256,6 +276,26 @@ function Order({
         </Card>
       </ScrollView>
 
+      {/* Betalen: de bestelpagina en Mollie over het hele scherm, in de app. */}
+      <Modal visible={payment !== null} animationType="slide" onRequestClose={closePayment}>
+        {payment ? (
+          <WebFlow
+            url={payment.url}
+            title="Betalen"
+            markAsApp
+            isDone={(url) => {
+              if (!isOrderPage(url, payment.orderId)) {
+                leftOrder.current = true;
+                return false;
+              }
+              return leftOrder.current || /[?&]payment=/.test(url);
+            }}
+            onDone={closePayment}
+            onClose={closePayment}
+          />
+        ) : null}
+      </Modal>
+
       {/* Het totaal en de knop, vast onderaan zoals bij de broodjes. */}
       <View style={styles.bar}>
         <View style={styles.flex}>
@@ -275,6 +315,16 @@ function Order({
       </View>
     </View>
   );
+}
+
+/**
+ * De bestelpagina zelf, niet `/bancontact` eronder. Daar kies je de betaalwijze;
+ * kom je er terug na Mollie (`?payment=return` of `?payment=cancelled`, de
+ * `successUrl`/`cancelUrl` in `lib/ticketing/orders.ts` op de site) of na de
+ * Bancontact-QR, dan is het betalen voorbij en sluit het scherm.
+ */
+function isOrderPage(url: string, orderId: string): boolean {
+  return new RegExp(`/tickets/bestelling/${orderId}/?(?:[?#]|$)`).test(url);
 }
 
 const styles = StyleSheet.create({
