@@ -792,3 +792,24 @@ Acht punten voor de release naar Apple en Google (site en app):
 - **Foto's**: traploos zoomen rond je vingers, ingezoomd slepen met uitbollen tot
   de rand, en dubbeltikken op een plek. Omhoog of omlaag vegen of naast de foto
   tikken brengt je terug naar het album.
+
+## November 2026: Bakske en Ir.Reëel lezen in de app
+
+Een nummer aantikken gaf de pdf aan de browser. Dat liep twee keer mis:
+
+- **De link was een 404.** De app kreeg `publicUrl(storageKey)`, dus
+  `/api/media/publications/<hash>.pdf`. Dat adres valt onder de route van de
+  plank op de site (`publications/[publicationId]`, één segment) en niet onder
+  `[...key]`, en die kent geen editie met die naam. De site geeft nu hetzelfde
+  adres als haar eigen plank, `/api/media/publications/<id>`; dat werkt meteen
+  voor elke geïnstalleerde app.
+- **Chrome op Android downloadt een pdf** in plaats van hem te tonen.
+
+Nu tekent de site elke bladzijde als JPEG van 1600 pixels breed, net zoals ze
+de kaft al tekende (`lib/magazineCover.ts`): na het uploaden, en voor de oudere
+nummers twee per ronde van de onderhoudstaak. Ze staan in `pages` in het
+contract, en de app toont ze in de fotoviewer (`MagazineReader` in
+`media.tsx`): vegen, knijpen, dubbeltikken, omlaag vegen om te sluiten. De
+viewer kreeg daarvoor `ViewerPhoto` in plaats van `AppPhoto`. Een nummer zonder
+`pages` (net geüpload, of een oudere server) opent nog als pdf. Links in een
+nummer werken in de lezer niet; op de site wel.

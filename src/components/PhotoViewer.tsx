@@ -26,6 +26,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AppPhoto } from '../api/contract';
 import { COLORS, SPACING, TYPE } from '../theme/tokens';
 
+/**
+ * Wat de viewer van een beeld nodig heeft. Een `AppPhoto` uit een album past
+ * erin, en ook een bladzijde van een Bakske of Ir.Reëel (zie `media.tsx`), die
+ * geen thumbnail en geen origineel heeft.
+ */
+export type ViewerPhoto = Pick<AppPhoto, 'id' | 'url' | 'filename'> & {
+  /** Toont meteen tot `url` binnen is; zonder valt er even niets te zien. */
+  thumbUrl?: string | null;
+};
+
 /** Hoe ver je mag inzoomen. Meer dan dit toont enkel nog de korrel. */
 const MAX_SCALE = 4;
 
@@ -56,7 +66,7 @@ export function PhotoViewer({
   onClose,
   actions,
 }: {
-  photos: AppPhoto[];
+  photos: ViewerPhoto[];
   /** De foto die openstaat, of `null` wanneer de viewer dicht is. */
   index: number | null;
   onIndexChange: (index: number) => void;
@@ -101,7 +111,7 @@ function Pager({
   onClose,
   actions,
 }: {
-  photos: AppPhoto[];
+  photos: ViewerPhoto[];
   initialIndex: number;
   index: number;
   onIndexChange: (index: number) => void;
@@ -113,7 +123,7 @@ function Pager({
   // Bladeren gaat uit zodra er ingezoomd is; anders vecht het slepen binnen de
   // foto met het omslaan naar de volgende.
   const [zoomed, setZoomed] = useState(false);
-  const list = useRef<FlatList<AppPhoto>>(null);
+  const list = useRef<FlatList<ViewerPhoto>>(null);
   const positioned = useRef(false);
   // Hoe ver de foto omhoog of omlaag weggeveegd is; de achtergrond vaagt mee weg.
   const dismiss = useSharedValue(0);
@@ -230,7 +240,7 @@ function ZoomablePhoto({
   dismiss,
   onClose,
 }: {
-  photo: AppPhoto;
+  photo: ViewerPhoto;
   width: number;
   height: number;
   active: boolean;
@@ -474,7 +484,7 @@ function ZoomablePhoto({
             source={{ uri: photo.url }}
             // De thumbnail staat al in de cache van het raster; die toont meteen,
             // tot de grote versie binnen is.
-            placeholder={{ uri: photo.thumbUrl }}
+            placeholder={photo.thumbUrl ? { uri: photo.thumbUrl } : undefined}
             placeholderContentFit="contain"
             style={{ width, height }}
             contentFit="contain"

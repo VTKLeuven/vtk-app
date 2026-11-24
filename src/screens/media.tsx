@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
 import { ChevronRight, Play } from 'lucide-react-native';
+import { useMemo, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -21,6 +22,7 @@ import { messageFor, useResource } from '../api/useResource';
 import { AlbumFeature, AlbumTile } from '../components/AlbumCard';
 import { PageHead } from '../components/PageHead';
 import { PatternBand } from '../components/PatternBand';
+import { PhotoViewer, type ViewerPhoto } from '../components/PhotoViewer';
 import { Empty, ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
@@ -196,13 +198,31 @@ function Aftermovies({ movies }: { movies: AppAftermovie[] }) {
   );
 }
 
-/** De plank van `MagazineShelf` op de site: het laatste nummer van elk blad vooraan. */
+/** Valt er iets te openen: bladzijden voor de lezer, of anders de pdf. */
+function canOpen(item: AppPublication): boolean {
+  return Boolean(item.pages?.length || item.url);
+}
+
+/**
+ * De plank van `MagazineShelf` op de site: het laatste nummer van elk blad vooraan.
+ *
+ * Een nummer opent in de lezer hieronder, als de server zijn bladzijden al
+ * getekend heeft. Daarvoor ging het naar de browser, en Chrome op Android toont
+ * een pdf niet maar downloadt hem. Zonder bladzijden (net geüpload, of een
+ * oudere server) gaat het nog altijd naar de browser.
+ */
 function Magazines({ publications }: { publications: AppPublication[] }) {
   // De server stuurt nieuwste eerst; het eerste van elk blad is dus het laatste nummer.
   const latest = KINDS.map((kind) => publications.find((item) => item.kind === kind)).filter(
     (item): item is AppPublication => Boolean(item),
   );
   const older = publications.filter((item) => !latest.includes(item));
+  const [reading, setReading] = useState<{ publication: AppPublication; page: number } | null>(null);
+
+  const open = (item: AppPublication) => {
+    if (item.pages?.length) setReading({ publication: item, page: 0 });
+    else if (item.url) void WebBrowser.openBrowserAsync(item.url);
+  };
 
   return (
     <View style={styles.shelf}>
@@ -214,8 +234,8 @@ function Magazines({ publications }: { publications: AppPublication[] }) {
             key={item.id}
             accessibilityRole="button"
             accessibilityLabel={`Open ${item.title}`}
-            disabled={!item.url}
-            onPress={() => void WebBrowser.openBrowserAsync(item.url as string)}
+            disabled={!canOpen(item)}
+            onPress={() => open(item)}
             style={({ pressed }) => [styles.issue, pressed && styles.pressed]}
           >
             <Text style={styles.kicker}>{KIND_LABEL[item.kind].toUpperCase()}</Text>
@@ -241,8 +261,8 @@ function Magazines({ publications }: { publications: AppPublication[] }) {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Open ${item.title}`}
-                disabled={!item.url}
-                onPress={() => void WebBrowser.openBrowserAsync(item.url as string)}
+                disabled={!canOpen(item)}
+                onPress={() => open(item)}
                 style={({ pressed }) => [styles.small, pressed && styles.pressed]}
               >
                 <MagazineCover publication={item} style={styles.coverSmall} compact />
@@ -254,7 +274,52 @@ function Magazines({ publications }: { publications: AppPublication[] }) {
           />
         </View>
       ) : null}
+
+      <MagazineReader
+        publication={reading?.publication ?? null}
+        page={reading?.page ?? null}
+        onPageChange={(page) => setReading((current) => (current ? { ...current, page } : current))}
+        onClose={() => setReading(null)}
+      />
     </View>
+  );
+}
+
+/**
+ * De lezer: elke bladzijde als beeld in de fotoviewer, dus vegen om te bladeren,
+ * knijpen of dubbeltikken om te lezen, en omlaag vegen om te sluiten. De
+ * bladzijden tekent de server uit de pdf (`pages` in het contract).
+ */
+function MagazineReader({
+  publication,
+  page,
+  onPageChange,
+  onClose,
+}: {
+  publication: AppPublication | null;
+  page: number | null;
+  onPageChange: (page: number) => void;
+  onClose: () => void;
+}) {
+  const pages = useMemo<ViewerPhoto[]>(
+    () =>
+      (publication?.pages ?? []).map((url, index, all) => ({
+        id: `${publication?.id}-${index + 1}`,
+        url: mediaUrl(url) as string,
+        // De kaft hangt al in de cache van de plank; bladzijde 1 staat er zo meteen.
+        thumbUrl: index === 0 ? mediaUrl(publication?.coverUrl ?? null) : null,
+        filename: `Bladzijde ${index + 1} van ${all.length}`,
+      })),
+    [publication],
+  );
+
+  return (
+    <PhotoViewer
+      photos={pages}
+      index={pages.length > 0 ? page : null}
+      onIndexChange={onPageChange}
+      onClose={onClose}
+    />
   );
 }
 
