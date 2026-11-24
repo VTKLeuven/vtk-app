@@ -1,33 +1,29 @@
 import { Clock, MapPin } from 'lucide-react-native';
 import { useLocalSearchParams } from 'expo-router';
-
-import * as WebBrowser from 'expo-web-browser';
 import { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { ApiError, baseUrl } from '../../api/client';
-import type { AppTicketEventDetail, AppTicketType } from '../../api/contract';
-import { fetchOrderStatus, fetchTicketEvent, startTicketCheckout } from '../../api/endpoints';
+import type { AppTicketEventDetail } from '../../api/contract';
+import { fetchTicketEvent } from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
 import { DatePin } from '../../components/DatePin';
 import { PageHead, PhotoHead } from '../../components/PageHead';
-import { QuestionField, type AnswerValue } from '../../components/QuestionField';
 import { Prose } from '../../components/Prose';
 import { Stepper } from '../../components/Stepper';
 import { Button, Card, Empty, ErrorState, Loading, SectionHeading } from '../../components/ui';
 import { formatEventWhen, formatEuro } from '../../format';
 import { useApp } from '../../state/app';
 import { useTabRouter } from '../../navigation';
-import { COLORS, SPACING, TYPE } from '../../theme/tokens';
+import { encodeQuantities } from '../../ticketOrder';
+import { COLORS, FONTS, SPACING, TYPE } from '../../theme/tokens';
 
 /**
- * Tickets kopen.
+ * Tickets kopen, stap één: welke tickets en hoeveel.
  *
- * Het scherm bouwt de bestelling op en stuurt ze naar dezelfde checkout als de
- * webshop. **Betalen gebeurt in de browser**, want dat is Mollie, en dat willen
- * we niet nabouwen: bankapps, Bancontact en 3D Secure horen in een echte browser.
- * Na het sluiten van die browser vragen we de server wat er van de bestelling
- * geworden is; we gokken niet op basis van of iemand terugkwam.
+ * Zodra er iets gekozen is, staat onderaan een zwevende balk met het totaal en
+ * "Bestellen". Die opent `ticket-bestellen/[slug]`, waar je de namen en je
+ * gegevens invult en betaalt. Tot november 2026 stond dat formulier onderaan
+ * deze pagina, onder de uitleg, en zag niemand dat het er was.
  *
  * Wat het scherm zelf beslist, beslist het enkel om knoppen uit te schakelen. De
  * voorraad, de limieten per bestelling en de vraag of een type nog te koop staat,
@@ -35,7 +31,7 @@ import { COLORS, SPACING, TYPE } from '../../theme/tokens';
  */
 export default function TicketShopScreen() {
   const router = useTabRouter();
-  const { locale, viewer } = useApp();
+  const { locale } = useApp();
   const { slug } = useLocalSearchParams<{ slug: string }>();
 
   const resource = useResource(
@@ -55,13 +51,13 @@ export default function TicketShopScreen() {
     <Shop
       event={resource.data}
       locale={locale}
-      viewerName={viewer?.name ?? ''}
-      viewerEmail={viewer?.email ?? ''}
       onNeedsLogin={() => router.push('/inloggen')}
-      onDone={() => {
-        void resource.reload();
-        router.replace('/mijn-tickets');
-      }}
+      onOrder={(quantities) =>
+        router.push({
+          pathname: `/ticket-bestellen/${slug}`,
+          params: { aantallen: encodeQuantities(quantities) },
+        })
+      }
     />
   );
 }
@@ -69,42 +65,15 @@ export default function TicketShopScreen() {
 function Shop({
   event,
   locale,
-  viewerName,
-  viewerEmail,
   onNeedsLogin,
-  onDone,
+  onOrder,
 }: {
   event: AppTicketEventDetail;
   locale: 'nl' | 'en';
-  viewerName: string;
-  viewerEmail: string;
   onNeedsLogin: () => void;
-  onDone: () => void;
+  onOrder: (quantities: Record<string, number>) => void;
 }) {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [buyerName, setBuyerName] = useState(viewerName);
-  const [buyerEmail, setBuyerEmail] = useState(viewerEmail);
-  const [attendees, setAttendees] = useState<Record<string, string>>({});
-  const [answers, setAnswers] = useState<Record<string, Record<string, AnswerValue>>>({});
-  const [terms, setTerms] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  /**
-   * Eén regel per ticket dat besteld wordt, met een stabiele sleutel
-   * `<typeId>#<index>`. Dat is wat de invoervelden per ticket aan elkaar knoopt:
-   * zet iemand het aantal van drie naar twee, dan verdwijnt de derde en houden de
-   * eerste twee hun naam.
-   */
-  const seats = useMemo(() => {
-    const list: { key: string; type: AppTicketType; index: number }[] = [];
-    for (const type of event.ticketTypes) {
-      const quantity = quantities[type.id] ?? 0;
-      for (let index = 0; index < quantity; index += 1) {
-        list.push({ key: `${type.id}#${index}`, type, index });
-      }
-    }
-    return list;
-  }, [event.ticketTypes, quantities]);
 
   const totals = useMemo(() => {
     let count = 0;
@@ -135,62 +104,16 @@ function Shop({
     );
   }
 
-  const missing = seats.find(({ key, type }) => {
-    if (!(attendees[key] ?? '').trim()) return true;
-    return type.questions.some((question) => {
-      if (!question.required) return false;
-      const value = answers[key]?.[question.id];
-      if (question.type === 'BOOLEAN') return value !== true;
-      if (question.type === 'MULTIPLE_CHOICE') return !Array.isArray(value) || value.length === 0;
-      return typeof value !== 'string' || value.trim() === '';
-    });
+  // Het minimum per type, zodat "Bestellen" niet opent op iets dat de checkout weigert.
+  const belowMinimum = event.ticketTypes.find((type) => {
+    const quantity = quantities[type.id] ?? 0;
+    return quantity > 0 && (type.minPerOrder ?? 1) > quantity;
   });
 
-  const canSubmit =
-    totals.count > 0 && !missing && terms && buyerName.trim().length >= 2 && buyerEmail.includes('@');
-
-  const submit = async () => {
-    setBusy(true);
-    try {
-      const checkout = await startTicketCheckout({
-        eventId: event.id,
-        buyerName: buyerName.trim(),
-        buyerEmail: buyerEmail.trim(),
-        locale,
-        termsAccepted: true,
-        items: seats.map(({ key, type }) => ({
-          ticketTypeId: type.id,
-          attendeeName: (attendees[key] ?? '').trim(),
-          answers: answers[key] ?? {},
-        })),
-      });
-
-      await WebBrowser.openBrowserAsync(checkout.checkoutUrl);
-
-      // De browser sluiten zegt niets over de betaling: iemand kan wegklikken
-      // terwijl de betaling doorliep, of terugkomen zonder betaald te hebben.
-      // De server weet het, dus vragen we het daar.
-      const status = await fetchOrderStatus(checkout.orderId).catch(() => null);
-      if (status?.status === 'PAID') {
-        onDone();
-      } else {
-        Alert.alert(
-          'Bestelling nog niet bevestigd',
-          'We zien nog geen betaling. Duurt dat langer dan een minuut, kijk dan bij Mijn tickets of in je mail.',
-          [{ text: 'Naar mijn tickets', onPress: onDone }, { text: 'Hier blijven' }],
-        );
-      }
-    } catch (error) {
-      Alert.alert('Bestellen lukte niet', checkoutErrorText(error));
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
-    <>
+    <View style={styles.root}>
       {event.imageUrl ? null : <PageHead title={event.title} subtitle={event.ownerGroupName} />}
-      <ScrollView contentContainerStyle={styles.content} style={styles.root} keyboardDismissMode="on-drag">
+      <ScrollView contentContainerStyle={styles.content} style={styles.root}>
         {event.imageUrl ? (
           // De banner van /tickets over de volle breedte, met de gele datumpin.
           <View style={styles.bleed}>
@@ -279,169 +202,69 @@ function Shop({
             </Card>
           </>
         ) : null}
-
-        {seats.length > 0 ? (
-          <>
-            <Text style={styles.section}>Wie komt er?</Text>
-            {seats.map(({ key, type, index }) => (
-              <Card key={key}>
-                <Text style={styles.kicker}>
-                  {type.name.toUpperCase()}   TICKET {index + 1}
-                </Text>
-                <Text style={styles.label}>Naam</Text>
-                <TextInput
-                  value={attendees[key] ?? ''}
-                  onChangeText={(next) => setAttendees((current) => ({ ...current, [key]: next }))}
-                  style={styles.input}
-                  autoCapitalize="words"
-                  accessibilityLabel={`Naam voor ticket ${index + 1}, ${type.name}`}
-                />
-                {type.questions.map((question) => (
-                  <QuestionField
-                    key={question.id}
-                    question={question}
-                    value={answers[key]?.[question.id]}
-                    onChange={(value) =>
-                      setAnswers((current) => ({
-                        ...current,
-                        [key]: { ...(current[key] ?? {}), [question.id]: value },
-                      }))
-                    }
-                  />
-                ))}
-              </Card>
-            ))}
-
-            <Text style={styles.section}>Jouw gegevens</Text>
-            <Card>
-              <Text style={styles.label}>Naam</Text>
-              <TextInput
-                value={buyerName}
-                onChangeText={setBuyerName}
-                style={styles.input}
-                autoCapitalize="words"
-                accessibilityLabel="Jouw naam"
-              />
-              <Text style={styles.label}>E-mail</Text>
-              <TextInput
-                value={buyerEmail}
-                onChangeText={setBuyerEmail}
-                style={styles.input}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                accessibilityLabel="Jouw e-mailadres"
-              />
-              <Text style={styles.hint}>
-                De tickets komen op dit adres toe, en staan daarna ook bij Mijn tickets.
-              </Text>
-            </Card>
-
-            <Card>
-              <Button
-                label={terms ? 'Voorwaarden aanvaard' : 'Ik ga akkoord met de voorwaarden'}
-                variant="ghost"
-                onPress={() => setTerms(!terms)}
-              />
-              <Button
-                label="Lees de voorwaarden"
-                variant="ghost"
-                onPress={() =>
-                  void WebBrowser.openBrowserAsync(`${baseUrl()}${event.termsUrl}`)
-                }
-              />
-            </Card>
-
-            <Card>
-              <View style={styles.totalRow}>
-                <Text style={styles.title}>
-                  {totals.count} {totals.count === 1 ? 'ticket' : 'tickets'}
-                </Text>
-                <Text style={styles.title}>
-                  {totals.cents === 0 ? 'Gratis' : formatEuro(totals.cents)}
-                </Text>
-              </View>
-              {missing ? (
-                <Text style={styles.hint}>Vul eerst alle namen en verplichte vragen in.</Text>
-              ) : null}
-              <Button
-                label={totals.cents === 0 ? 'Bestelling afronden' : 'Betalen'}
-                busy={busy}
-                disabled={!canSubmit}
-                onPress={() => void submit()}
-              />
-            </Card>
-          </>
-        ) : null}
       </ScrollView>
-    </>
-  );
-}
 
-/** De melding bij een geweigerde bestelling; de codes komen van `TicketCheckoutError`. */
-function checkoutErrorText(error: unknown): string {
-  if (!(error instanceof ApiError)) {
-    return 'Geen verbinding met vtk.be. Probeer het straks opnieuw.';
-  }
-  switch (error.code) {
-    case 'EVENT_NOT_ON_SALE':
-      return 'De verkoop voor dit event is intussen gesloten.';
-    case 'SOLD_OUT':
-      return 'Er zijn niet genoeg tickets meer beschikbaar.';
-    case 'LOGIN_REQUIRED':
-      return 'Voor dit ticket moet je ingelogd zijn.';
-    case 'TOO_MANY_RESERVATIONS':
-      return 'Je hebt al een bestelling lopen. Rond die eerst af of wacht tot ze vervalt.';
-    case 'FREE_TICKET_LIMIT':
-      return 'Je hebt het maximum aan gratis tickets bereikt.';
-    case 'HONORARY_PRICE_USED':
-      return 'Je erelidticket voor dit event heb je al. Kies de gewone prijs.';
-    case 'HONORARY_TICKET_LIMIT':
-      return 'Als erelid koop je voor dit event één ticket, en dat heb je al.';
-    case 'MEMBERSHIP_REQUIRED':
-      return 'Dit ticket is enkel voor leden van VTK.';
-    case 'INVALID_TICKET_TYPE':
-      return 'Een gekozen tickettype is niet meer beschikbaar.';
-    case 'INVALID_QUANTITY':
-      return 'Dat aantal kan niet voor dit tickettype.';
-    case 'INVALID_ANSWER':
-      return 'Een van de antwoorden is niet geldig. Kijk de vragen nog eens na.';
-    case 'PAYMENT_UNAVAILABLE':
-      return 'De betaaldienst is even niet bereikbaar. Probeer het straks opnieuw.';
-    case 'BUSY':
-      // Een 503 van de checkout bij een rush: er is niets besteld en meteen
-      // opnieuw proberen kan lukken, dus niet "straks".
-      return 'Het is heel druk. Je bestelling is niet doorgegaan; probeer meteen opnieuw.';
-    default:
-      return error.message;
-  }
+      {/* Zodra er een ticket gekozen is: het totaal en "Bestellen", vast onderaan.
+          De namen, je gegevens en betalen staan op het volgende scherm. */}
+      {totals.count > 0 ? (
+        <View style={styles.bar}>
+          <View style={styles.flex}>
+            <Text style={styles.barTotal}>
+              {totals.count} {totals.count === 1 ? 'ticket' : 'tickets'},{' '}
+              {totals.cents === 0 ? 'gratis' : formatEuro(totals.cents)}
+            </Text>
+            {belowMinimum ? (
+              <Text style={styles.hint} numberOfLines={1}>
+                Minstens {belowMinimum.minPerOrder} x {belowMinimum.name}
+              </Text>
+            ) : null}
+          </View>
+          <View style={styles.barButton}>
+            <Button
+              label="Bestellen"
+              disabled={Boolean(belowMinimum)}
+              onPress={() => onOrder(quantities)}
+            />
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
+  flex: { flex: 1 },
   content: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxl },
   // De kop met de foto loopt tot tegen de randen, buiten de marge van de inhoud.
   bleed: { marginHorizontal: -SPACING.lg, marginTop: -SPACING.lg },
   facts: { gap: SPACING.sm, paddingHorizontal: SPACING.xs },
   fact: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   factText: { ...TYPE.body, color: COLORS.body, flexShrink: 1 },
-  section: { ...TYPE.sectionTitle, color: COLORS.ink, marginTop: SPACING.sm },
   title: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },
   hint: { ...TYPE.small, color: COLORS.muted },
-  kicker: { ...TYPE.kicker, color: COLORS.muted },
-  label: { ...TYPE.body, fontFamily: TYPE.cardTitle.fontFamily, color: COLORS.ink },
   price: { ...TYPE.small, color: COLORS.body, marginTop: 2 },
   typeRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   typeText: { flex: 1, gap: 2 },
-  input: {
-    ...TYPE.body,
-    color: COLORS.ink,
-    borderRadius: 12,
-    paddingHorizontal: SPACING.md,
+  // Het totaal en de knop, zwevend boven de tabbalk zoals bij de broodjes.
+  bar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.sm,
+    paddingLeft: SPACING.lg,
+    paddingRight: SPACING.md,
     paddingVertical: SPACING.md,
+    borderRadius: 22,
     backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.controlBorder,
+    shadowColor: COLORS.navy,
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  barTotal: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink, fontVariant: ['tabular-nums'] },
+  barButton: { minWidth: 132 },
 });
