@@ -8,19 +8,19 @@ import type { AppBurgieclanCourse, AppBurgieclanDocument } from '../../api/contr
 import { fetchBurgieclanCourse, fetchBurgieclanFile, setBurgieclanFavorite } from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
 import { PageHead } from '../../components/PageHead';
+import { EvaluationsView } from '../../components/studies/BurgieclanEvaluations';
 import { Empty, ErrorState, Loading, MarginRegister, StaleNotice } from '../../components/ui';
 import { formatShortDate } from '../../format';
 import { useApp } from '../../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 
-const ALL = 'alles';
+type View_ = 'documenten' | 'evaluaties';
 
 /**
- * Eén vak van Burgieclan: zijn documenten per soort.
- *
- * De soorten (samenvattingen, examens, oplossingen, ...) staan als pillen in de
- * kop, met hun aantal erbij, zoals de tabbladen elders in de app. Binnen een
- * soort staat het nieuwste academiejaar bovenaan; dat is wat je meestal zoekt.
+ * Eén vak van Burgieclan, zoals de vakpagina daar: de documenten per soort, en
+ * de vakevaluatie (sterren per rubriek en de opmerkingen van studenten). Die
+ * twee staan als pillen in de kop. Binnen een soort staat het nieuwste
+ * academiejaar bovenaan; dat is wat je meestal zoekt.
  *
  * Een document openen haalt een link op die tien minuten geldig is en opent die
  * in het venster van het systeem: dat toont een pdf beter dan wij het zouden
@@ -30,7 +30,7 @@ export default function VakScreen() {
   const { id, naam } = useLocalSearchParams<{ id: string; naam?: string }>();
   const { locale } = useApp();
   const resource = useResource(`burgieclan-vak-${id}`, () => fetchBurgieclanCourse(locale, id), `${locale}:${id}`);
-  const [category, setCategory] = useState(ALL);
+  const [view, setView] = useState<View_>('documenten');
   const [favorite, setFavorite] = useState<boolean | null>(null);
   const [starBusy, setStarBusy] = useState(false);
   const [opening, setOpening] = useState<number | null>(null);
@@ -64,8 +64,9 @@ export default function VakScreen() {
 
   const { course, documents } = detail;
   const starred = favorite ?? course.favorite;
-  const shown = category === ALL ? documents : documents.filter((document) => document.category === category);
-  const grouped = groupByCategory(shown);
+  const grouped = groupByCategory(documents);
+  const evaluations = detail.evaluations ?? null;
+  const commentCount = evaluations?.sections.reduce((sum, section) => sum + section.comments.length, 0) ?? 0;
 
   const toggleStar = async () => {
     setStarBusy(true);
@@ -118,27 +119,30 @@ export default function VakScreen() {
           </Pressable>
         }
         tabs={
-          categories.length > 1
+          evaluations
             ? {
-                scroll: true,
-                value: category,
-                onChange: setCategory,
+                value: view,
+                onChange: setView,
                 options: [
-                  { value: ALL, label: 'Alles', count: documents.length },
-                  ...categories.map((c) => ({ value: c.name, label: c.name, count: c.count })),
+                  { value: 'documenten', label: 'Documenten', count: documents.length },
+                  { value: 'evaluaties', label: 'Evaluaties', count: commentCount },
                 ],
               }
             : undefined
         }
       />
 
-      {documents.length === 0 ? (
+      {view === 'evaluaties' && evaluations ? (
+        <EvaluationsView evaluations={evaluations} url={course.url} locale={locale} />
+      ) : null}
+      {view === 'documenten' && documents.length === 0 ? (
         <Empty
           title="Nog geen documenten"
           hint="Niemand deelde voor dit vak al iets. Heb jij een samenvatting of een oud examen?"
           action={{ label: 'Opladen op Burgieclan', onPress: () => void WebBrowser.openBrowserAsync(course.url) }}
         />
       ) : null}
+      {view === 'documenten' ? (
       <ScrollView
         style={styles.root}
         contentContainerStyle={styles.content}
@@ -150,7 +154,7 @@ export default function VakScreen() {
 
         {grouped.map(({ name, items }) => (
             <View key={name} style={styles.group}>
-              {category === ALL && categories.length > 1 ? <Text style={styles.kicker}>{name}</Text> : null}
+              {categories.length > 1 ? <Text style={styles.kicker}>{name}</Text> : null}
               <View style={styles.register}>
                 {items.map((document) => (
                   <Pressable
@@ -203,6 +207,7 @@ export default function VakScreen() {
           />
         ) : null}
       </ScrollView>
+      ) : null}
     </>
   );
 }

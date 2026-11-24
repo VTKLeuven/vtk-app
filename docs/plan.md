@@ -730,3 +730,30 @@ en de app samen):
   per voertuig te filteren, met chauffeur, bijrijders en de post. Dezelfde laag
   als `transportWeekForPraesidium` in apps/logistiek, zonder nummers, adressen of
   nota's.
+
+## November 2026: na de eerste ronde Studies
+
+Zeven opmerkingen na het eerste gebruik, in één ronde (site, cudi, Burgieclan en
+de app):
+
+- **Cudi**: wat klaarligt staat bovenaan, met tot wanneer en de knop **Tijdslot
+  reserveren**. Een tijdslot kiezen en vrijgeven gebeurt nu in de app
+  (`cudi-tijdsloten.tsx`), met dezelfde regels als cudi (`lib/student-timeslots.ts`
+  daar, uit de server action gehaald). Zoeken op vak, code, titel of auteur
+  (`?q=` op de catalogus; zonder vakken op je profiel zoekt het in het hele
+  aanbod). "Voor iedereen" is dichtgeklapt, de pil "Verplicht" is weg, en de
+  pillen hebben de kleuren van de shiften op de site (groen in orde, oker
+  wachten, rood op, geel van jou). De kop zegt "De cursusdienst is open".
+- **Kalender**: Agenda heet **Evenementen**, Mijn lijst **Mijn evenementen**, en
+  de filter op categorie is weg; enkel Lijst en Maand staan nog bovenaan.
+- **Burgieclan**: een vak heeft twee pillen, Documenten en **Evaluaties**: de
+  sterren per rubriek (recent en alle jaren, met het minimum van Burgieclan) en
+  de opmerkingen.
+- **Transport** is de telefoonweergave van logistiek.vtk.be: één dag over de
+  volle breedte, de dagstrip met stippen, vegen naar de dag ernaast, de blokken
+  in de kleur van de chauffeur met de arcering van het voertuig.
+- **Beheer** is /admin op een telefoon: de deurkaart, de BO-kaart met de gele
+  rand, en de snelkoppelingen in hun banen met de tegels onder elkaar.
+- **Home**: Cursusdienst opent het tabblad Cudi en geen browser meer.
+- **De scanner** heeft de navy kop en het lichte ontwerp van de rest van de app;
+  enkel het camerabeeld en de feedback na een scan zijn nog een gekleurd vlak.

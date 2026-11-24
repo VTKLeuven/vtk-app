@@ -49,7 +49,13 @@ export function CudiOrderCard({
                 {line.quantity > 1 ? `${line.quantity} × ` : ''}
                 {line.title}
               </Text>
-              <Text style={[styles.meta, line.status === 'ASSIGNED' && styles.strong]}>
+              <Text
+                style={[
+                  styles.meta,
+                  line.status === 'ASSIGNED' && styles.ready,
+                  line.status === 'BOOKED' && styles.waiting,
+                ]}
+              >
                 {lineStatus(line, locale)}
               </Text>
             </View>
@@ -131,7 +137,8 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACING.sm },
   title: { ...TYPE.cardTitle, color: COLORS.ink, flexShrink: 1 },
   meta: { ...TYPE.small, color: COLORS.body },
-  strong: { color: COLORS.ink, fontFamily: FONTS.semibold },
+  ready: { color: COLORS.okInk, fontFamily: FONTS.semibold },
+  waiting: { color: COLORS.lowInk },
   lines: { borderTopWidth: 1, borderTopColor: COLORS.line2 },
   line: {
     flexDirection: 'row',

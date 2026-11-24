@@ -214,7 +214,11 @@ export default function HomeScreen() {
         <View style={[styles.section, styles.pad]}>
           <SectionHeading>Snel naar</SectionHeading>
           <Shortcuts
-            onOpen={(route) => router.push(route as never)}
+            onOpen={(route) => {
+              // `/studies?tab=cudi`: de query als parameter, anders komt het vraagteken in het pad.
+              const [pathname, query] = route.split('?');
+              router.push(query ? { pathname, params: Object.fromEntries(new URLSearchParams(query)) } : pathname);
+            }}
             onExternal={(url) => void WebBrowser.openBrowserAsync(url)}
           />
         </View>
@@ -249,10 +253,9 @@ export default function HomeScreen() {
  * kaarten van "Wat we doen" op de homepage: een foto bovenaan, de titel met de
  * gele lijn. Lokalen staat er niet bij: dat heeft een eigen plek onder Studeren.
  *
- * De cursusdienst draait op Cudi en niet op deze site, dus die krijgt het pijltje
- * naar buiten: je hoort te weten dat je in een browser terechtkomt voor je tikt.
+ * De cursusdienst opent het tabblad Cudi onder Studies: sinds november 2026 staat
+ * cudi in de app zelf en hoort er geen browser meer aan te pas te komen.
  */
-const CUDI = 'https://cudi.vtk.be';
 
 const SHORTCUTS: {
   key: string;
@@ -267,9 +270,8 @@ const SHORTCUTS: {
   {
     key: 'cursusdienst',
     label: 'Cursusdienst',
-    to: `${CUDI}/vtk/shop`,
+    to: '/studies?tab=cudi',
     photo: require('../../assets/snel/cursusdienst.jpg'),
-    external: true,
   },
 ];
 

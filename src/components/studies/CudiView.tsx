@@ -1,9 +1,10 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Image } from 'expo-image';
 import { useFocusEffect } from 'expo-router';
-import { Check, ChevronRight, X } from 'lucide-react-native';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { CalendarClock, Check, ChevronDown, ChevronRight, X } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Modal,
   Pressable,
@@ -16,13 +17,28 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { AppCudiArticle, AppCudiCatalog, AppCudiOrder, AppCudiOrderResult } from '../../api/contract';
-import { cudiCheckout, fetchCudiCatalog, fetchCudiOverview, placeCudiOrder } from '../../api/endpoints';
+import type {
+  AppCudiArticle,
+  AppCudiCatalog,
+  AppCudiOrder,
+  AppCudiOrderResult,
+  AppCudiTimeslots,
+  AppLocale,
+} from '../../api/contract';
+import {
+  cudiCheckout,
+  fetchCudiCatalog,
+  fetchCudiOverview,
+  fetchCudiTimeslots,
+  placeCudiOrder,
+} from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
+import { formatDayShort, formatTime } from '../../format';
 import { useTabRouter } from '../../navigation';
 import { useApp } from '../../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { PageHead } from '../PageHead';
+import { SearchField } from '../SearchField';
 import { Stepper } from '../Stepper';
 import { Button, Card, Empty, ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice } from '../ui';
 import { CudiOrderCard, euro } from './CudiOrderCard';
@@ -40,21 +56,18 @@ type Placed = Extract<AppCudiOrderResult, { ok: true }>;
 /**
  * De cursusdienst, het tweede tabblad van Studies.
  *
- * Wat cudi.vtk.be doet in Bestel boeken en Mijn bestellingen, in de vorm van de
- * app en precies zoals Broodjes: bovenaan wat er voor jou klaarligt en tot
- * wanneer, daaronder de cursussen van jouw vakken als register met een stapper,
- * en het totaal met de knop vast onder de lijst. Reserveren opent een blad om na
- * te kijken.
+ * Van boven naar onder in de volgorde waarin je het nodig hebt:
  *
- * **Cudi beslist alles.** De lijst toont wat er te bestellen valt, maar de
- * reservatie gaat door dezelfde functie als de knop in de webshop
- * (`placeOrderForUser` bij cudi): de voorraad, de wachtlijst, het semester, de
- * vakken op je profiel en het maximum per artikel (`maxQuantity`, van cudi).
- * Weigert cudi iets, dan zegt een melding waarom en gaan die artikels uit het
- * mandje.
+ * 1. **Wat klaarligt**, met tot wanneer en de knop om een tijdslot te kiezen.
+ *    Ligt er iets voor je, dan is dat de reden dat je hier bent.
+ * 2. Wat nog op levering wacht, en de link naar al je bestellingen.
+ * 3. **Zoeken** en de cursussen van jouw vakken, als register met een stapper,
+ *    en de balk met het totaal onder de lijst, zoals bij Broodjes.
+ * 4. Het algemene materiaal ("Voor iedereen"), dichtgeklapt: het is lang en
+ *    zelden waarvoor je komt.
  *
- * Wat op cudi zelf blijft: de voorwaarden aanvaarden (een juridische stap), je
- * vakken aanduiden, een afhaalmoment kiezen, tweedehands en printen.
+ * **Cudi beslist alles**: reserveren gaat door dezelfde functie als de knop in de
+ * webshop (`placeOrderForUser`), ook het maximum per artikel en de wachtlijst.
  */
 export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean }) {
   const router = useTabRouter();
@@ -70,8 +83,19 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
     `${locale}:${viewer?.id ?? 'anon'}`,
     enabled,
   );
+  const timeslots = useResource(
+    'cudi-tijdsloten',
+    () => fetchCudiTimeslots(locale),
+    `${locale}:${viewer?.id ?? 'anon'}`,
+    enabled,
+  );
 
+  const [query, setQuery] = useState('');
+  const search = useCatalogSearch(query, locale, enabled);
+  const [generalOpen, setGeneralOpen] = useState(false);
   const [cart, setCart] = useState<Cart>({});
+  // Wat er in het mandje zit, blijft gekend ook als het niet meer in de zoekresultaten staat.
+  const [known, setKnown] = useState<Record<string, AppCudiArticle>>({});
   const [confirming, setConfirming] = useState(false);
   const [paymentChoice, setPaymentChoice] = useState<'ONSITE' | 'ONLINE'>('ONSITE');
   const [busy, setBusy] = useState<string | null>(null);
@@ -82,16 +106,19 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
       if (!enabled) return;
       void overview.reload();
       void catalog.reload();
+      void timeslots.reload();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [enabled]),
   );
 
   const articles = useMemo(() => {
-    const map = new Map<string, AppCudiArticle>();
-    for (const subject of catalog.data?.subjects ?? []) for (const a of subject.articles) map.set(a.id, a);
-    for (const group of catalog.data?.general ?? []) for (const a of group.articles) map.set(a.id, a);
+    const map = new Map<string, AppCudiArticle>(Object.entries(known));
+    for (const source of [catalog.data, search.catalog]) {
+      for (const subject of source?.subjects ?? []) for (const a of subject.articles) map.set(a.id, a);
+      for (const group of source?.general ?? []) for (const a of group.articles) map.set(a.id, a);
+    }
     return map;
-  }, [catalog.data]);
+  }, [catalog.data, search.catalog, known]);
 
   const lines = Object.entries(cart)
     .filter(([id, quantity]) => quantity > 0 && articles.has(id))
@@ -105,7 +132,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
       title="Studies"
       subtitle={
         hours && !hours.unavailable
-          ? `Cudi ${hours.openNow ? 'is open' : 'is gesloten'}, ${hours.detail}`
+          ? `De cursusdienst is ${hours.openNow ? 'open' : 'gesloten'}, ${hours.detail}`
           : 'Je cursussen reserveren en afhalen'
       }
       back={false}
@@ -166,9 +193,10 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
   const cudiBase = data.shopUrl.replace(/\/shop\/?$/, '');
   const openStep = (url: string, title: string) => router.push({ pathname: '/web', params: { url, title } });
 
-  const setQuantity = (id: string, quantity: number) => {
+  const setQuantity = (article: AppCudiArticle, quantity: number) => {
     setPlaced(null);
-    setCart((current) => ({ ...current, [id]: quantity }));
+    setKnown((current) => ({ ...current, [article.id]: article }));
+    setCart((current) => ({ ...current, [article.id]: quantity }));
   };
 
   const clearCart = () =>
@@ -231,26 +259,13 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
   };
 
   const open = data.orders.filter((order) => order.open);
-  // Ligt er iets klaar, dan is de volgende vraag "wanneer kan ik het halen": de uren
-  // staan dan meteen onder je bestellingen in plaats van onder de hele catalogus.
-  const readyNow = open.some((order) => order.status === 'READY' || order.status === 'ONLINE_PAID');
-  const hoursBlock =
-    hours && !hours.unavailable && hours.entries.length > 0 ? (
-      <View style={styles.block}>
-        <SectionHeading>Deze week</SectionHeading>
-        <View style={styles.register}>
-          {hours.entries.map((entry) => (
-            <View key={entry.day} style={styles.hoursRow}>
-              <Text style={styles.hoursDay}>{entry.day}</Text>
-              <Text style={styles.hoursValue}>{entry.hours}</Text>
-            </View>
-          ))}
-        </View>
-        {hours.note ? <Text style={styles.hint}>{hours.note}</Text> : null}
-      </View>
-    ) : null;
-
+  const ready = open.flatMap((order) =>
+    order.lines.filter((line) => line.status === 'ASSIGNED').map((line) => ({ order, line })),
+  );
+  const waiting = open.filter((order) => !order.lines.some((line) => line.status === 'ASSIGNED'));
   const closedMessage = !data.gate && !ordering.open ? ordering.message : null;
+  const searching = query.trim().length >= 2;
+  const shown = searching ? search.catalog : catalog.data;
 
   return (
     <View style={styles.root}>
@@ -259,12 +274,14 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
         ref={scroll}
         style={styles.root}
         contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={overview.refreshing}
             onRefresh={() => {
               void overview.refresh();
               void catalog.reload();
+              void timeslots.reload();
             }}
           />
         }
@@ -296,63 +313,158 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
 
         {placed ? <PlacedNotice result={placed} /> : null}
 
-        {open.length > 0 ? (
-          <View style={styles.block}>
-            <SectionHeading
-              right={
-                <Pressable
-                  accessibilityRole="link"
-                  onPress={() => router.push('/cudi-bestellingen')}
-                  hitSlop={12}
-                  style={({ pressed }) => pressed && styles.pressed}
-                >
-                  <Text style={styles.link}>Alle bestellingen →</Text>
-                </Pressable>
-              }
-            >
-              Jouw bestellingen
-            </SectionHeading>
-            {open.map((order) => (
-              <CudiOrderCard
-                key={order.id}
-                order={order}
-                ordering={data.ordering}
-                locale={locale}
-                busy={busy}
-                onPay={() => void pay(order)}
-              />
-            ))}
-          </View>
-        ) : data.orders.length > 0 ? (
+        {ready.length > 0 ? (
+          <ReadyCard
+            ready={ready}
+            locale={locale}
+            timeslots={timeslots.data}
+            onTimeslots={() => router.push('/cudi-tijdsloten')}
+          />
+        ) : null}
+
+        {waiting.map((order) => (
+          <CudiOrderCard
+            key={order.id}
+            order={order}
+            ordering={data.ordering}
+            locale={locale}
+            busy={busy}
+            onPay={() => void pay(order)}
+          />
+        ))}
+
+        {data.orders.length > 0 ? (
           <Pressable
             accessibilityRole="link"
             onPress={() => router.push('/cudi-bestellingen')}
             style={({ pressed }) => [styles.history, pressed && styles.pressed]}
           >
-            <Text style={styles.body}>Je vorige bestellingen</Text>
+            <Text style={styles.body}>{open.length > 0 ? 'Al je bestellingen' : 'Je vorige bestellingen'}</Text>
             <ChevronRight size={18} color={COLORS.muted} />
           </Pressable>
         ) : null}
 
-        {readyNow ? hoursBlock : null}
+        {!data.gate ? (
+          <View style={styles.block}>
+            <SectionHeading>{searching ? 'Zoeken' : 'Voor jouw vakken'}</SectionHeading>
+            <SearchField
+              value={query}
+              onChange={setQuery}
+              placeholder="Zoek een vak of cursus"
+              label="Zoeken in de cursusdienst"
+              style={styles.search}
+            />
+            {searching ? (
+              search.loading && !search.catalog ? (
+                <ActivityIndicator color={COLORS.navy} style={styles.spinner} />
+              ) : search.error ? (
+                <Text style={styles.hint}>{search.error}</Text>
+              ) : search.catalog ? (
+                <>
+                  <Text style={styles.hint}>
+                    {search.catalog.searchedAll ? 'In het hele aanbod van de cursusdienst.' : 'In de vakken op je profiel.'}
+                  </Text>
+                  <SubjectList
+                    catalog={search.catalog}
+                    cart={cart}
+                    orderingOpen={ordering.open}
+                    onQuantity={setQuantity}
+                  />
+                  {search.catalog.subjects.length === 0 && search.catalog.general.length === 0 ? (
+                    <Text style={styles.hint}>Niets gevonden voor {`“${query.trim()}”`}.</Text>
+                  ) : null}
+                </>
+              ) : null
+            ) : catalog.loading && !catalog.data ? (
+              <Loading label="Het aanbod ophalen" />
+            ) : !catalog.data ? (
+              <ErrorState message={messageFor(catalog.error)} onRetry={() => void catalog.refresh()} />
+            ) : !catalog.data.hasProfileSubjects ? (
+              <Card>
+                <Text style={styles.title}>Duid eerst je vakken aan</Text>
+                <Text style={styles.body}>
+                  Je ziet hier de cursussen van de vakken op je profiel bij de cursusdienst. Kies ze één
+                  keer; daarna staan ze hier.
+                </Text>
+                <Button
+                  label="Vakken kiezen"
+                  variant="ghost"
+                  onPress={() => openStep(catalog.data!.subjectsUrl, 'Je vakken')}
+                />
+              </Card>
+            ) : catalog.data.subjects.length === 0 ? (
+              <Text style={styles.hint}>Voor je vakken is er dit semester (nog) niets te reserveren.</Text>
+            ) : (
+              <SubjectList catalog={catalog.data} cart={cart} orderingOpen={ordering.open} onQuantity={setQuantity} />
+            )}
+          </View>
+        ) : null}
 
-        <Catalog
-          catalog={catalog.data}
-          loading={catalog.loading}
-          error={catalog.error}
-          onRetry={() => void catalog.refresh()}
-          cart={cart}
-          orderingOpen={ordering.open}
-          onQuantity={setQuantity}
-          onSubjects={(url) => openStep(url, 'Je vakken')}
-        />
+        {!data.gate && shown && shown.general.length > 0 ? (
+          <View style={styles.block}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: searching || generalOpen }}
+              onPress={() => setGeneralOpen((value) => !value)}
+              disabled={searching}
+              style={({ pressed }) => [styles.collapse, pressed && styles.pressed]}
+            >
+              <View style={styles.flex}>
+                <Text style={styles.collapseTitle}>Voor iedereen</Text>
+                <Text style={styles.hint} numberOfLines={1}>
+                  {shown.general.reduce((sum, group) => sum + group.articles.length, 0)} artikels:{' '}
+                  {shown.general.map((group) => group.type.toLocaleLowerCase('nl')).join(', ')}
+                </Text>
+              </View>
+              {!searching ? (
+                <ChevronDown
+                  size={20}
+                  color={COLORS.muted}
+                  style={generalOpen ? styles.chevronOpen : undefined}
+                />
+              ) : null}
+            </Pressable>
+            {searching || generalOpen
+              ? shown.general.map((group) => (
+                  <View key={group.type} style={styles.subject}>
+                    <View style={styles.subjectHead}>
+                      <Text style={styles.subjectName}>{group.type}</Text>
+                    </View>
+                    <View style={styles.register}>
+                      {group.articles.map((article) => (
+                        <ArticleRow
+                          key={article.id}
+                          article={article}
+                          quantity={cart[article.id] ?? 0}
+                          orderingOpen={ordering.open}
+                          onQuantity={(q) => setQuantity(article, q)}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                ))
+              : null}
+          </View>
+        ) : null}
 
-        {!readyNow ? hoursBlock : null}
+        {hours && !hours.unavailable && hours.entries.length > 0 ? (
+          <View style={styles.block}>
+            <SectionHeading>Openingsuren deze week</SectionHeading>
+            <View style={styles.register}>
+              {hours.entries.map((entry) => (
+                <View key={entry.day} style={styles.hoursRow}>
+                  <Text style={styles.hoursDay}>{entry.day}</Text>
+                  <Text style={styles.hoursValue}>{entry.hours}</Text>
+                </View>
+              ))}
+            </View>
+            {hours.note ? <Text style={styles.hint}>{hours.note}</Text> : null}
+          </View>
+        ) : null}
 
         <MarginRegister
           title="Op cudi.vtk.be"
           links={[
-            { label: 'Een afhaalmoment kiezen', url: `${cudiBase}/account/slots` },
             { label: 'Tweedehands', url: `${cudiBase}/secondhand` },
             { label: 'Printen', url: `${cudiBase}/printer` },
           ].map((link) => ({
@@ -414,7 +526,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
                         {quantity > 1 ? `${quantity} × ` : ''}
                         {article.title}
                       </Text>
-                      <Text style={[styles.meta, article.availableNow && styles.strong]}>
+                      <Text style={[styles.meta, article.availableNow ? styles.readyText : styles.waitText]}>
                         {article.availableNow ? 'Ligt meteen klaar' : 'Op de wachtlijst tot er een binnen is'}
                       </Text>
                     </View>
@@ -474,90 +586,136 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
   );
 }
 
-function Catalog({
+/** Zoeken terwijl je tikt, met een korte pauze; een traag antwoord overschrijft geen sneller. */
+function useCatalogSearch(query: string, locale: AppLocale, enabled: boolean) {
+  const [state, setState] = useState<{ catalog: AppCudiCatalog | null; loading: boolean; error: string | null }>({
+    catalog: null,
+    loading: false,
+    error: null,
+  });
+  const latest = useRef(0);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (!enabled || q.length < 2) return;
+    const id = ++latest.current;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      setState((current) => ({ ...current, loading: true, error: null }));
+      fetchCudiCatalog(locale, q, controller.signal)
+        .then((result) => {
+          if (latest.current === id) setState({ catalog: result, loading: false, error: null });
+        })
+        .catch((error: Error) => {
+          if (latest.current === id && error.name !== 'AbortError') {
+            setState({ catalog: null, loading: false, error: messageFor(error) });
+          }
+        });
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query, locale, enabled]);
+
+  return query.trim().length < 2 ? NO_SEARCH : state;
+}
+
+const NO_SEARCH = { catalog: null as AppCudiCatalog | null, loading: false, error: null };
+
+/**
+ * Wat er klaarligt, bovenaan: per cursus tot wanneer, en de knop voor een
+ * tijdslot. Een gereserveerd slot staat erbij, zodat je weet wanneer je gaat.
+ */
+function ReadyCard({
+  ready,
+  locale,
+  timeslots,
+  onTimeslots,
+}: {
+  ready: { order: AppCudiOrder; line: AppCudiOrder['lines'][number] }[];
+  locale: AppLocale;
+  timeslots: AppCudiTimeslots | null;
+  onTimeslots: () => void;
+}) {
+  const next = timeslots?.mine[0] ?? null;
+  const usesSlots = timeslots ? timeslots.enabled : true;
+  return (
+    <Card featured>
+      <View style={styles.readyHead}>
+        <Text style={[styles.title, styles.flex]}>Klaar om af te halen</Text>
+        <Text style={[styles.pill, styles.pillOk]}>{ready.length}</Text>
+      </View>
+      <View style={styles.readyLines}>
+        {ready.map(({ order, line }) => (
+          <View key={line.id} style={styles.readyLine}>
+            <Text style={styles.readyTitle} numberOfLines={2}>
+              {line.quantity > 1 ? `${line.quantity} × ` : ''}
+              {line.title}
+            </Text>
+            <Text style={styles.meta}>
+              {line.pickupDeadline
+                ? `Tot ${formatDayShort(line.pickupDeadline, locale)} ${formatTime(line.pickupDeadline, locale)}`
+                : 'Ligt klaar'}
+              {' · '}#{order.number}
+            </Text>
+          </View>
+        ))}
+      </View>
+      {next ? (
+        <View style={styles.slot}>
+          <CalendarClock size={18} color={COLORS.okInk} />
+          <Text style={[styles.slotText, styles.flex]}>
+            Je tijdslot: {formatDayShort(next.start, locale)} {formatTime(next.start, locale)} -{' '}
+            {formatTime(next.end, locale)}
+          </Text>
+        </View>
+      ) : null}
+      {usesSlots ? (
+        <Button
+          label={next ? 'Tijdslot wijzigen' : 'Tijdslot reserveren'}
+          variant={next ? 'ghost' : 'primary'}
+          onPress={onTimeslots}
+        />
+      ) : (
+        <Text style={styles.hint}>Kom langs tijdens de openingsuren, hieronder.</Text>
+      )}
+    </Card>
+  );
+}
+
+function SubjectList({
   catalog,
-  loading,
-  error,
-  onRetry,
   cart,
   orderingOpen,
   onQuantity,
-  onSubjects,
 }: {
-  catalog: AppCudiCatalog | null;
-  loading: boolean;
-  error: Error | null;
-  onRetry: () => void;
+  catalog: AppCudiCatalog;
   cart: Cart;
   orderingOpen: boolean;
-  onQuantity: (id: string, quantity: number) => void;
-  onSubjects: (url: string) => void;
+  onQuantity: (article: AppCudiArticle, quantity: number) => void;
 }) {
-  if (loading && !catalog) return <Loading label="Het aanbod ophalen" />;
-  if (!catalog) return <ErrorState message={messageFor(error)} onRetry={onRetry} />;
-  if (catalog.gate) return null;
-
   return (
     <>
-      <View style={styles.block}>
-        <SectionHeading>Voor jouw vakken</SectionHeading>
-        {!catalog.hasProfileSubjects ? (
-          <Card>
-            <Text style={styles.title}>Duid eerst je vakken aan</Text>
-            <Text style={styles.body}>
-              Je ziet hier de cursussen van de vakken op je profiel bij de cursusdienst. Kies ze één
-              keer; daarna staan ze hier.
-            </Text>
-            <Button label="Vakken kiezen" variant="ghost" onPress={() => onSubjects(catalog.subjectsUrl)} />
-          </Card>
-        ) : catalog.subjects.length === 0 ? (
-          <Text style={styles.hint}>Voor je vakken is er dit semester (nog) niets te reserveren.</Text>
-        ) : (
-          catalog.subjects.map((subject) => (
-            <View key={subject.id} style={styles.subject}>
-              <View style={styles.subjectHead}>
-                {subject.code ? <Text style={styles.code}>{subject.code}</Text> : null}
-                <Text style={styles.subjectName}>{subject.name}</Text>
-              </View>
-              <View style={styles.register}>
-                {subject.articles.map((article) => (
-                  <ArticleRow
-                    key={article.id}
-                    article={article}
-                    quantity={cart[article.id] ?? 0}
-                    orderingOpen={orderingOpen}
-                    onQuantity={(q) => onQuantity(article.id, q)}
-                  />
-                ))}
-              </View>
-            </View>
-          ))
-        )}
-      </View>
-
-      {catalog.general.length > 0 ? (
-        <View style={styles.block}>
-          <SectionHeading>Voor iedereen</SectionHeading>
-          {catalog.general.map((group) => (
-            <View key={group.type} style={styles.subject}>
-              <View style={styles.subjectHead}>
-                <Text style={styles.subjectName}>{group.type}</Text>
-              </View>
-              <View style={styles.register}>
-                {group.articles.map((article) => (
-                  <ArticleRow
-                    key={article.id}
-                    article={article}
-                    quantity={cart[article.id] ?? 0}
-                    orderingOpen={orderingOpen}
-                    onQuantity={(q) => onQuantity(article.id, q)}
-                  />
-                ))}
-              </View>
-            </View>
-          ))}
+      {catalog.subjects.map((subject) => (
+        <View key={subject.id} style={styles.subject}>
+          <View style={styles.subjectHead}>
+            {subject.code ? <Text style={styles.code}>{subject.code}</Text> : null}
+            <Text style={styles.subjectName}>{subject.name}</Text>
+          </View>
+          <View style={styles.register}>
+            {subject.articles.map((article) => (
+              <ArticleRow
+                key={article.id}
+                article={article}
+                quantity={cart[article.id] ?? 0}
+                orderingOpen={orderingOpen}
+                onQuantity={(q) => onQuantity(article, q)}
+              />
+            ))}
+          </View>
         </View>
-      ) : null}
+      ))}
     </>
   );
 }
@@ -565,8 +723,11 @@ function Catalog({
 /**
  * Eén cursus. Twee lagen, zodat een lange titel niet tussen de omslag en de
  * stapper geperst wordt: bovenaan de titel en de auteur over de volle breedte,
- * daaronder de prijs en wat er over dit exemplaar te zeggen valt, met de stapper
- * rechts.
+ * daaronder de prijs en de pillen, met de stapper rechts.
+ *
+ * De pillen spreken de kleurtaal van de shiften op de site: groen is in orde
+ * (op voorraad, al gekocht), geel is van jou en ligt klaar, oker is wachten
+ * (gereserveerd, wachtlijst), rood is op, grijs is niet te bestellen.
  */
 function ArticleRow({
   article,
@@ -583,6 +744,8 @@ function ArticleRow({
   const bought = article.mine.find((m) => m.kind === 'SOLD');
   const byline = [article.author, article.type].filter(Boolean).join(' · ');
   const max = article.maxQuantity ?? FALLBACK_MAX;
+  const stockStyle =
+    article.stock?.tone === 'red' ? styles.pillDanger : article.stock?.tone === 'amber' ? styles.pillLow : styles.pillOk;
 
   return (
     <View style={styles.item}>
@@ -612,16 +775,19 @@ function ArticleRow({
           {article.memberPrice && article.listPrice > article.price ? (
             <Text style={styles.strike}>{euro(article.listPrice)}</Text>
           ) : null}
-          {article.mandatory ? <Text style={styles.tag}>Verplicht</Text> : null}
           {reserved ? (
-            <Text style={styles.mine}>{reserved.kind === 'ASSIGNED' ? 'Ligt voor je klaar' : 'Gereserveerd'}</Text>
+            reserved.kind === 'ASSIGNED' ? (
+              <Text style={[styles.pill, styles.pillMine]}>Ligt voor je klaar</Text>
+            ) : (
+              <Text style={[styles.pill, styles.pillLow]}>Gereserveerd</Text>
+            )
           ) : bought ? (
-            <Text style={styles.tag}>Al gekocht</Text>
+            <Text style={[styles.pill, styles.pillOk]}>Al gekocht</Text>
           ) : article.stock ? (
-            <Text style={[styles.stock, article.stock.tone === 'red' && styles.stockRed]}>{article.stock.label}</Text>
+            <Text style={[styles.pill, stockStyle]}>{article.stock.label}</Text>
           ) : null}
           {!article.orderable && orderingOpen && !reserved && !bought ? (
-            <Text style={styles.tag}>Nu niet online te reserveren</Text>
+            <Text style={[styles.pill, styles.pillFull]}>Nu niet online te reserveren</Text>
           ) : null}
         </View>
         {article.orderable && max > 0 ? (
@@ -641,19 +807,30 @@ function PlacedNotice({ result }: { result: Placed }) {
   ].filter(Boolean);
   return (
     <Card featured>
-      <View style={styles.placedHead}>
-        <Check size={18} color={COLORS.navy} />
+      <View style={styles.readyHead}>
+        <Check size={18} color={COLORS.okInk} />
         <Text style={[styles.title, styles.flex]}>Gereserveerd</Text>
       </View>
       <Text style={styles.body}>
         {parts.join(', ')}.{' '}
         {waiting > 0
           ? 'De cursusdienst mailt je zodra er iets voor je klaarligt.'
-          : 'Haal je cursussen af aan de balie van de cursusdienst.'}
+          : 'Kies hierboven een tijdslot om af te halen.'}
       </Text>
     </Card>
   );
 }
+
+const pillBase = {
+  ...TYPE.small,
+  fontSize: 12,
+  lineHeight: 16,
+  fontFamily: FONTS.semibold,
+  borderRadius: RADIUS.pill,
+  paddingHorizontal: 9,
+  paddingVertical: 3,
+  overflow: 'hidden' as const,
+};
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
@@ -661,12 +838,14 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   block: { gap: SPACING.md },
   pressed: { opacity: 0.6 },
+  spinner: { alignSelf: 'flex-start', marginVertical: SPACING.md },
+  search: { margin: 0, marginBottom: 0 },
   title: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },
   hint: { ...TYPE.small, color: COLORS.muted },
   meta: { ...TYPE.small, color: COLORS.body },
-  strong: { color: COLORS.ink, fontFamily: FONTS.semibold },
-  link: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.navy },
+  readyText: { color: COLORS.okInk, fontFamily: FONTS.semibold },
+  waitText: { color: COLORS.lowInk },
 
   history: {
     flexDirection: 'row',
@@ -677,7 +856,33 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: COLORS.line2,
   },
-  placedHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+
+  readyHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  readyLines: { borderTopWidth: 1, borderTopColor: COLORS.line2 },
+  readyLine: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.line2, gap: 2 },
+  readyTitle: { fontFamily: FONTS.semibold, fontSize: 15, lineHeight: 20, color: COLORS.ink },
+  slot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    backgroundColor: COLORS.okBg,
+    borderRadius: RADIUS.sm,
+    padding: SPACING.md,
+  },
+  slotText: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.okInk },
+
+  collapse: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    minHeight: 56,
+    paddingVertical: SPACING.sm,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: COLORS.line2,
+  },
+  collapseTitle: { ...TYPE.cardTitle, color: COLORS.ink },
+  chevronOpen: { transform: [{ rotate: '180deg' }] },
 
   subject: { gap: SPACING.xs },
   subjectHead: { marginTop: SPACING.sm, gap: 1 },
@@ -700,34 +905,16 @@ const styles = StyleSheet.create({
   itemBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.md },
   cover: { width: 40, height: 54, borderRadius: 6, backgroundColor: COLORS.paper2 },
   name: { fontFamily: FONTS.semibold, fontSize: 15, lineHeight: 20, color: COLORS.ink },
-  tags: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: SPACING.sm },
+  tags: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
   price: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink, fontVariant: ['tabular-nums'] },
   strike: { ...TYPE.small, color: COLORS.muted, textDecorationLine: 'line-through' },
-  tag: {
-    ...TYPE.small,
-    fontSize: 12,
-    fontFamily: FONTS.medium,
-    color: COLORS.navy,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
-    borderRadius: RADIUS.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 1,
-    overflow: 'hidden',
-  },
-  mine: {
-    ...TYPE.small,
-    fontSize: 12,
-    fontFamily: FONTS.semibold,
-    color: COLORS.ink,
-    backgroundColor: COLORS.yellow,
-    borderRadius: RADIUS.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 1,
-    overflow: 'hidden',
-  },
-  stock: { ...TYPE.small, fontSize: 12, color: COLORS.muted },
-  stockRed: { color: COLORS.dangerInk },
+
+  pill: pillBase,
+  pillOk: { backgroundColor: COLORS.okBg, color: COLORS.okInk },
+  pillLow: { backgroundColor: COLORS.lowBg, color: COLORS.lowInk },
+  pillDanger: { backgroundColor: COLORS.dangerBg, color: COLORS.dangerInk },
+  pillMine: { backgroundColor: COLORS.yellow, color: COLORS.ink },
+  pillFull: { backgroundColor: COLORS.paper2, color: COLORS.muted },
 
   hoursRow: {
     flexDirection: 'row',

@@ -12,7 +12,7 @@ const timeFormat = new Intl.DateTimeFormat('nl-BE', { hour: '2-digit', minute: '
 export function OfflineBanner({ manifest }: { manifest: ScannerManifest | null }) {
   return (
     <View style={[styles.banner, { backgroundColor: SCANNER.offlineBanner }]}>
-      <WifiOff size={18} color={SCANNER.text} />
+      <WifiOff size={18} color={SCANNER.offlineBannerInk} />
       <Text style={styles.bannerText}>
         {manifest
           ? `Offline scannen op de lijst van ${timeFormat.format(new Date(manifest.generatedAt))}. Scans worden bewaard.`
@@ -111,6 +111,6 @@ const styles = StyleSheet.create({
   bannerButtonText: { fontFamily: FONTS.semibold, fontSize: 13, color: SCANNER.accentInk },
   conflict: { backgroundColor: SCANNER.conflictBanner, alignItems: 'flex-start' },
   conflictBody: { flex: 1, gap: 2 },
-  conflictTitle: { fontFamily: FONTS.semibold, fontSize: 13, color: SCANNER.text },
-  conflictRow: { fontFamily: FONTS.regular, fontSize: 12, color: 'rgba(255,255,255,.75)' },
+  conflictTitle: { fontFamily: FONTS.semibold, fontSize: 13, color: SCANNER.conflictBannerInk },
+  conflictRow: { fontFamily: FONTS.regular, fontSize: 12, color: SCANNER.conflictBannerInk },
 });

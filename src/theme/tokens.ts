@@ -42,6 +42,38 @@ export const COLORS = {
   dangerBg: '#FDECEA',
   dangerInk: '#B42318',
   dangerLine: '#D92D20',
+  /**
+   * Beschikbaarheid, zoals bij de shiften op de site (`--ok-*`, `--low-*`,
+   * `--full-*`): ruim of in orde, bijna op of wachten, en vol. Vol is bewust
+   * grijs en niet rood: het is geen fout maar een keuze die wegvalt.
+   */
+  okBg: '#E2F1E8',
+  okInk: '#16663F',
+  lowBg: '#FFF2C7',
+  lowInk: '#7A4E05',
+} as const;
+
+/**
+ * De transportplanning (Meer › Transport), zoals logistiek.vtk.be ze tekent
+ * (`apps/logistiek/app/design/theme.css`, lichte modus). De vulkleur van een rit
+ * is de chauffeur en komt van de server (`AppTransportTrip.fill`); hier staat de
+ * rest: de arcering per voertuig, de rand zonder chauffeur, de streep van een
+ * aanvraag en de nu-lijn.
+ */
+export const TRANSPORT = {
+  pattern: 'rgba(14, 26, 54, 0.13)',
+  patternStrong: 'rgba(14, 26, 54, 0.2)',
+  patternFaint: 'rgba(14, 26, 54, 0.11)',
+  /** De streepjesrand van een rit zonder chauffeur. */
+  edge: 'rgba(14, 26, 54, 0.45)',
+  /** Een gewone rand rond een blok (`border-vtk-navy/15`). */
+  border: 'rgba(14, 26, 54, 0.15)',
+  /** De streep bovenaan een rit die nog beslist moet worden, en de rail van je eigen post. */
+  emphasis: '#0E1A36',
+  /** De kolom van vandaag. */
+  today: '#FFFBF0',
+  /** De lijn van nu, `--now-line`. */
+  now: '#D64545',
 } as const;
 
 /**
@@ -122,45 +154,52 @@ export const TYPE = {
 } as const;
 
 /**
- * Het scherm aan de deur (`src/screens/scan/[eventId].tsx`) en zijn panelen.
- *
- * Het enige donkere scherm van de app, en dat is geen stijlkeuze: de scanner
- * staat aan een deur, in het donker, op armlengte, en een wit scherm verblindt
- * wie erop kijkt en wie ervoor staat. Het palet is dat van de webscanner, uit
- * `apps/web/app/design/vtk-tickets.css` (`.scanner-*`); **wijzigt daar een
- * kleur, dan wijzigt ze hier mee**. Eén accent (het VTK-geel) en vier
- * oordeelkleuren.
+ * De scanner aan de deur. Tot november 2026 had die een eigen donker palet (dat
+ * van de webscanner); nu spreekt hij de taal van de rest van de app: de navy kop
+ * met het patroon, papier eronder, witte panelen met haarlijnen, en navy voor wat
+ * je aantikt. Enkel twee dingen zijn bewust anders: het camerabeeld (`videoWell`)
+ * is donker, en de volle feedback na een scan (`accepted`, ...) blijft een vlak
+ * in de kleur van het oordeel met witte tekst (`onStatus`), want dat moet je van
+ * drie meter zien.
  */
 export const SCANNER = {
-  shell: '#111318',
-  header: '#171a20',
-  field: '#20242b',
+  shell: COLORS.paper,
+  header: COLORS.surface,
+  field: COLORS.paper2,
   videoWell: '#090a0d',
-  line: 'rgba(255,255,255,.10)',
-  scrim: 'rgba(0,0,0,.55)',
+  line: COLORS.line2,
+  scrim: 'rgba(10, 15, 31, 0.45)',
 
-  text: '#f7f7f4',
-  textMuted: '#a7adba',
-  accent: '#ffd23f',
-  accentInk: '#111318',
+  text: COLORS.ink,
+  textMuted: COLORS.muted,
+  /** Wat je aantikt: navy, met papier erop, zoals een primaire knop in de app. */
+  accent: COLORS.navy,
+  accentInk: COLORS.paper,
+  /** Het geel van het richtkader in het camerabeeld. */
+  reticle: COLORS.yellow,
+  /** Tekst en iconen op het camerabeeld en op een feedbackvlak. */
+  onStatus: '#FFFFFF',
+  onStatusMuted: 'rgba(255, 255, 255, 0.8)',
 
   accepted: '#0d784c',
   duplicate: '#a66800',
   reversed: '#304c8c',
   rejected: '#ab1f39',
 
-  onlineBg: 'rgba(39,190,125,.13)',
-  onlineInk: '#6be0a7',
-  offlineBg: 'rgba(239,81,100,.15)',
-  offlineInk: '#ff8493',
+  onlineBg: COLORS.okBg,
+  onlineInk: COLORS.okInk,
+  offlineBg: COLORS.dangerBg,
+  offlineInk: COLORS.dangerInk,
   // Bewust niet alarmrood: offline scannen is een werkende toestand, geen fout.
-  offlineBanner: '#74520d',
-  conflictBanner: '#5c1524',
+  offlineBanner: COLORS.lowBg,
+  offlineBannerInk: COLORS.lowInk,
+  conflictBanner: COLORS.dangerBg,
+  conflictBannerInk: COLORS.dangerInk,
 
-  countAccepted: '#63d59c',
-  countDuplicate: '#ffd23f',
-  countRejected: '#ff788b',
-  countReversed: '#a9c4ff',
+  countAccepted: COLORS.okInk,
+  countDuplicate: COLORS.lowInk,
+  countRejected: COLORS.dangerInk,
+  countReversed: '#304c8c',
 } as const;
 
 /**

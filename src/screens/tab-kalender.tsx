@@ -23,14 +23,15 @@ import { groupByWeek } from '../weeks';
 
 /** De tabbladen in de kop. */
 type Tab = 'planning' | 'agenda' | 'mijn';
-/** Hoe Agenda getoond wordt: als lijst of als maandrooster. */
+/** Hoe Evenementen getoond wordt: als lijst of als maandrooster. */
 type Weergave = 'lijst' | 'maand';
 
 const VIEW_KEY = 'kalender-weergave';
 
 /**
  * De kalender, in de vorm van /kalender op de site: de
- * eventtegel met de gele datumpin, per week een kop, en de thema's als chips.
+ * eventtegel met de gele datumpin en per week een kop. Een filter op categorie
+ * staat er sinds november 2026 niet meer: enkel Lijst en Maand bovenaan.
  * De tegels zijn lager dan op de site (`compact`), zodat er meer onder elkaar
  * past op een telefoon.
  *
@@ -39,7 +40,7 @@ const VIEW_KEY = 'kalender-weergave';
  * wanneer je iets plant en wil zien welke avonden al vol zitten. Dat zijn twee
  * verschillende vragen, en geen van beide weergaven beantwoordt ze allebei goed.
  *
- * Lijst en Maand zijn twee weergaven van hetzelfde tabblad **Agenda**, met een
+ * Lijst en Maand zijn twee weergaven van hetzelfde tabblad **Evenementen** (tot november 2026 Agenda), met een
  * schakelaar boven de inhoud, en geen twee tabbladen: het is dezelfde agenda. De
  * keuze tussen die twee blijft bewaard. Wie de maandweergave verkiest, wil die
  * niet elke keer opnieuw aanzetten.
@@ -48,7 +49,7 @@ const VIEW_KEY = 'kalender-weergave';
  * deadlines en de VTK-evenementen die je erin zette) als drie dagen naast
  * elkaar. Ze staat naast de kalender en vervangt hem niet; zie `PlanningView`.
  * Wie ze kan zien, komt er standaard op uit: je lessen open je vaker dan de
- * agenda van VTK. Dat wordt bewust niet bewaard; wie even naar Agenda keek, vindt
+ * agenda van VTK. Dat wordt bewust niet bewaard; wie even naar Evenementen keek, vindt
  * bij de volgende start opnieuw zijn planning.
  *
  * De kop is hier lager dan op andere schermen (`compact`): de planning heeft
@@ -59,7 +60,7 @@ const VIEW_KEY = 'kalender-weergave';
  * bladeren naar vorige maand een leeg rooster geven.
  *
  * **De ster is geen inschrijving.** Ze zet een evenement in jouw lijst (het
- * tabblad "Mijn lijst" in de kop) en hangt er de herinnering van de dag ervoor aan. Wat ze niet
+ * tabblad "Mijn evenementen" in de kop) en hangt er de herinnering van de dag ervoor aan. Wat ze niet
  * doet: een plaats reserveren, een ticket kopen of iemand laten weten dat je
  * komt. Dat onderscheid is de reden dat ze naast de rij staat en niet de rij zelf
  * is.
@@ -84,13 +85,12 @@ export default function KalenderScreen() {
   );
   useTabParam<Tab>(params.tab, ['planning', 'agenda', 'mijn'], setChosen);
   const fallback: Tab = planningAvailable ? 'planning' : 'agenda';
-  // De planning en "Mijn lijst" vragen een login; uitgelogd valt dat terug op Agenda.
+  // De planning en "Mijn evenementen" vragen een login; uitgelogd valt dat terug op Evenementen.
   const allowed = (option: Tab | null) =>
     option !== null && !(option === 'planning' && !planningAvailable) && !(option === 'mijn' && !viewer);
   const tab: Tab = chosen !== null && allowed(chosen) ? chosen : fallback;
 
   const [view, setViewState] = useState<Weergave>(() => (getPref(VIEW_KEY) === 'maand' ? 'maand' : 'lijst'));
-  const [category, setCategory] = useState<string | null>(null);
   const [anchor, setAnchor] = useState<MonthAnchor>(() => anchorOf(todayKey()));
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
@@ -108,12 +108,11 @@ export default function KalenderScreen() {
     'kalender',
     () =>
       fetchCalendar(locale, {
-        categorie: mine ? undefined : (category ?? undefined),
         interesse: mine,
         van: range?.from,
         tot: range?.to,
       }),
-    `${locale}:${mine ? 'mijn' : (category ?? '')}:${range ? `${range.from}-${range.to}` : 'nu'}`,
+    `${locale}:${mine ? 'mijn' : ''}:${range ? `${range.from}-${range.to}` : 'nu'}`,
   );
 
   /**
@@ -158,8 +157,8 @@ export default function KalenderScreen() {
     onChange: setChosen,
     options: [
       ...(planningAvailable ? [{ value: 'planning' as const, label: 'Planning' }] : []),
-      { value: 'agenda' as const, label: 'Agenda' },
-      ...(viewer ? [{ value: 'mijn' as const, label: 'Mijn lijst' }] : []),
+      { value: 'agenda' as const, label: 'Evenementen' },
+      ...(viewer ? [{ value: 'mijn' as const, label: 'Mijn evenementen' }] : []),
     ],
   };
 
@@ -192,7 +191,7 @@ export default function KalenderScreen() {
     );
   }
 
-  const { categories, filteredByAudience } = resource.data;
+  const { filteredByAudience } = resource.data;
 
   return (
     <View style={styles.root}>
@@ -224,25 +223,6 @@ export default function KalenderScreen() {
               ]}
             />
           </View>
-        ) : null}
-
-        {categories.length > 0 && !mine ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chips}
-          >
-            <Chip label="Alles" active={category === null} onPress={() => setCategory(null)} />
-            {categories.map((item) => (
-              <Chip
-                key={item.slug}
-                label={item.name}
-                colour={item.colour}
-                active={category === item.slug}
-                onPress={() => setCategory(category === item.slug ? null : item.slug)}
-              />
-            ))}
-          </ScrollView>
         ) : null}
 
         {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
@@ -297,11 +277,8 @@ export default function KalenderScreen() {
               hint={
                 mine
                   ? 'Je hebt nog niets aangeduid. Tik het sterretje bij een evenement en het komt hier te staan.'
-                  : category
-                    ? 'Er staat niets in deze categorie. Zet de filter op Alles om de rest te zien.'
-                    : 'Er staat nog niets gepland.'
+                  : 'Er staat nog niets gepland.'
               }
-              action={category && !mine ? { label: 'Toon alles', onPress: () => setCategory(null) } : undefined}
             />
           ) : (
             <>
@@ -335,7 +312,7 @@ export default function KalenderScreen() {
 }
 
 /**
- * Lijst of Maand, onder het tabblad Agenda. Een schakelaar op papier en geen
+ * Lijst of Maand, onder het tabblad Evenementen. Een schakelaar op papier en geen
  * pillen in de kop: het is een andere weergave van dezelfde agenda, geen ander
  * tabblad.
  */
@@ -368,31 +345,6 @@ function Segmented<T extends string>({
   );
 }
 
-/** Een themafilter zoals de chips van /tickets: wit, met de kleur als stip, actief in inkt. */
-function Chip({
-  label,
-  active,
-  onPress,
-  colour,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-  colour?: string | null;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={[styles.chip, active && styles.chipActive]}
-    >
-      {colour ? <View style={[styles.chipDot, { backgroundColor: colour }]} /> : null}
-      <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{label}</Text>
-    </Pressable>
-  );
-}
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
@@ -423,22 +375,6 @@ const styles = StyleSheet.create({
   segmentLabel: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.body },
   segmentLabelActive: { color: COLORS.paper },
 
-  chips: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.md, paddingBottom: SPACING.xs, gap: SPACING.sm },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderRadius: RADIUS.pill,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    backgroundColor: COLORS.surface,
-  },
-  chipActive: { backgroundColor: COLORS.ink, borderColor: COLORS.ink },
-  chipDot: { width: 7, height: 7, borderRadius: 4 },
-  chipLabel: { ...TYPE.small, fontFamily: FONTS.medium, color: COLORS.body },
-  chipLabelActive: { color: COLORS.paper },
 
   dayTitle: { ...TYPE.sectionTitle, color: COLORS.ink, marginTop: SPACING.sm },
   hint: { ...TYPE.small, color: COLORS.muted },

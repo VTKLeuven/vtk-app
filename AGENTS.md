@@ -24,7 +24,7 @@ Burgieclan, als native schermen. vtk.be spreekt namens jou met cudi en
 Burgieclan; de app logt daar niet apart in. Zie "Studies" onder Structuur.
 
 **De ticketscanner voor aan de deur zit hier ook in**, met zijn offline-werking,
-zijn wachtrij en zijn donkere scherm. Tot november 2026 was dat een aparte app,
+zijn wachtrij en zijn feedback over het hele beeld. Tot november 2026 was dat een aparte app,
 vtk-scanner-app; die staat nu enkel nog als archief. Enkel wie iets te scannen
 heeft, ziet hem. Alles daarover staat in `docs/scanner.md`.
 
@@ -102,7 +102,7 @@ uitzondering: die werkt in Expo Go niet.
    inloggen, de onboarding-poorten en betalen (Mollie). Al de rest wordt een echt
    scherm. Een browser openen voor eigen inhoud is een bug, geen keuze; enkel
    adressen op een andere site (Career, logistiek.vtk.be om een rit aan te
-   vragen, uploaden op Burgieclan, tijdsloten en tweedehands op cudi) horen
+   vragen, uploaden op Burgieclan, tweedehands en printen op cudi) horen
    daar. Sinds november 2026 is er één uitzondering bij, `src/screens/web.tsx`:
    een onderdeel van de admin (zie 3), en de twee eenmalige stappen op cudi die
    bij je account horen (voorwaarden aanvaarden, je vakken aanduiden). Enkel
@@ -133,8 +133,10 @@ uitzondering: die werkt in Expo Go niet.
    plaats van een witte kaart per regel, de agenda per week (`WeekHead`). Zoek bij
    een nieuw scherm eerst het overeenkomende scherm op de site en neem dat over.
    Praesidium hield bewust zijn eigen vorm; de muur van gezichten van de site werd
-   op een telefoon niet beter. De scanner aan de deur is de enige uitzondering op
-   het lichte ontwerp: die is donker, met het palet `SCANNER` van de webscanner.
+   op een telefoon niet beter. Ook de scanner aan de deur volgt sinds november
+   2026 het lichte ontwerp met de navy kop (tot dan was hij donker, met het palet
+   van de webscanner); enkel het camerabeeld en de feedback na een scan zijn een
+   gekleurd vlak.
 9. **Home is vandaag, Meer is waar alles staat.** Home beantwoordt twee vragen:
    wat is er open, en wat wacht er op mij. De CMS-boom, de mensen, de piano en je
    profiel staan onder Meer. Zet een snelkoppeling niet op allebei; anders komt de
@@ -204,10 +206,12 @@ uitzondering: die werkt in Expo Go niet.
   annuleren bij cudi gaat door dezelfde functie als de webshop daar, een document
   van Burgieclan opent als pdf in het systeemvenster. Tickets heeft twee tabbladen
   (Kopen/Mijne) als pillen in de kop (`tabs` op `PageHead`). Kalender heeft er
-  drie (Planning, Agenda, Mijn lijst) en opent op **Planning** voor wie die
+  drie (Planning, Evenementen, Mijn evenementen; tot november 2026 Agenda en
+  Mijn lijst) en opent op **Planning** voor wie die
   heeft (de Burgieclan-koppeling via `src/components/planning/PlanningView.tsx`;
   zie `docs/burgieclan-planning.md` in `vtk-website-new`); Lijst en Maand zijn
-  weergaven onder Agenda, geen tabbladen. Broodjes staat als snelkoppeling op
+  weergaven onder Evenementen, geen tabbladen, en er is geen filter op
+  categorie meer. Broodjes staat als snelkoppeling op
   Home en heeft enkel Bestellen.
 - `app/_layout.tsx` draagt enkel nog de tabs plus drie modals (inloggen, de
   onboardingpoort, de serverinstelling) en de scanner aan de deur
@@ -270,7 +274,8 @@ uitzondering: die werkt in Expo Go niet.
 Geen achterstand maar een beslissing: je gegevens wijzigen, verbonden apps,
 privacygegevens, formulieren, lesbezoeken en het contactformulier. Ook de
 schermen van de admin zelf (zie regel 3), uploaden en stemmen op Burgieclan, en
-tijdsloten, tweedehands en printen op cudi. Dat zijn
+tweedehands en printen op cudi (een tijdslot om af te halen kies je sinds
+november 2026 wel in de app, `cudi-tijdsloten.tsx`). Dat zijn
 formulieren met eigen validatie en soms juridische gevolgen, en die op twee
 plaatsen hebben is twee keer kunnen mislopen.
 
@@ -293,7 +298,7 @@ contract aan in vtk-website-new en haal het met `npm run contract:sync`.
 | `src/api/contract.ts` | `apps/web/lib/app-api/contract.ts` |
 | de prefixen in `src/scanKind.ts` | `apps/web/lib/ticketing/crypto.ts` + `apps/web/lib/app-api/tokens.ts` |
 | `src/theme/tokens.ts` | `apps/web/app/design/vtk-base.css` (`:root`) |
-| `SCANNER` en `TICKET_COLORS` in `src/theme/tokens.ts` | `apps/web/app/design/vtk-tickets.css` (`.scanner-*`) + `vtk-ticket-colors.css` |
+| `TICKET_COLORS` en de oordeelkleuren in `SCANNER` (`src/theme/tokens.ts`) | `apps/web/app/design/vtk-ticket-colors.css` + `vtk-tickets.css` (`.scanner-*`) |
 | `src/scanner/types.ts` | `apps/web/components/ticketing/scanner/types.ts` |
 | `src/scanner/offline.ts` | `apps/web/components/ticketing/scanner/offline.ts` (de beslislogica) |
 | `src/scanner/cardHash.ts` | `apps/web/lib/ticketing/cardHash.ts` (**letterlijk**; faalt stil) |

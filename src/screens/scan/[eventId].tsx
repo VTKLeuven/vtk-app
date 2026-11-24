@@ -24,6 +24,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PageHead } from '../../components/PageHead';
 import { ConflictBanner, OfflineBanner, QueueBanner } from '../../components/scanner/Banners';
 import { ScannerFeedback } from '../../components/scanner/ScannerFeedback';
 import { ScanCounters } from '../../components/scanner/SessionPanel';
@@ -36,7 +37,7 @@ import {
   ScannersSheet,
 } from '../../components/scanner/Sheets';
 import { useScanner } from '../../scanner/useScanner';
-import { FONTS, HIT_TARGET, RADIUS, SCANNER, SPACING } from '../../theme/tokens';
+import { COLORS, FONTS, HIT_TARGET, RADIUS, SCANNER, SPACING } from '../../theme/tokens';
 
 type Sheet = 'none' | 'gate' | 'manual' | 'card' | 'names' | 'history' | 'scanners';
 
@@ -48,11 +49,14 @@ type Sheet = 'none' | 'gate' | 'manual' | 'card' | 'names' | 'history' | 'scanne
  * namenlijst, de kaartlezer, terugdraaien en het scannerspaneel. Zie
  * `docs/architecture.md` voor de weg van een scan.
  *
- * **Het enige donkere scherm van de app, en het ligt over de tabbalk.** Het staat
- * aan de wortel als `fullScreenModal` (`app/_layout.tsx`) en niet in een tab: de
- * tabbalk zou hier enkel een rij knoppen zijn waar je per ongeluk op tikt terwijl
- * er een rij voor je staat, en een veeg naar beneden mag de scanner niet sluiten.
- * Dicht gaat met het kruis. Het palet is `SCANNER` uit de tokens.
+ * **Het ligt over de tabbalk.** Het staat aan de wortel als `fullScreenModal`
+ * (`app/_layout.tsx`) en niet in een tab: de tabbalk zou hier enkel een rij
+ * knoppen zijn waar je per ongeluk op tikt terwijl er een rij voor je staat, en
+ * een veeg naar beneden mag de scanner niet sluiten. Dicht gaat met het kruis.
+ *
+ * Tot november 2026 was dit het enige donkere scherm van de app. Nu draagt het de
+ * navy `PageHead` en het lichte ontwerp van de rest (`SCANNER` uit de tokens); enkel
+ * het camerabeeld en de feedback na een scan zijn nog een gekleurd vlak.
  */
 export default function ScanScreen() {
   const router = useRouter();
@@ -106,47 +110,45 @@ export default function ScanScreen() {
   const cameraReady = permission?.granted && cameraOn;
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <View style={styles.headerTitle}>
-          <Text style={styles.eyebrow}>AAN DE DEUR</Text>
-          <Text style={styles.eventTitle} numberOfLines={1}>
-            {bootstrap.event.title}
-          </Text>
-        </View>
-        <View
-          style={[styles.pill, scanner.online ? styles.pillOnline : styles.pillOffline]}
-          accessibilityLabel={scanner.online ? 'Online' : 'Offline'}
-        >
-          {scanner.online ? (
-            <Signal size={13} color={SCANNER.onlineInk} />
-          ) : (
-            <SignalZero size={13} color={SCANNER.offlineInk} />
-          )}
-          <Text style={[styles.pillText, { color: scanner.online ? SCANNER.onlineInk : SCANNER.offlineInk }]}>
-            {scanner.online ? 'Online' : 'Offline'}
-          </Text>
-        </View>
-        {bootstrap.canManageScanners ? (
-          <Pressable
-            onPress={() => setSheet('scanners')}
-            disabled={!scanner.online}
-            hitSlop={12}
-            accessibilityLabel="Scanners beheren"
-            accessibilityRole="button"
-          >
-            <UserRoundCog size={21} color={scanner.online ? SCANNER.textMuted : SCANNER.line} />
-          </Pressable>
-        ) : null}
-        <Pressable
-          onPress={close}
-          hitSlop={12}
-          accessibilityLabel="Scanner sluiten"
-          accessibilityRole="button"
-        >
-          <X size={22} color={SCANNER.textMuted} />
-        </Pressable>
-      </View>
+    <SafeAreaView style={styles.screen} edges={['bottom']}>
+      <PageHead
+        kicker="Tickets scannen"
+        title={bootstrap.event.title}
+        back={false}
+        compact
+        right={
+          <View style={styles.headActions}>
+            <View
+              style={[styles.pill, scanner.online ? styles.pillOnline : styles.pillOffline]}
+              accessibilityLabel={scanner.online ? 'Online' : 'Offline'}
+            >
+              {scanner.online ? (
+                <Signal size={13} color={SCANNER.onlineInk} />
+              ) : (
+                <SignalZero size={13} color={SCANNER.offlineInk} />
+              )}
+              <Text style={[styles.pillText, { color: scanner.online ? SCANNER.onlineInk : SCANNER.offlineInk }]}>
+                {scanner.online ? 'Online' : 'Offline'}
+              </Text>
+            </View>
+            {bootstrap.canManageScanners ? (
+              <Pressable
+                onPress={() => setSheet('scanners')}
+                disabled={!scanner.online}
+                hitSlop={12}
+                accessibilityLabel="Scanners beheren"
+                accessibilityRole="button"
+                style={!scanner.online && styles.dimmed}
+              >
+                <UserRoundCog size={21} color={COLORS.onDark} />
+              </Pressable>
+            ) : null}
+            <Pressable onPress={close} hitSlop={12} accessibilityLabel="Scanner sluiten" accessibilityRole="button">
+              <X size={22} color={COLORS.onDark} />
+            </Pressable>
+          </View>
+        }
+      />
 
       <Pressable
         style={styles.gateRow}
@@ -186,26 +188,26 @@ export default function ScanScreen() {
           />
         ) : (
           <View style={styles.cameraEmpty}>
-            <Camera size={32} color={SCANNER.textMuted} />
+            <Camera size={32} color={SCANNER.onStatusMuted} />
             <Text style={styles.cameraEmptyTitle}>
               {permission?.granted ? 'Camera is uitgeschakeld' : 'Cameratoegang is nodig'}
             </Text>
             <Pressable
-              style={styles.retry}
+              style={[styles.retry, styles.retryOnDark]}
               onPress={() => {
                 if (permission?.granted) setCameraOn(true);
                 else void requestPermission();
               }}
               accessibilityRole="button"
             >
-              <Camera size={16} color={SCANNER.accentInk} />
-              <Text style={styles.retryText}>
+              <Camera size={16} color={COLORS.ink} />
+              <Text style={[styles.retryText, styles.retryTextOnDark]}>
                 {permission?.granted ? 'Camera starten' : 'Toegang geven'}
               </Text>
             </Pressable>
             {permission && !permission.canAskAgain && !permission.granted ? (
               <View style={styles.cameraDenied}>
-                <AlertCircle size={15} color={SCANNER.offlineInk} />
+                <AlertCircle size={15} color={SCANNER.onStatusMuted} />
                 <Text style={styles.cameraDeniedText}>
                   Cameratoegang werd geweigerd; zet ze aan in de instellingen van je toestel.
                 </Text>
@@ -345,7 +347,6 @@ function Tool({
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: SCANNER.shell },
   muted: { fontFamily: FONTS.regular, fontSize: 13, color: SCANNER.textMuted },
-  eyebrow: { fontFamily: FONTS.semibold, fontSize: 11, letterSpacing: 1.4, color: SCANNER.accent },
   center: { alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, padding: SPACING.xxl },
   errorTitle: { fontFamily: FONTS.bold, fontSize: 18, color: SCANNER.text },
   retry: {
@@ -358,15 +359,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
   },
   retryText: { fontFamily: FONTS.semibold, fontSize: 14, color: SCANNER.accentInk },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    padding: SPACING.lg,
-    backgroundColor: SCANNER.header,
-  },
-  headerTitle: { flex: 1, gap: 2 },
-  eventTitle: { fontFamily: FONTS.bold, fontSize: 17, color: SCANNER.text },
+  retryOnDark: { backgroundColor: SCANNER.reticle },
+  retryTextOnDark: { color: COLORS.ink },
+  headActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  dimmed: { opacity: 0.4 },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -382,22 +378,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    minHeight: 44,
     paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.sm,
     backgroundColor: SCANNER.header,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.line,
   },
   gateText: { flex: 1, fontFamily: FONTS.medium, fontSize: 13, color: SCANNER.textMuted },
   videoWrap: { flex: 1, minHeight: 240, backgroundColor: SCANNER.videoWell, overflow: 'hidden' },
   cameraEmpty: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, padding: SPACING.xl },
-  cameraEmptyTitle: { fontFamily: FONTS.semibold, fontSize: 15, color: SCANNER.text },
+  cameraEmptyTitle: { fontFamily: FONTS.semibold, fontSize: 15, color: SCANNER.onStatus },
   cameraDenied: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.lg },
-  cameraDeniedText: { flex: 1, fontFamily: FONTS.regular, fontSize: 12, color: SCANNER.offlineInk },
+  cameraDeniedText: { flex: 1, fontFamily: FONTS.regular, fontSize: 12, color: SCANNER.onStatusMuted },
   reticle: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  corner: { position: 'absolute', width: 42, height: 42, borderColor: SCANNER.accent },
+  corner: { position: 'absolute', width: 42, height: 42, borderColor: SCANNER.reticle },
   cornerTL: { top: '22%', left: '14%', borderTopWidth: 3, borderLeftWidth: 3, borderTopLeftRadius: 6 },
   cornerTR: { top: '22%', right: '14%', borderTopWidth: 3, borderRightWidth: 3, borderTopRightRadius: 6 },
   cornerBL: { bottom: '22%', left: '14%', borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 6 },
@@ -407,6 +405,8 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     padding: SPACING.sm,
     backgroundColor: SCANNER.header,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.line,
   },
   tool: {
     flex: 1,

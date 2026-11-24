@@ -52,9 +52,13 @@ deur.tsx  ──▶  /scan/<eventId>  (app/scan/[eventId].tsx, fullScreenModal)
   niet in een tab. Een tabbalk is aan een deur een rij knoppen waar je per ongeluk
   op tikt, en een veeg naar beneden mag de camera niet sluiten
   (`gestureEnabled: false`). Dicht gaat met het kruis.
-- **Het is het enige donkere scherm van de app.** Het palet staat in de tokens als
-  `SCANNER` en `TICKET_COLORS` en komt van de webscanner
-  (`apps/web/app/design/vtk-tickets.css` en `vtk-ticket-colors.css`).
+- **Het ziet eruit als de rest van de app.** Tot november 2026 was het het enige
+  donkere scherm, met het palet van de webscanner; dat werd als een andere app
+  ervaren. Nu opent het met de navy `PageHead`, met papier en witte panelen
+  eronder (`SCANNER` in de tokens, gebouwd op `COLORS`). Twee vlakken blijven in
+  kleur: het camerabeeld, en de feedback na een scan, die het hele beeld vult in
+  de kleur van het oordeel of van het tickettype (`TICKET_COLORS`, uit
+  `vtk-ticket-colors.css` op de site), zodat je ze van drie meter ziet.
 - **De scanner praat met de routes van de webscanner** (`/api/tickets/...`) en niet
   met `/app/v1`, net zoals afrekenen dat doet: daar zit de hele beoordeling en het
   scanlogboek. Enkel de lijst van events komt uit de app-API, want die draagt de

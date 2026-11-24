@@ -57,7 +57,15 @@ export const TAB_ROUTES = {
     'peilingen',
   ],
   kalender: ['evenement/[id]', 'ticket/[slug]', 'mijn-tickets', 'meldingen'],
-  studies: ['studiegroep/[id]', 'studiegroep/nieuw', 'lokalen', 'vak/[id]', 'cudi-bestellingen', 'web'],
+  studies: [
+    'studiegroep/[id]',
+    'studiegroep/nieuw',
+    'lokalen',
+    'vak/[id]',
+    'cudi-bestellingen',
+    'cudi-tijdsloten',
+    'web',
+  ],
   tickets: ['ticket/[slug]', 'mijn-tickets', 'scannen', 'deur'],
   meer: [
     'zoeken',

@@ -14,6 +14,8 @@ import type {
   AppCudiOrderInput,
   AppCudiOrderResult,
   AppCudiOverview,
+  AppCudiTimeslotResult,
+  AppCudiTimeslots,
   AppFakCheckin,
   AppGroups,
   AppLocale,
@@ -521,8 +523,29 @@ export function fetchCudiOverview(locale: AppLocale): Promise<AppCudiOverview> {
   return apiFetch<AppCudiOverview>(appApi('/cudi', { locale }), { timeout: 20_000 });
 }
 
-export function fetchCudiCatalog(locale: AppLocale): Promise<AppCudiCatalog> {
-  return apiFetch<AppCudiCatalog>(appApi('/cudi/catalogus', { locale }), { timeout: 20_000 });
+/** Met `q` (minstens twee tekens) zoeken op titel, auteur, vaknaam of vakcode. */
+export function fetchCudiCatalog(locale: AppLocale, q?: string, signal?: AbortSignal): Promise<AppCudiCatalog> {
+  return apiFetch<AppCudiCatalog>(appApi('/cudi/catalogus', { locale, q }), { timeout: 20_000, signal });
+}
+
+export function fetchCudiTimeslots(locale: AppLocale): Promise<AppCudiTimeslots> {
+  return apiFetch<AppCudiTimeslots>(appApi('/cudi/tijdsloten', { locale }), { timeout: 20_000 });
+}
+
+export function reserveCudiTimeslot(locale: AppLocale, timeslotId: string): Promise<AppCudiTimeslotResult> {
+  return apiFetch<AppCudiTimeslotResult>(appApi('/cudi/tijdsloten', { locale }), {
+    method: 'POST',
+    body: { timeslotId },
+    timeout: 20_000,
+  });
+}
+
+export function releaseCudiTimeslot(locale: AppLocale, registrationId: string): Promise<AppCudiTimeslotResult> {
+  return apiFetch<AppCudiTimeslotResult>(appApi('/cudi/tijdsloten/vrijgeven', { locale }), {
+    method: 'POST',
+    body: { registrationId },
+    timeout: 20_000,
+  });
 }
 
 /** Bij drukte wacht cudi tot een halve minuut op een vrije plaats; vandaar de ruime timeout. */

@@ -37,7 +37,7 @@ export function ScannerFeedback({ item }: { item: ScanHistoryItem }) {
   return (
     <View style={[styles.overlay, { backgroundColor: background }]} accessibilityLiveRegion="assertive">
       <View style={styles.icon}>
-        <Icon size={34} color={SCANNER.text} />
+        <Icon size={34} color={SCANNER.onStatus} />
       </View>
       <Text style={showType ? styles.type : styles.headline} numberOfLines={2}>
         {showType ? item.typeName : item.message}
@@ -77,13 +77,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,.16)',
     marginBottom: SPACING.sm,
   },
-  headline: { fontFamily: FONTS.bold, fontSize: 24, color: SCANNER.text, textAlign: 'center' },
+  headline: { fontFamily: FONTS.bold, fontSize: 24, color: SCANNER.onStatus, textAlign: 'center' },
   type: {
     fontFamily: FONTS.bold,
     fontSize: 40,
     lineHeight: 44,
     letterSpacing: 0.5,
-    color: SCANNER.text,
+    color: SCANNER.onStatus,
     textAlign: 'center',
     textTransform: 'uppercase',
   },
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: SCANNER.text,
+    backgroundColor: SCANNER.onStatus,
     borderRadius: RADIUS.pill,
     paddingVertical: 5,
     paddingHorizontal: 12,
