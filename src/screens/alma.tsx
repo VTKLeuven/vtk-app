@@ -287,7 +287,13 @@ function Days({ dates, selected, onSelect }: { dates: string[]; selected: string
   }, [selected]);
   if (shown.length === 0) return null;
   return (
-    <ScrollView ref={strip} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.days}>
+    <ScrollView
+      ref={strip}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.daysStrip}
+      contentContainerStyle={styles.days}
+    >
       {shown.map((date) => {
         const active = date === selected;
         return (
@@ -460,6 +466,9 @@ function Hours({ restaurant }: { restaurant: AppAlmaRestaurant }) {
 
 const styles = StyleSheet.create({
   pager: { flex: 1 },
+  // Enkel zo hoog als de pillen: buiten een verticale lijst rekte de rij anders uit
+  // tot de hele vrije hoogte.
+  daysStrip: { flexGrow: 0, flexShrink: 0 },
   root: { flex: 1, backgroundColor: COLORS.paper },
   content: { paddingTop: SPACING.sm, paddingBottom: SPACING.xxl * 2, gap: SPACING.xl },
   status: {

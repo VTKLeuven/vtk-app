@@ -350,8 +350,10 @@ const styles = StyleSheet.create({
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.lg },
   tabsCompact: { marginTop: SPACING.md },
   // Tot tegen de rand van het scherm, zodat de laatste pil zichtbaar doorloopt.
-  tabsScroll: { marginTop: SPACING.lg, marginHorizontal: -(SPACING.xl - 4) },
-  tabsScrollContent: { gap: SPACING.sm, paddingHorizontal: SPACING.xl - 4, paddingBottom: 6 },
+  // Lucht boven en onder in de strook zelf, met een negatieve marge eromheen: anders
+  // knipt de rand van de strook de schaduw van de pillen af tot een grijze band.
+  tabsScroll: { flexGrow: 0, marginTop: SPACING.lg - 12, marginBottom: -12, marginHorizontal: -(SPACING.xl - 4) },
+  tabsScrollContent: { gap: SPACING.sm, paddingHorizontal: SPACING.xl - 4, paddingVertical: 12 },
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
