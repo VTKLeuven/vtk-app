@@ -6,7 +6,6 @@ import {
   Modal,
   Pressable,
   StyleSheet,
-  Text,
   View,
   useWindowDimensions,
   type NativeScrollEvent,
@@ -20,6 +19,7 @@ import Animated, {
   withDecay,
   withSpring,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -33,7 +33,9 @@ const MAX_SCALE = 4;
 const TAP_SCALE = 2.5;
 
 /**
- * De schermvullende fotoviewer: vegen tussen de foto's, knijpen om in te zoomen.
+ * De schermvullende fotoviewer: vegen tussen de foto's, knijpen om in te zoomen,
+ * en omhoog of omlaag vegen of naast de foto tikken om terug naar het album te
+ * gaan, zoals in Foto's op iOS.
  *
  * **Waarom dit een eigen component is.** Het zat in `album/[slug].tsx` als één
  * `<Image>` in een `Modal`, zonder enige manier om naar de volgende foto te gaan
@@ -113,6 +115,10 @@ function Pager({
   const [zoomed, setZoomed] = useState(false);
   const list = useRef<FlatList<AppPhoto>>(null);
   const positioned = useRef(false);
+  // Hoe ver de foto omhoog of omlaag weggeveegd is; de achtergrond vaagt mee weg.
+  const dismiss = useSharedValue(0);
+  const backdrop = useAnimatedStyle(() => ({ opacity: 1 - Math.min(Math.abs(dismiss.value) / 320, 0.9) }));
+  const chrome = useAnimatedStyle(() => ({ opacity: 1 - Math.min(Math.abs(dismiss.value) / 120, 1) }));
 
   /**
    * Na de eerste layout nog eens zelf naar de aangetikte foto springen.
@@ -138,6 +144,7 @@ function Pager({
 
   return (
     <View style={styles.viewer}>
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.backdrop, backdrop]} />
       <FlatList
         ref={list}
         data={photos}
@@ -167,11 +174,13 @@ function Pager({
             height={height}
             active={position === index}
             onZoomChange={setZoomed}
+            dismiss={dismiss}
+            onClose={onClose}
           />
         )}
       />
 
-      <View style={[styles.bar, { top: insets.top + SPACING.md }]}>
+      <Animated.View style={[styles.bar, { top: insets.top + SPACING.md }, chrome]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Sluiten"
@@ -182,11 +191,11 @@ function Pager({
           <X color={COLORS.onDark} size={24} />
         </Pressable>
         {actions}
-      </View>
+      </Animated.View>
 
-      <Text style={[styles.counter, { bottom: insets.bottom + SPACING.xl }]}>
+      <Animated.Text style={[styles.counter, { bottom: insets.bottom + SPACING.xl }, chrome]}>
         {index + 1} van {photos.length}
-      </Text>
+      </Animated.Text>
     </View>
   );
 }
@@ -218,12 +227,17 @@ function ZoomablePhoto({
   height,
   active,
   onZoomChange,
+  dismiss,
+  onClose,
 }: {
   photo: AppPhoto;
   width: number;
   height: number;
   active: boolean;
   onZoomChange: (zoomed: boolean) => void;
+  /** Hoe ver de foto weggeveegd is, voor de achtergrond. */
+  dismiss: SharedValue<number>;
+  onClose: () => void;
 }) {
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
@@ -236,6 +250,10 @@ function ZoomablePhoto({
   const originY = useSharedValue(0);
   // De verhouding van de foto (breedte / hoogte); tot ze geladen is die van het scherm.
   const aspect = useSharedValue(width / height);
+  // Waar de vinger neerkwam, en wat de veeg doet: 0 nog niets, 1 rondkijken, 2 wegvegen.
+  const touchX = useSharedValue(0);
+  const touchY = useSharedValue(0);
+  const mode = useSharedValue(0);
 
   const reset = useCallback(() => {
     scale.value = withTiming(1);
@@ -317,27 +335,71 @@ function ZoomablePhoto({
     });
 
   /**
-   * Slepen met één vinger, **enkel wanneer de foto ingezoomd is**. Op ware
-   * grootte weigert het meteen, zodat de lijst eronder de veeg krijgt en je kan
-   * bladeren. Ingezoomd neemt het de veeg.
+   * Eén vinger. **Ingezoomd** is dat rondkijken. **Op ware grootte** beslist de
+   * richting: omhoog of omlaag veegt de foto weg en sluit de viewer, zoals in
+   * Foto's op iOS; opzij weigert het gebaar meteen, zodat de lijst eronder de
+   * veeg krijgt en je naar de volgende foto bladert.
    */
   const pan = Gesture.Pan()
     .manualActivation(true)
     .maxPointers(1)
-    .onTouchesMove((_event, manager) => {
-      if (savedScale.value > 1.01) manager.activate();
-      else manager.fail();
+    .onTouchesDown((event) => {
+      const touch = event.allTouches[0];
+      if (touch) {
+        touchX.value = touch.absoluteX;
+        touchY.value = touch.absoluteY;
+      }
+      mode.value = 0;
+    })
+    .onTouchesMove((event, manager) => {
+      if (savedScale.value > 1.01) {
+        mode.value = 1;
+        manager.activate();
+        return;
+      }
+      const touch = event.allTouches[0];
+      if (!touch) return;
+      const dx = touch.absoluteX - touchX.value;
+      const dy = touch.absoluteY - touchY.value;
+      if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx) * 1.2) {
+        mode.value = 2;
+        manager.activate();
+      } else if (Math.abs(dx) > 12) {
+        manager.fail();
+      }
     })
     .onStart(() => {
       savedX.value = x.value;
       savedY.value = y.value;
     })
     .onUpdate((event) => {
+      if (mode.value === 2) {
+        x.value = event.translationX * 0.4;
+        y.value = event.translationY;
+        scale.value = 1 - Math.min(Math.abs(event.translationY) / 1600, 0.15);
+        dismiss.value = event.translationY;
+        return;
+      }
       const limits = bounds(scale.value);
       x.value = rubber(savedX.value + event.translationX, limits.x);
       y.value = rubber(savedY.value + event.translationY, limits.y);
     })
     .onEnd((event) => {
+      if (mode.value === 2) {
+        if (Math.abs(event.translationY) > 110 || Math.abs(event.velocityY) > 900) {
+          const away = (event.translationY < 0 ? -1 : 1) * height;
+          dismiss.value = withTiming(away, { duration: 180 });
+          y.value = withTiming(away, { duration: 180 }, (done) => {
+            if (done) runOnJS(onClose)();
+          });
+        } else {
+          x.value = withSpring(0, SPRING);
+          y.value = withSpring(0, SPRING);
+          scale.value = withSpring(1, SPRING);
+          dismiss.value = withSpring(0, SPRING);
+        }
+        return;
+      }
       const limits = bounds(scale.value);
       // Buiten de rand: terugveren. Erbinnen: uitbollen tot de rand.
       if (Math.abs(x.value) > limits.x) x.value = withSpring(clamp(x.value, limits.x), SPRING);
@@ -346,8 +408,11 @@ function ZoomablePhoto({
       else y.value = withDecay({ velocity: event.velocityY, clamp: [-limits.y, limits.y] });
     })
     .onFinalize(() => {
-      savedX.value = x.value;
-      savedY.value = y.value;
+      if (mode.value !== 2) {
+        savedX.value = x.value;
+        savedY.value = y.value;
+      }
+      mode.value = 0;
     });
 
   const doubleTap = Gesture.Tap()
@@ -377,8 +442,22 @@ function ZoomablePhoto({
       runOnJS(onZoomChange)(true);
     });
 
-  // Alles tegelijk: knijpen hoeft niet te wachten tot de dubbeltik mislukt.
-  const gesture = Gesture.Simultaneous(pinch, pan, doubleTap);
+  /** Een tik naast de foto (in de zwarte rand erboven of eronder) sluit de viewer. */
+  const singleTap = Gesture.Tap()
+    .numberOfTaps(1)
+    .maxDuration(250)
+    .onEnd((event) => {
+      if (savedScale.value > 1.01) return;
+      const shownWidth = Math.min(width, height * aspect.value);
+      const shownHeight = Math.min(height, width / aspect.value);
+      const outside =
+        Math.abs(event.x - width / 2) > shownWidth / 2 || Math.abs(event.y - height / 2) > shownHeight / 2;
+      if (outside) runOnJS(onClose)();
+    });
+
+  // Knijpen en slepen tegelijk, zonder te wachten op een tik; één tik wacht wel
+  // tot het geen dubbeltik is.
+  const gesture = Gesture.Simultaneous(pinch, pan, Gesture.Exclusive(doubleTap, singleTap));
 
   const animated = useAnimatedStyle(() => ({
     transform: [{ translateX: x.value }, { translateY: y.value }, { scale: scale.value }],
@@ -420,7 +499,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   // Bewust bijna zwart en niet navy: een foto beoordeel je niet tegen een
   // gekleurde achtergrond.
-  viewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.94)' },
+  viewer: { flex: 1 },
+  backdrop: { backgroundColor: 'rgba(0,0,0,0.94)' },
   page: { alignItems: 'center', justifyContent: 'center' },
   bar: {
     position: 'absolute',

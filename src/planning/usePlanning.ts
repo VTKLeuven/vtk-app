@@ -94,6 +94,28 @@ export function usePlanning(locale: AppLocale): PlanningHandle {
             tasks: data.block.tasks.map((t) => (t.id === operation.id ? { ...t, done: operation.value } : t)),
           },
         };
+      } else if (data?.personal && operation.op === 'updatePersonal') {
+        const { item } = operation;
+        const minutes = (time: string | null, fallback: number) => {
+          if (!time) return fallback;
+          const [h, m] = time.split(':').map(Number);
+          return h * 60 + m;
+        };
+        optimistic = {
+          ...data,
+          personal: data.personal.map((p) =>
+            p.id === operation.id
+              ? {
+                  ...p,
+                  ...item,
+                  startMin: item.allDay ? 0 : minutes(item.start, 0),
+                  endMin: item.allDay ? 1440 : minutes(item.end, 60),
+                }
+              : p,
+          ),
+        };
+      } else if (data?.personal && operation.op === 'deletePersonal') {
+        optimistic = { ...data, personal: data.personal.filter((p) => p.id !== operation.id) };
       } else if (data?.block && operation.op === 'freeDay') {
         const { date, value } = operation;
         optimistic = {

@@ -1,13 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { AlertTriangle, CalendarPlus, Check, ChevronLeft, ChevronRight, Flag, GraduationCap, Settings2 } from 'lucide-react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Reanimated, {
-  runOnJS,
-  useAnimatedReaction,
-  useAnimatedStyle,
-  useSharedValue,
-  type SharedValue,
-} from 'react-native-reanimated';
+import Reanimated, { runOnJS, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -20,9 +14,12 @@ import {
   Text,
   useWindowDimensions,
   View,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
 
-import type { AppLocale } from '../../api/contract';
+import type { AppLocale, AppPlanningPersonal } from '../../api/contract';
 import { messageFor } from '../../api/useResource';
 import {
   contentByDay,
@@ -49,7 +46,7 @@ import { Empty, ErrorState, Loading, StaleNotice } from '../ui';
 import { DetailSheet, ExportSheet, selectionOf, SettingsSheet, SetupForm, Sheet, type Selection } from './PlanningSheets';
 import { CARD_SHADOW } from '../HomeSection';
 import { BlokView } from './BlokView';
-import { ItemSheet, type ItemDraft } from './ItemSheet';
+import { PersonalSheet, type ItemDraft, type PersonalTarget } from './PersonalSheet';
 import { CourseList, SemesterGrid, TotalsRow } from './OverviewViews';
 import {
   PLANNING_MODES,
@@ -88,6 +85,8 @@ const BLOCK_STYLE = {
   practice: { backgroundColor: PLANNING.practiceBg, borderColor: PLANNING.practiceBorder, color: PLANNING.practiceText },
   other: { backgroundColor: PLANNING.otherBg, borderColor: PLANNING.otherBorder, color: PLANNING.otherText },
   vtk: { backgroundColor: COLORS.surface, borderColor: COLORS.line2, color: COLORS.navy },
+  // Je eigen privé items: warm geel, zodat ze naast de lessen (blauw, groen, paars) opvallen.
+  personal: { backgroundColor: COLORS.lowBg, borderColor: COLORS.yellowDeep, color: COLORS.lowInk },
 } as const;
 
 /**
@@ -121,8 +120,10 @@ export function PlanningView({
   const { resource, data } = handle;
   const [chosenMode, setChosenMode] = useState<PlanningMode | null>(storedMode);
   const [picking, setPicking] = useState(false);
-  // Een nieuw blok dat iemand in de week neerzette door lang te drukken; het blad vult de rest in.
-  const [draft, setDraft] = useState<ItemDraft | null>(null);
+  // Een eigen item om in te vullen: een nieuw blok dat iemand in de week neerzette door
+  // lang te drukken, of een bestaand item waarop getikt werd.
+  const [personal, setPersonal] = useState<PersonalTarget | null>(null);
+  const draft = personal?.kind === 'new' ? personal.draft : null;
   const [semesterChoice, setSemesterChoice] = useState<string | null>(null);
   const [openCourse, setOpenCourse] = useState<string | null>(null);
   // Zonder lessenrooster maar met iets in de blokkalender: dat is wat er te zien is.
@@ -171,8 +172,13 @@ export function PlanningView({
   const sheets = data ? (
     <>
       <ViewSheet visible={picking} mode={mode} onChange={setMode} onClose={() => setPicking(false)} />
-      {data.subscribed && draft ? (
-        <ItemSheet key={`${draft.date}-${draft.startMin}`} draft={draft} handle={handle} onClose={() => setDraft(null)} />
+      {data.subscribed && personal ? (
+        <PersonalSheet
+          key={personal.kind === 'new' ? `${personal.draft.date}-${personal.draft.startMin}` : personal.item.id}
+          target={personal}
+          handle={handle}
+          onClose={() => setPersonal(null)}
+        />
       ) : null}
       <DetailSheet handle={handle} selection={selection} onClose={() => setSelection(null)} onOpenEvent={onOpenEvent} />
       <ExportSheet visible={exporting} handle={handle} onClose={() => setExporting(false)} />
@@ -349,10 +355,27 @@ export function PlanningView({
         days={days}
         refreshing={resource.refreshing}
         onRefresh={() => void resource.refresh()}
-        onSelect={(ref) => setSelection(selectionOf(ref))}
+        onSelect={(ref) =>
+          ref.kind === 'personal' ? setPersonal({ kind: 'edit', item: ref.item }) : setSelection(selectionOf(ref))
+        }
         renderTitle={(subtitle) => title(subtitle)}
         draft={draft}
-        onDraft={setDraft}
+        onDraft={(next) => setPersonal({ kind: 'new', draft: next })}
+        onMovePersonal={(item, date, startMin, endMin) =>
+          void handle.run({
+            op: 'updatePersonal',
+            id: item.id,
+            item: {
+              title: item.title,
+              location: item.location,
+              note: item.note,
+              date,
+              allDay: false,
+              start: clock(startMin),
+              end: endMin >= 24 * 60 ? '24:00' : clock(endMin),
+            },
+          })
+        }
         toolbarRight={
           <>
             <IconButton label="Exporteren naar je agenda" onPress={() => setExporting(true)}>
@@ -394,11 +417,13 @@ function Grid({
   renderTitle,
   draft,
   onDraft,
+  onMovePersonal,
   toolbarRight,
 }: {
   renderTitle: (subtitle: string) => React.ReactNode;
   draft: ItemDraft | null;
   onDraft: (draft: ItemDraft) => void;
+  onMovePersonal: (item: AppPlanningPersonal, date: string, startMin: number, endMin: number) => void;
   planningToday: string;
   days: string[];
   content: Map<string, DayContent>;
@@ -416,17 +441,6 @@ function Grid({
   const [scrollX] = useState(() => new Animated.Value(todayIndex * column));
   const list = useRef<FlatList<string>>(null);
   const vertical = useRef<ScrollViewInstance>(null);
-  // Het blok dat je aan het neerzetten bent: waar het nu staat, in minuten.
-  const draftStart = useSharedValue(0);
-  const [placing, setPlacing] = useState<string | null>(null);
-  const startPlacing = useCallback((date: string) => setPlacing(date), []);
-  const finishPlacing = useCallback(
-    (date: string, startMin: number) => {
-      setPlacing(null);
-      onDraft({ date, startMin, endMin: Math.min(startMin + DRAFT_MINUTES, 24 * 60) });
-    },
-    [onDraft],
-  );
 
   useEffect(() => {
     const id = setInterval(() => setNow(nowInLeuven()), 60_000);
@@ -442,6 +456,19 @@ function Grid({
     const id = requestAnimationFrame(() => vertical.current?.scrollTo({ y: initialY, animated: false }));
     return () => cancelAnimationFrame(id);
   }, [initialY]);
+
+  const drag = useDragToPlace({
+    days,
+    content,
+    column,
+    initialX: todayIndex * column,
+    initialY,
+    list,
+    vertical,
+    onDraft,
+    onMovePersonal,
+    onFirst: setFirst,
+  });
 
   const chipRows = useMemo(() => {
     let most = 0;
@@ -505,9 +532,12 @@ function Grid({
 
       <ScrollView
         ref={vertical}
-        scrollEnabled={placing === null}
+        scrollEnabled={!drag.active}
         style={styles.root}
         contentOffset={{ x: 0, y: initialY }}
+        scrollEventThrottle={16}
+        onScroll={drag.onVerticalScroll}
+        onLayout={drag.onVerticalLayout}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View style={styles.body}>
@@ -518,6 +548,7 @@ function Grid({
               </Text>
             ))}
           </View>
+          <GestureDetector gesture={drag.gesture}>
           <View style={styles.columns}>
             {Array.from({ length: 23 }, (_, i) => i + 1).map((h) => (
               <View key={h} pointerEvents="none" style={[styles.hourLine, { top: h * HOUR }]} />
@@ -529,7 +560,7 @@ function Grid({
               keyExtractor={(date) => date}
               getItemLayout={(_, index) => ({ length: column, offset: column * index, index })}
               initialScrollIndex={todayIndex}
-              scrollEnabled={placing === null}
+              scrollEnabled={!drag.active}
               snapToInterval={column}
               decelerationRate="fast"
               showsHorizontalScrollIndicator={false}
@@ -537,10 +568,13 @@ function Grid({
               maxToRenderPerBatch={6}
               windowSize={7}
               scrollEventThrottle={16}
-              onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: true })}
+              onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
+                useNativeDriver: true,
+                listener: drag.onHorizontalScroll,
+              })}
               onMomentumScrollEnd={(e) => onSettle(e.nativeEvent.contentOffset.x)}
               onScrollEndDrag={(e) => onSettle(e.nativeEvent.contentOffset.x)}
-              extraData={`${now.date}:${now.minutes}:${content.size}:${placing ?? ''}:${draft?.date ?? ''}:${draft?.startMin ?? ''}`}
+              extraData={`${now.date}:${now.minutes}:${content.size}:${drag.movingKey ?? ''}:${draft?.date ?? ''}:${draft?.startMin ?? ''}`}
               renderItem={({ item }) => (
                 <DayColumn
                   date={item}
@@ -548,19 +582,274 @@ function Grid({
                   blocks={content.get(item)?.blocks ?? []}
                   nowMinutes={item === now.date ? now.minutes : null}
                   onSelect={onSelect}
-                  draftStart={draftStart}
-                  placing={placing === item}
+                  movingKey={drag.movingKey}
                   draft={draft?.date === item ? draft : null}
-                  onPlaceStart={startPlacing}
-                  onPlaceEnd={finishPlacing}
                 />
               )}
             />
+            <DragBlock state={drag.overlay} width={column} />
           </View>
+          </GestureDetector>
         </View>
       </ScrollView>
       </View>
     </View>
+  );
+}
+
+/**
+ * Lang drukken in de week en slepen, zoals in Agenda op iOS.
+ *
+ * - Op een lege plek zet lang drukken een blok van een uur neer, met je vinger in
+ *   het midden; op een eigen item neem je dat item op.
+ * - Zonder los te laten sleep je het naar elk uur (per kwartier) en **elke dag**.
+ *   Tegen de linker- of rechterrand schuift de week een dag mee, tegen de boven-
+ *   of onderrand de dag, zodat je ook bij dagen en uren buiten beeld komt.
+ * - Loslaten opent bij een nieuw blok het blad om het in te vullen; een bestaand
+ *   item staat meteen op zijn nieuwe plek.
+ *
+ * Eén gebaar over alle dagen samen en niet één per dag: enkel zo kan een blok
+ * van de ene dag naar de andere. Het gebaar begint pas na het lang drukken, dus
+ * een gewone veeg blijft scrollen en een tik op een les blijft een tik. Terwijl
+ * je sleept, staat scrollen met de hand stil en schuift de app zelf.
+ */
+function useDragToPlace({
+  days,
+  content,
+  column,
+  initialX,
+  initialY,
+  list,
+  vertical,
+  onDraft,
+  onMovePersonal,
+  onFirst,
+}: {
+  days: string[];
+  content: Map<string, DayContent>;
+  column: number;
+  initialX: number;
+  initialY: number;
+  list: React.RefObject<FlatList<string> | null>;
+  vertical: React.RefObject<ScrollViewInstance | null>;
+  onDraft: (draft: ItemDraft) => void;
+  onMovePersonal: (item: AppPlanningPersonal, date: string, startMin: number, endMin: number) => void;
+  onFirst: (index: number) => void;
+}) {
+  const [active, setActive] = useState(false);
+  const [movingKey, setMovingKey] = useState<string | null>(null);
+  const hOffset = useRef(initialX);
+  const vOffset = useRef(initialY);
+  const viewportHeight = useRef(400);
+  const scrollShared = useSharedValue(initialX);
+  const overlay = {
+    day: useSharedValue(0),
+    start: useSharedValue(0),
+    duration: useSharedValue(DRAFT_MINUTES),
+    visible: useSharedValue(0),
+    scroll: scrollShared,
+    title: useRef('Nieuw'),
+    setLabel: useRef<((label: string) => void) | null>(null),
+  };
+  const state = useRef({
+    active: false,
+    item: null as AppPlanningPersonal | null,
+    duration: DRAFT_MINUTES,
+    grab: DRAFT_MINUTES / 2,
+    x: 0,
+    vy: 0,
+    day: 0,
+    start: 0,
+    lastHorizontal: 0,
+    timer: null as ReturnType<typeof setInterval> | null,
+  });
+
+  // Alles wat de callbacks lezen, via een ref: het gebaar wordt niet opnieuw opgebouwd bij elke render.
+  const latest = useRef({ days, content, column, onDraft, onMovePersonal, onFirst });
+  useEffect(() => {
+    latest.current = { days, content, column, onDraft, onMovePersonal, onFirst };
+  });
+
+  const place = useCallback(() => {
+    const d = state.current;
+    const { days: list_, column: col } = latest.current;
+    const contentY = d.vy + vOffset.current;
+    const minute = (contentY / HOUR) * 60 - d.grab;
+    d.start = Math.min(Math.max(Math.round(minute / SNAP) * SNAP, 0), 24 * 60 - d.duration);
+    d.day = Math.min(Math.max(Math.floor((d.x + hOffset.current) / col), 0), list_.length - 1);
+    overlay.day.value = d.day;
+    overlay.start.value = d.start;
+    overlay.setLabel.current?.(`${clock(d.start)} - ${clock(d.start + d.duration)}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const tick = useCallback(() => {
+    const d = state.current;
+    if (!d.active) return;
+    const { days: list_, column: col, onFirst: first } = latest.current;
+    const edgeX = 28;
+    const width = col * VISIBLE_DAYS;
+    const nowMs = Date.now();
+    if ((d.x < edgeX || d.x > width - edgeX) && nowMs - d.lastHorizontal > 550) {
+      const index = Math.round(hOffset.current / col) + (d.x < edgeX ? -1 : 1);
+      const target = Math.min(Math.max(index, 0), Math.max(0, list_.length - VISIBLE_DAYS));
+      if (target * col !== hOffset.current) {
+        list.current?.scrollToOffset({ offset: target * col, animated: true });
+        hOffset.current = target * col;
+        scrollShared.value = target * col;
+        first(target);
+        d.lastHorizontal = nowMs;
+      }
+    }
+    const edgeY = 40;
+    const max = Math.max(0, DAY_HEIGHT - viewportHeight.current);
+    let next = vOffset.current;
+    if (d.vy < edgeY) next = Math.max(0, next - 12);
+    else if (d.vy > viewportHeight.current - edgeY) next = Math.min(max, next + 12);
+    if (next !== vOffset.current) {
+      vertical.current?.scrollTo({ y: next, animated: false });
+      vOffset.current = next;
+    }
+    place();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [place]);
+
+  const begin = useCallback(
+    (x: number, y: number) => {
+      const d = state.current;
+      const { days: list_, content: map, column: col } = latest.current;
+      const dayIndex = Math.min(Math.max(Math.floor((x + hOffset.current) / col), 0), list_.length - 1);
+      const minute = (y / HOUR) * 60;
+      const hit = (map.get(list_[dayIndex])?.blocks ?? []).find(
+        (block) => block.ref.kind === 'personal' && minute >= block.startMin && minute <= block.endMin,
+      );
+      if (hit && hit.ref.kind === 'personal') {
+        d.item = hit.ref.item;
+        d.duration = hit.endMin - hit.startMin;
+        d.grab = minute - hit.startMin;
+        overlay.title.current = hit.title;
+        setMovingKey(hit.key);
+      } else {
+        d.item = null;
+        d.duration = DRAFT_MINUTES;
+        d.grab = DRAFT_MINUTES / 2;
+        overlay.title.current = 'Nieuw';
+      }
+      d.active = true;
+      d.x = x;
+      d.vy = y - vOffset.current;
+      overlay.duration.value = d.duration;
+      place();
+      overlay.visible.value = 1;
+      setActive(true);
+      d.timer = setInterval(tick, 40);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [place, tick],
+  );
+
+  const move = useCallback(
+    (x: number, y: number) => {
+      const d = state.current;
+      if (!d.active) return;
+      d.x = x;
+      d.vy = y - vOffset.current;
+      place();
+    },
+    [place],
+  );
+
+  const finish = useCallback(
+    (commit: boolean) => {
+      const d = state.current;
+      if (!d.active) return;
+      d.active = false;
+      if (d.timer) clearInterval(d.timer);
+      d.timer = null;
+      overlay.visible.value = 0;
+      setActive(false);
+      setMovingKey(null);
+      if (!commit) return;
+      const { days: list_, onDraft: draftCb, onMovePersonal: moveCb } = latest.current;
+      const date = list_[d.day];
+      if (d.item) {
+        if (date !== d.item.date || d.start !== d.item.startMin) moveCb(d.item, date, d.start, d.start + d.duration);
+      } else {
+        draftCb({ date, startMin: d.start, endMin: Math.min(d.start + d.duration, 24 * 60) });
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  useEffect(
+    () => () => {
+      if (state.current.timer) clearInterval(state.current.timer);
+    },
+    [],
+  );
+
+  // De callbacks lezen refs, maar pas wanneer het gebaar loopt, nooit tijdens de
+  // render; de regel ziet het verschil niet.
+  /* eslint-disable react-hooks/refs */
+  const gesture = Gesture.Pan()
+    .activateAfterLongPress(LONG_PRESS_MS)
+    .onStart((event) => {
+      runOnJS(begin)(event.x, event.y);
+    })
+    .onUpdate((event) => {
+      runOnJS(move)(event.x, event.y);
+    })
+    .onEnd(() => {
+      runOnJS(finish)(true);
+    })
+    .onFinalize(() => {
+      runOnJS(finish)(false);
+    });
+  /* eslint-enable react-hooks/refs */
+
+  return {
+    gesture,
+    active,
+    movingKey,
+    overlay,
+    onHorizontalScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      hOffset.current = event.nativeEvent.contentOffset.x;
+      scrollShared.value = event.nativeEvent.contentOffset.x;
+    },
+    onVerticalScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (!state.current.active) vOffset.current = event.nativeEvent.contentOffset.y;
+    },
+    onVerticalLayout: (event: LayoutChangeEvent) => {
+      viewportHeight.current = event.nativeEvent.layout.height;
+    },
+  };
+}
+
+type DragOverlay = ReturnType<typeof useDragToPlace>['overlay'];
+
+/** Het blok onder je vinger: zweeft boven het raster en volgt dag en kwartier. */
+function DragBlock({ state, width }: { state: DragOverlay; width: number }) {
+  const [label, setLabel] = useState('');
+  useEffect(() => {
+    state.setLabel.current = setLabel;
+    return () => {
+      state.setLabel.current = null;
+    };
+  }, [state.setLabel]);
+  const animated = useAnimatedStyle(() => ({
+    opacity: state.visible.value,
+    top: (state.start.value / 60) * HOUR + 1,
+    height: (state.duration.value / 60) * HOUR - 2,
+    left: state.day.value * width - state.scroll.value + 2,
+  }));
+  return (
+    <Reanimated.View pointerEvents="none" style={[styles.draft, styles.draftLifted, { width: width - 4 }, animated]}>
+      <Text style={styles.draftTime}>{label}</Text>
+      <Text style={styles.draftTitle} numberOfLines={2}>
+        {state.title.current}
+      </Text>
+    </Reanimated.View>
   );
 }
 
@@ -629,57 +918,22 @@ const DayColumn = memo(function DayColumn({
   blocks,
   nowMinutes,
   onSelect,
-  draftStart,
-  placing,
+  movingKey,
   draft,
-  onPlaceStart,
-  onPlaceEnd,
 }: {
   date: string;
   width: number;
   blocks: Block[];
   nowMinutes: number | null;
   onSelect: (ref: Ref) => void;
-  draftStart: SharedValue<number>;
-  /** Wordt er op deze dag net een blok neergezet (de vinger is nog niet los)? */
-  placing: boolean;
+  /** Het item dat je aan het verslepen bent; het staat hier nog, maar vaag. */
+  movingKey: string | null;
   /** Het neergezette blok op deze dag, terwijl het blad openstaat. */
   draft: ItemDraft | null;
-  onPlaceStart: (date: string) => void;
-  onPlaceEnd: (date: string, startMin: number) => void;
 }) {
   const placed = useMemo(() => place(blocks), [blocks]);
   const weekend = weekdayOf(date) >= 5;
-  const grabStart = useSharedValue(0);
-
-  /**
-   * Lang indrukken zet een blok van een uur neer, met je vinger in het midden;
-   * zonder los te laten schuif je het per kwartier, en loslaten opent het blad om
-   * het in te vullen. Zoals een nieuw evenement in Agenda op iOS.
-   *
-   * Een `Pan` die pas na het lang indrukken begint: een gewone veeg (scrollen,
-   * naar de volgende dagen) beweegt te vroeg en laat hem mislukken, en een tik op
-   * een les blijft een tik.
-   */
-  const gesture = Gesture.Pan()
-    .activateAfterLongPress(LONG_PRESS_MS)
-    .onStart((event) => {
-      const minute = (event.y / HOUR) * 60 - DRAFT_MINUTES / 2;
-      const start = Math.min(Math.max(Math.round(minute / SNAP) * SNAP, 0), 24 * 60 - DRAFT_MINUTES);
-      grabStart.value = start;
-      draftStart.value = start;
-      runOnJS(onPlaceStart)(date);
-    })
-    .onUpdate((event) => {
-      const minute = grabStart.value + (event.translationY / HOUR) * 60;
-      draftStart.value = Math.min(Math.max(Math.round(minute / SNAP) * SNAP, 0), 24 * 60 - DRAFT_MINUTES);
-    })
-    .onEnd(() => {
-      runOnJS(onPlaceEnd)(date, draftStart.value);
-    });
-
   return (
-    <GestureDetector gesture={gesture}>
     <View style={[styles.column, { width }, weekend && styles.weekend]}>
       {placed.map((block) => {
         const top = (block.startMin / 60) * HOUR + 1;
@@ -716,6 +970,7 @@ const DayColumn = memo(function DayColumn({
               block.mandatory && styles.blockMandatory,
               block.done && styles.done,
               block.hidden && styles.blockHidden,
+              block.key === movingKey && styles.blockMoving,
               pressed && styles.pressed,
             ]}
           >
@@ -740,9 +995,7 @@ const DayColumn = memo(function DayColumn({
           <View style={styles.nowDot} />
         </View>
       ) : null}
-      {placing ? (
-        <DraftBlock start={draftStart} />
-      ) : draft ? (
+      {draft ? (
         <View
           pointerEvents="none"
           style={[
@@ -755,32 +1008,8 @@ const DayColumn = memo(function DayColumn({
         </View>
       ) : null}
     </View>
-    </GestureDetector>
   );
 });
-
-/** Het blok onder je vinger terwijl je het neerzet, met het beginuur erin. */
-function DraftBlock({ start }: { start: SharedValue<number> }) {
-  const animated = useAnimatedStyle(() => ({ top: (start.value / 60) * HOUR + 1 }));
-  const [label, setLabel] = useState('');
-  // Het uur in de tekst volgt het blok; enkel bij een nieuw kwartier, dus zelden.
-  useAnimatedReactionLabel(start, setLabel);
-  return (
-    <Reanimated.View pointerEvents="none" style={[styles.draft, styles.draftLifted, { height: (DRAFT_MINUTES / 60) * HOUR - 2 }, animated]}>
-      <Text style={styles.draftTime}>{label}</Text>
-      <Text style={styles.draftTitle}>Nieuw</Text>
-    </Reanimated.View>
-  );
-}
-
-function useAnimatedReactionLabel(start: SharedValue<number>, onChange: (label: string) => void) {
-  useAnimatedReaction(
-    () => start.value,
-    (value, previous) => {
-      if (value !== previous) runOnJS(onChange)(clock(value));
-    },
-  );
-}
 
 const clock = (minutes: number) => {
   'worklet';
@@ -920,6 +1149,7 @@ const styles = StyleSheet.create({
   blockVtk: { borderLeftWidth: 4, borderLeftColor: COLORS.yellow },
   blockMandatory: { borderLeftWidth: 3, borderLeftColor: PLANNING.danger },
   blockHidden: { borderStyle: 'dashed', opacity: 0.5 },
+  blockMoving: { opacity: 0.3 },
   blockTop: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   blockTime: { fontFamily: FONTS.semibold, fontSize: 10.5, fontVariant: ['tabular-nums'] },
   blockTitle: { fontFamily: FONTS.semibold, fontSize: 12, lineHeight: 15, color: COLORS.ink },

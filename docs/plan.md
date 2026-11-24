@@ -769,11 +769,14 @@ Acht punten voor de release naar Apple en Google (site en app):
   is het raster dat opzij schuift, Blok is de maandkalender met examens, taken
   en vrije dagen, met een kaart naar KURT (bibplaatsen) en naar Samen blokken.
   De blokkalender komt van Burgieclan via de site (`AppPlanning.block` en de
-  blokoperaties); zonder lessenrooster werkt Blok ook. In de week zet **lang
-  drukken** een nieuw blok neer zoals in Agenda op iOS: schuiven zonder los te
-  laten verplaatst het per kwartier, loslaten opent het blad (`ItemSheet.tsx`)
-  met de dag en de uren ingevuld. Het wordt een verplichte sessie of een
-  deadline bij een vak, want dat is wat Burgieclan bewaart.
+  blokoperaties); zonder lessenrooster werkt Blok ook. **Eigen privé items**:
+  lang drukken in de week zet een blok neer zoals in Agenda op iOS; slepen gaat
+  naar elk kwartier en elke dag, en tegen de rand schuift de week of de dag mee.
+  Loslaten opent het blad (`PersonalSheet.tsx`): titel, locatie, hele dag, begin
+  en einde met een draaiwiel (`Wheel.tsx`, in JavaScript) en een notitie. Zo'n
+  item hoort bij geen vak en geen VTK-evenement; vtk.be bewaart het
+  (`PlanningPersonalItem`), want Burgieclan kent enkel items bij een vak. Een
+  eigen item verplaats je op dezelfde manier, en een tik opent het om te wijzigen.
 - **Gebruik meten** (`src/usage.ts`, `docs/app-gebruik.md` op de site): een
   willekeurige installatie-id, sessies, schermen per dag en tikken op een
   pushbericht. Elke aanvraag draagt `X-VTK-Client` en `X-VTK-Install`, zodat de
@@ -787,4 +790,5 @@ Acht punten voor de release naar Apple en Google (site en app):
 - **Zoeken** opent pagina's, albums en menu-items in de app; enkel een andere
   site gaat nog naar de browser.
 - **Foto's**: traploos zoomen rond je vingers, ingezoomd slepen met uitbollen tot
-  de rand, en dubbeltikken op een plek.
+  de rand, en dubbeltikken op een plek. Omhoog of omlaag vegen of naast de foto
+  tikken brengt je terug naar het album.

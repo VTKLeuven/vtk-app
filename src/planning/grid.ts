@@ -2,6 +2,7 @@ import type {
   AppPlanning,
   AppPlanningItem,
   AppPlanningOccurrence,
+  AppPlanningPersonal,
   AppPlanningSession,
   AppPlanningVtkEvent,
 } from '../api/contract';
@@ -37,7 +38,8 @@ export const TYPE_LABELS: Record<string, string> = {
 export type Ref =
   | { kind: 'session'; session: AppPlanningSession }
   | { kind: 'item'; item: AppPlanningItem }
-  | { kind: 'vtk'; event: AppPlanningVtkEvent; occurrence: AppPlanningOccurrence };
+  | { kind: 'vtk'; event: AppPlanningVtkEvent; occurrence: AppPlanningOccurrence }
+  | { kind: 'personal'; item: AppPlanningPersonal };
 
 /** Een blok in het tijdsraster. */
 export type Block = {
@@ -48,7 +50,7 @@ export type Block = {
   time: string;
   title: string;
   place: string | null;
-  tone: Tone | 'vtk';
+  tone: Tone | 'vtk' | 'personal';
   mandatory: boolean;
   done: boolean;
   hidden: boolean;
@@ -216,6 +218,28 @@ export function contentByDay(planning: AppPlanning, showHidden: boolean): Map<st
         ref,
       });
     }
+  }
+
+  // Je eigen privé items: een blok, of bovenaan de dag wanneer het de hele dag duurt.
+  for (const item of planning.personal ?? []) {
+    const ref: Ref = { kind: 'personal', item };
+    if (item.allDay) {
+      day(item.date).chips.push({ key: `p:${item.id}`, label: item.title, vtk: false, done: false, ref });
+      continue;
+    }
+    day(item.date).blocks.push({
+      key: `p:${item.id}`,
+      startMin: item.startMin,
+      endMin: Math.max(item.endMin, item.startMin + 15),
+      time: item.start ?? '',
+      title: item.title,
+      place: item.location,
+      tone: 'personal',
+      mandatory: false,
+      done: false,
+      hidden: false,
+      ref,
+    });
   }
 
   for (const event of planning.vtkEvents) {

@@ -126,6 +126,8 @@ function Fact({ label, value }: { label: string; value: string | null | undefine
 export type Selection = { kind: 'session' | 'item' | 'vtk'; id: string; occurrence?: string } | null;
 
 export function selectionOf(ref: Ref): Selection {
+  // Een privé item opent zijn eigen blad (`PersonalSheet`), niet dit.
+  if (ref.kind === 'personal') return null;
   if (ref.kind === 'session') return { kind: 'session', id: ref.session.uid };
   if (ref.kind === 'item') return { kind: 'item', id: ref.item.id };
   return { kind: 'vtk', id: ref.event.id, occurrence: ref.occurrence.key };
@@ -245,6 +247,8 @@ export function DetailSheet({
       </Sheet>
     );
   }
+
+  if (ref.kind === 'personal') return <Sheet visible={false} title="" onClose={onClose}>{null}</Sheet>;
 
   return (
     <SessionSheet key={ref.session.uid} handle={handle} session={ref.session} planning={planning} onClose={onClose} />
