@@ -16,7 +16,7 @@ import { ServiceList } from '../components/ServiceList';
 import { KURT_URL } from '../components/planning/BlokView';
 import { LinkCard, TaskCard } from '../components/TaskCard';
 import { Button, Card, ErrorState, Loading, StaleNotice } from '../components/ui';
-import { formatVouchers } from '../format';
+import { formatDay, formatVouchers } from '../format';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
@@ -66,12 +66,7 @@ export default function HomeScreen() {
   const greeting = today.greetingName ? `Dag ${today.greetingName}` : 'VTK Leuven';
   const events = today.upcomingEvents.slice(0, MAX_EVENTS);
 
-  const dayLabel = new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'nl-BE', {
-    timeZone: 'Europe/Brussels',
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  }).format(new Date(today.now));
+  const dayLabel = formatDay(today.now, locale);
   const kicker = dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1);
 
   /** De knoppen rechtsboven: halfwit op een foto, wit met een schaduw op papier. */

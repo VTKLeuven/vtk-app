@@ -61,7 +61,11 @@ const GUTTER = 44;
 const HOUR = 52;
 const DAY_HEIGHT = 24 * HOUR;
 const VISIBLE_DAYS = 3;
+/** Aantal dagen voor en na het zichtbare venster waarvoor dagkoppen gemount blijven. */
+const HEAD_BUFFER = 14;
 const CHIP_ROW = 20;
+const EMPTY_BLOCKS: Block[] = [];
+const EMPTY_CHIPS: Chip[] = [];
 /** De marge links en rechts van de witte kaart rond het raster. */
 const GRID_MARGIN = 12;
 const SHOW_HIDDEN_KEY = 'planning-verborgen';
@@ -103,7 +107,7 @@ const BLOCK_STYLE = {
  * punten breed, en daarin past geen vaknaam. Drie is wat je vandaag en morgen
  * nodig hebt, en vegen brengt je verder.
  */
-export function PlanningView({
+export const PlanningView = memo(function PlanningView({
   locale,
   onOpenEvent,
   onOpenCourse,
@@ -126,6 +130,11 @@ export function PlanningView({
   const draft = personal?.kind === 'new' ? personal.draft : null;
   const [semesterChoice, setSemesterChoice] = useState<string | null>(null);
   const [openCourse, setOpenCourse] = useState<string | null>(null);
+  const handleSelect = useCallback(
+    (ref: Ref) =>
+      ref.kind === 'personal' ? setPersonal({ kind: 'edit', item: ref.item }) : setSelection(selectionOf(ref)),
+    [],
+  );
   // Zonder lessenrooster maar met iets in de blokkalender: dat is wat er te zien is.
   const hasBlok = data?.block ? data.block.exams.length + data.block.tasks.length > 0 : false;
   const mode: PlanningMode = chosenMode ?? (data && !data.subscribed && hasBlok ? 'blok' : 'week');
@@ -355,9 +364,7 @@ export function PlanningView({
         days={days}
         refreshing={resource.refreshing}
         onRefresh={() => void resource.refresh()}
-        onSelect={(ref) =>
-          ref.kind === 'personal' ? setPersonal({ kind: 'edit', item: ref.item }) : setSelection(selectionOf(ref))
-        }
+        onSelect={handleSelect}
         renderTitle={(subtitle) => title(subtitle)}
         draft={draft}
         onDraft={(next) => setPersonal({ kind: 'new', draft: next })}
@@ -391,7 +398,7 @@ export function PlanningView({
       {sheets}
     </View>
   );
-}
+});
 
 function IconButton({ label, onPress, children }: { label: string; onPress: () => void; children: React.ReactNode }) {
   return (
@@ -478,6 +485,9 @@ function Grid({
 
   const visible = days.slice(first, first + VISIBLE_DAYS);
   const label = visible.length > 0 ? monthSpan(visible[0], visible[visible.length - 1]) : '';
+  const headStart = Math.max(0, first - HEAD_BUFFER);
+  const headEnd = Math.min(days.length, first + VISIBLE_DAYS + HEAD_BUFFER);
+  const headDays = days.slice(headStart, headEnd);
 
   const goToday = () => {
     list.current?.scrollToIndex({ index: todayIndex, animated: true });
@@ -512,16 +522,17 @@ function Grid({
             style={{
               flexDirection: 'row',
               width: column * days.length,
+              paddingLeft: headStart * column,
               transform: [{ translateX: Animated.multiply(scrollX, -1) }],
             }}
           >
-            {days.map((date) => (
+            {headDays.map((date) => (
               <DayHead
                 key={date}
                 date={date}
                 width={column}
                 today={date === now.date}
-                chips={content.get(date)?.chips ?? []}
+                chips={content.get(date)?.chips ?? EMPTY_CHIPS}
                 chipRows={chipRows}
                 onSelect={onSelect}
               />
@@ -579,7 +590,7 @@ function Grid({
                 <DayColumn
                   date={item}
                   width={column}
-                  blocks={content.get(item)?.blocks ?? []}
+                  blocks={content.get(item)?.blocks ?? EMPTY_BLOCKS}
                   nowMinutes={item === now.date ? now.minutes : null}
                   onSelect={onSelect}
                   movingKey={drag.movingKey}
@@ -853,7 +864,7 @@ function DragBlock({ state, width }: { state: DragOverlay; width: number }) {
   );
 }
 
-function DayHead({
+const DayHead = memo(function DayHead({
   date,
   width,
   today,
@@ -910,7 +921,7 @@ function DayHead({
       ) : null}
     </View>
   );
-}
+});
 
 const DayColumn = memo(function DayColumn({
   date,

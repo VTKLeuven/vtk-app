@@ -34,6 +34,26 @@ function isoWeek(monday: Date): number {
   return Math.round((monday.getTime() - firstMonday.getTime()) / (7 * DAY_MS)) + 1;
 }
 
+type WeekFormatters = {
+  dayMonth: Intl.DateTimeFormat;
+  dayOnly: Intl.DateTimeFormat;
+};
+
+const weekFormatters: Partial<Record<AppLocale, WeekFormatters>> = {};
+
+function weekFormattersFor(locale: AppLocale): WeekFormatters {
+  let cached = weekFormatters[locale];
+  if (!cached) {
+    const tag = locale === 'en' ? 'en-GB' : 'nl-BE';
+    cached = {
+      dayMonth: new Intl.DateTimeFormat(tag, { timeZone: 'UTC', day: 'numeric', month: 'long' }),
+      dayOnly: new Intl.DateTimeFormat(tag, { timeZone: 'UTC', day: 'numeric' }),
+    };
+    weekFormatters[locale] = cached;
+  }
+  return cached;
+}
+
 /**
  * Groepeert `items` per week op het tijdstip dat `isoOf` teruggeeft. De volgorde
  * van de items blijft; de weken staan in de volgorde waarin ze voor het eerst
@@ -45,9 +65,7 @@ export function groupByWeek<T>(
   locale: AppLocale,
 ): WeekGroup<T>[] {
   const thisMonday = mondayOf(todayKey()).getTime();
-  const tag = locale === 'en' ? 'en-GB' : 'nl-BE';
-  const dayMonth = new Intl.DateTimeFormat(tag, { timeZone: 'UTC', day: 'numeric', month: 'long' });
-  const dayOnly = new Intl.DateTimeFormat(tag, { timeZone: 'UTC', day: 'numeric' });
+  const { dayMonth, dayOnly } = weekFormattersFor(locale);
 
   const weeks = new Map<number, WeekGroup<T>>();
   for (const item of items) {

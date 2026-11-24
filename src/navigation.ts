@@ -1,5 +1,5 @@
-import { useRouter, useSegments } from 'expo-router';
-import { useMemo } from 'react';
+import { useRouter } from 'expo-router';
+import { createContext, createElement, useContext, useMemo, type ReactNode } from 'react';
 
 /**
  * Navigeren binnen de tab waar je staat.
@@ -173,11 +173,23 @@ export function resolveTabHref(path: string, current: TabName): string {
   return `${PREFIX[tab]}/${segments.join('/')}${query ? `?${query}` : ''}`;
 }
 
+const TabContext = createContext<TabName | null>(null);
+
+/**
+ * Maakt de huidige tab statisch bekend voor alle schermen binnen haar stack.
+ *
+ * Elke tablayout wikkelt zijn `<Stack>` hierin (zie `scripts/genereer-routes.mjs`).
+ * Zo leest `useCurrentTab` een waarde die voor een gemount scherm nooit verandert
+ * in plaats van de globale routerstatus via `useSegments()`, waardoor een tabwissel
+ * geen andere gemounte tabs meer opnieuw rendert.
+ */
+export function TabScope({ tab, children }: { tab: TabName; children: ReactNode }) {
+  return createElement(TabContext.Provider, { value: tab }, children);
+}
+
 /** De tab waarin het scherm staat dat dit aanroept. */
 export function useCurrentTab(): TabName {
-  const segments = useSegments();
-  const found = segments.find((segment): segment is TabName => segment in PREFIX);
-  return found ?? '(home)';
+  return useContext(TabContext) ?? '(home)';
 }
 
 /**

@@ -69,31 +69,55 @@ export type CachedValue<T> = {
   savedAt: number;
 };
 
+const memoryCache = new Map<string, CachedValue<unknown>>();
+let cacheEpoch = 0;
+
 export function readCache<T>(key: string): CachedValue<T> | null {
+  const hit = memoryCache.get(key);
+  if (hit) return hit as CachedValue<T>;
   try {
     const row = db.getFirstSync<{ payload: string; saved_at: number }>(
       'SELECT payload, saved_at FROM cache WHERE key = ?',
       key,
     );
     if (!row) return null;
-    return { value: JSON.parse(row.payload) as T, savedAt: row.saved_at };
+    const entry: CachedValue<T> = { value: JSON.parse(row.payload) as T, savedAt: row.saved_at };
+    memoryCache.set(key, entry);
+    return entry;
   } catch {
     return null;
   }
 }
 
 export function writeCache(key: string, value: unknown): void {
+  const savedAt = Date.now();
+  const epoch = cacheEpoch;
+  memoryCache.set(key, { value, savedAt });
+
+  let payload: string;
   try {
-    db.runSync(
+    payload = JSON.stringify(value);
+  } catch (error) {
+    console.error('Cache bewaren mislukt', error);
+    return;
+  }
+
+  void db
+    .runAsync(
       'INSERT OR REPLACE INTO cache (key, payload, saved_at) VALUES (?, ?, ?)',
       key,
-      JSON.stringify(value),
-      Date.now(),
-    );
-  } catch (error) {
-    // Een vol toestel mag geen scherm breken; zonder cache haalt hij gewoon op.
-    console.error('Cache bewaren mislukt', error);
-  }
+      payload,
+      savedAt,
+    )
+    .then(() => {
+      if (epoch !== cacheEpoch) {
+        void db.runAsync('DELETE FROM cache WHERE key = ? AND saved_at = ?', key, savedAt).catch(() => {});
+      }
+    })
+    .catch((error) => {
+      // Een vol toestel mag geen scherm breken; zonder cache haalt hij gewoon op.
+      console.error('Cache bewaren mislukt', error);
+    });
 }
 
 /**
@@ -102,6 +126,8 @@ export function writeCache(key: string, value: unknown): void {
  * levert schermen op die iets tonen dat niet meer van jou is.
  */
 export function clearCache(): void {
+  cacheEpoch += 1;
+  memoryCache.clear();
   try {
     db.runSync('DELETE FROM cache');
   } catch {

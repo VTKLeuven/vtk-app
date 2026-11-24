@@ -92,23 +92,36 @@ export function monthGrid(anchor: MonthAnchor): GridCell[] {
   });
 }
 
+const monthLabelFormats: Partial<Record<'nl' | 'en', Intl.DateTimeFormat>> = {};
+const weekdayLabelCache: Partial<Record<'nl' | 'en', string[]>> = {};
+
 /** De naam van de maand, voor boven het rooster. */
 export function monthLabel(anchor: MonthAnchor, locale: 'nl' | 'en'): string {
-  return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'nl-BE', {
-    timeZone: 'UTC',
-    month: 'long',
-    year: 'numeric',
-  }).format(utcNoon(anchor.year, anchor.month, 1));
+  let format = monthLabelFormats[locale];
+  if (!format) {
+    format = new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'nl-BE', {
+      timeZone: 'UTC',
+      month: 'long',
+      year: 'numeric',
+    });
+    monthLabelFormats[locale] = format;
+  }
+  return format.format(utcNoon(anchor.year, anchor.month, 1));
 }
 
 /** De zeven kopletters boven het rooster, maandag eerst. */
 export function weekdayLabels(locale: 'nl' | 'en'): string[] {
-  const format = new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'nl-BE', {
-    timeZone: 'UTC',
-    weekday: 'short',
-  });
-  // 2026-01-05 was een maandag; het jaar doet er niet toe, enkel de weekdag.
-  return Array.from({ length: 7 }, (_, index) => format.format(utcNoon(2026, 1, 5 + index)));
+  let labels = weekdayLabelCache[locale];
+  if (!labels) {
+    const format = new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'nl-BE', {
+      timeZone: 'UTC',
+      weekday: 'short',
+    });
+    // 2026-01-05 was een maandag; het jaar doet er niet toe, enkel de weekdag.
+    labels = Array.from({ length: 7 }, (_, index) => format.format(utcNoon(2026, 1, 5 + index)));
+    weekdayLabelCache[locale] = labels;
+  }
+  return labels;
 }
 
 /**

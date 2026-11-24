@@ -1,9 +1,32 @@
+import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { AppLocale } from '../api/contract';
 import { COLORS, FONTS } from '../theme/tokens';
 
 const TZ = 'Europe/Brussels';
+
+type PinFormatters = {
+  weekday: Intl.DateTimeFormat;
+  day: Intl.DateTimeFormat;
+  month: Intl.DateTimeFormat;
+};
+
+const pinFormatters: Partial<Record<AppLocale, PinFormatters>> = {};
+
+function formattersFor(locale: AppLocale): PinFormatters {
+  let cached = pinFormatters[locale];
+  if (!cached) {
+    const tag = locale === 'en' ? 'en-GB' : 'nl-BE';
+    cached = {
+      weekday: new Intl.DateTimeFormat(tag, { timeZone: TZ, weekday: 'short' }),
+      day: new Intl.DateTimeFormat(tag, { timeZone: TZ, day: 'numeric' }),
+      month: new Intl.DateTimeFormat(tag, { timeZone: TZ, month: 'short' }),
+    };
+    pinFormatters[locale] = cached;
+  }
+  return cached;
+}
 
 /**
  * De gele datumpin van de site (`.ev-card-pin`): weekdag boven, het getal groot,
@@ -13,7 +36,7 @@ const TZ = 'Europe/Brussels';
  * `quiet` is de lichtblauwe variant voor een dag zonder iets, en `active` de
  * gele in een rij keuzes (de verkoopdagen van het Theokot), waar de rest wit is.
  */
-export function DatePin({
+export const DatePin = memo(function DatePin({
   iso,
   locale,
   size = 'md',
@@ -31,14 +54,10 @@ export function DatePin({
   shadow?: boolean;
 }) {
   const date = new Date(iso);
-  const tag = locale === 'en' ? 'en-GB' : 'nl-BE';
-  const weekday = date
-    .toLocaleDateString(tag, { timeZone: TZ, weekday: 'short' })
-    .replace('.', '');
-  const day = date.toLocaleDateString(tag, { timeZone: TZ, day: 'numeric' });
-  const monthLabel = date
-    .toLocaleDateString(tag, { timeZone: TZ, month: 'short' })
-    .replace('.', '');
+  const fmt = formattersFor(locale);
+  const weekday = fmt.weekday.format(date).replace('.', '');
+  const day = fmt.day.format(date);
+  const monthLabel = month ? fmt.month.format(date).replace('.', '') : '';
 
   const box = size === 'sm' ? styles.sm : styles.md;
   return (
@@ -57,7 +76,7 @@ export function DatePin({
       {month ? <Text style={[styles.small, tone === 'ink' && styles.smallInk]}>{monthLabel}</Text> : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   pin: {

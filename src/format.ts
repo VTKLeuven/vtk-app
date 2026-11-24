@@ -15,9 +15,34 @@ function tag(locale: AppLocale): string {
   return locale === 'en' ? 'en-GB' : 'nl-BE';
 }
 
+const dateFormatters = new Map<string, Intl.DateTimeFormat>();
+const numberFormatters = new Map<string, Intl.NumberFormat>();
+
+function dateFormat(localeTag: string, key: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const id = `${localeTag}:${key}`;
+  let cached = dateFormatters.get(id);
+  if (!cached) {
+    cached = new Intl.DateTimeFormat(localeTag, options);
+    dateFormatters.set(id, cached);
+  }
+  return cached;
+}
+
+function numberFormat(localeTag: string, key: string, options: Intl.NumberFormatOptions): Intl.NumberFormat {
+  const id = `${localeTag}:${key}`;
+  let cached = numberFormatters.get(id);
+  if (!cached) {
+    cached = new Intl.NumberFormat(localeTag, options);
+    numberFormatters.set(id, cached);
+  }
+  return cached;
+}
+
+const isoDayFormat = new Intl.DateTimeFormat('en-CA', { timeZone: TZ });
+
 /** "maandag 15 september" */
 export function formatDay(iso: string, locale: AppLocale): string {
-  return new Intl.DateTimeFormat(tag(locale), {
+  return dateFormat(tag(locale), 'day', {
     timeZone: TZ,
     weekday: 'long',
     day: 'numeric',
@@ -27,7 +52,7 @@ export function formatDay(iso: string, locale: AppLocale): string {
 
 /** "ma 15 sep" */
 export function formatDayShort(iso: string, locale: AppLocale): string {
-  return new Intl.DateTimeFormat(tag(locale), {
+  return dateFormat(tag(locale), 'dayShort', {
     timeZone: TZ,
     weekday: 'short',
     day: 'numeric',
@@ -37,7 +62,7 @@ export function formatDayShort(iso: string, locale: AppLocale): string {
 
 /** "12:00" */
 export function formatTime(iso: string, locale: AppLocale): string {
-  return new Intl.DateTimeFormat(tag(locale), {
+  return dateFormat(tag(locale), 'time', {
     timeZone: TZ,
     hour: '2-digit',
     minute: '2-digit',
@@ -62,8 +87,7 @@ export function formatEventWhen(
 ): string {
   const start = formatDay(startIso, locale);
   const sameDay =
-    new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date(startIso)) ===
-    new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date(endIso));
+    isoDayFormat.format(new Date(startIso)) === isoDayFormat.format(new Date(endIso));
 
   if (allDay) {
     return sameDay ? start : `${start} tot ${formatDay(endIso, locale)}`;
@@ -78,7 +102,7 @@ export function formatEventWhen(
  * `formatVouchers` op de site.
  */
 export function formatVouchers(amount: number, locale: AppLocale = 'nl'): string {
-  return new Intl.NumberFormat(tag(locale), { maximumFractionDigits: 1 }).format(amount);
+  return numberFormat(tag(locale), 'vouchers', { maximumFractionDigits: 1 }).format(amount);
 }
 
 /** Eurocent naar "€2,60"; zelfde notatie als `formatEuro` op de site. */
@@ -91,7 +115,7 @@ export function formatEuro(cents: number): string {
  * niet vanzelf spreekt: in de lijst per jaar staat het al in de kop erboven.
  */
 export function formatShortDate(iso: string, locale: AppLocale, withYear: boolean): string {
-  return new Intl.DateTimeFormat(tag(locale), {
+  return dateFormat(tag(locale), withYear ? 'shortDateYear' : 'shortDate', {
     timeZone: TZ,
     day: 'numeric',
     month: 'short',
@@ -101,7 +125,7 @@ export function formatShortDate(iso: string, locale: AppLocale, withYear: boolea
 
 /** "15 september 2026" */
 export function formatLongDate(iso: string, locale: AppLocale): string {
-  return new Intl.DateTimeFormat(tag(locale), {
+  return dateFormat(tag(locale), 'longDate', {
     timeZone: TZ,
     day: 'numeric',
     month: 'long',
@@ -111,7 +135,7 @@ export function formatLongDate(iso: string, locale: AppLocale): string {
 
 /** "15 september", voor een ban of een deadline. */
 export function formatDate(iso: string, locale: AppLocale): string {
-  return new Intl.DateTimeFormat(tag(locale), {
+  return dateFormat(tag(locale), 'date', {
     timeZone: TZ,
     day: 'numeric',
     month: 'long',

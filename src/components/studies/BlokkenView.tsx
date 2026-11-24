@@ -169,10 +169,12 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
   }, [session, applyOverview]);
 
   // Terugkomen van het groepsscherm hoort de lijst bij te werken; daar kan net
-  // een groep bijgekomen of verdwenen zijn.
+  // een groep bijgekomen of verdwenen zijn. De eerste keer haalt `useResource` zelf op.
+  const focusedOnce = useRef(false);
   useFocusEffect(
     useCallback(() => {
-      if (viewer) void resource.reload();
+      if (focusedOnce.current && viewer) void resource.reload();
+      focusedOnce.current = true;
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [viewer?.id]),
   );

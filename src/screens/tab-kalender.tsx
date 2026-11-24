@@ -117,6 +117,7 @@ export default function KalenderScreen() {
         tot: range?.to,
       }),
     `${locale}:${mine ? 'mijn' : ''}:${range ? `${range.from}-${range.to}` : 'nu'}`,
+    !planning,
   );
 
   /**

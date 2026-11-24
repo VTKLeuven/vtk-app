@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 import Svg, { Circle, Defs, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
@@ -32,91 +33,114 @@ import {
  *
  * De meetkunde staat in `skylineShapes.ts`; hier wordt ze enkel getekend.
  */
-export function Skyline({
-  buildings,
-  height = 132,
-  moon = false,
-  style,
-}: {
-  buildings: Building[];
-  height?: number;
-  /** De maan uit het posterbeeld. Enkel op een groot paneel, niet in een rij. */
-  moon?: boolean;
-  style?: ViewStyle;
-}) {
-  const placed = placeSkyline(buildings, height);
-  const stars = starsFor(height);
-
-  return (
-    <View style={[styles.wrap, { height }, style]}>
-      <Svg
-        width="100%"
-        height={height}
-        viewBox={`0 0 ${VIEW_WIDTH} ${height}`}
-        preserveAspectRatio="none"
-      >
-        <Defs>
-          <LinearGradient id="vtk-sky" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={SKY_TOP} />
-            <Stop offset="1" stopColor={SKY_HORIZON} />
-          </LinearGradient>
-        </Defs>
-
-        <Rect x={0} y={0} width={VIEW_WIDTH} height={height} fill="url(#vtk-sky)" />
-
-        {stars.map((star, index) => (
-          <Circle
-            key={index}
-            cx={star.cx}
-            cy={star.cy}
-            r={star.r}
-            fill="#FFFFFF"
-            opacity={star.opacity}
-          />
-        ))}
-
-        {moon ? (
-          <G>
-            <Circle cx={VIEW_WIDTH - 40} cy={26} r={13} fill="#FFFFFF" opacity={0.08} />
-            <Path
-              d={`M${VIEW_WIDTH - 36},17 a9,9 0 1 0 0.6,17.8 a7,7 0 1 1 -0.6,-17.8 Z`}
-              fill="#F2F5FF"
-              opacity={0.92}
-            />
-          </G>
-        ) : null}
-
-        {placed.map((item) => (
-          <G key={item.key}>
-            <Rect
-              x={item.x}
-              y={item.top}
-              width={item.width}
-              height={height - GROUND - item.top}
-              fill={item.fill}
-            />
-            {item.roof ? <Path d={item.roof} fill={item.fill} /> : null}
-            {item.windows.map((window, index) => (
-              <Rect
-                key={index}
-                x={window.x}
-                y={window.y}
-                width={window.width}
-                height={window.height}
-                rx={0.6}
-                fill={window.fill}
-                opacity={window.opacity}
-              />
-            ))}
-            {item.crane ? <Path d={item.crane} fill="#FFD23F" opacity={0.95} /> : null}
-          </G>
-        ))}
-
-        <Rect x={0} y={height - GROUND} width={VIEW_WIDTH} height={GROUND} fill={GROUND_LINE} />
-      </Svg>
-    </View>
-  );
+function sameBuildings(a: readonly Building[], b: readonly Building[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (
+      a[i].key !== b[i].key ||
+      a[i].floors !== b[i].floors ||
+      a[i].lit !== b[i].lit ||
+      a[i].building !== b[i].building
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
+
+export const Skyline = memo(
+  function Skyline({
+    buildings,
+    height = 132,
+    moon = false,
+    style,
+  }: {
+    buildings: Building[];
+    height?: number;
+    /** De maan uit het posterbeeld. Enkel op een groot paneel, niet in een rij. */
+    moon?: boolean;
+    style?: ViewStyle;
+  }) {
+    const placed = useMemo(() => placeSkyline(buildings, height), [buildings, height]);
+    const stars = useMemo(() => starsFor(height), [height]);
+
+    return (
+      <View style={[styles.wrap, { height }, style]}>
+        <Svg
+          width="100%"
+          height={height}
+          viewBox={`0 0 ${VIEW_WIDTH} ${height}`}
+          preserveAspectRatio="none"
+        >
+          <Defs>
+            <LinearGradient id="vtk-sky" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={SKY_TOP} />
+              <Stop offset="1" stopColor={SKY_HORIZON} />
+            </LinearGradient>
+          </Defs>
+
+          <Rect x={0} y={0} width={VIEW_WIDTH} height={height} fill="url(#vtk-sky)" />
+
+          {stars.map((star, index) => (
+            <Circle
+              key={index}
+              cx={star.cx}
+              cy={star.cy}
+              r={star.r}
+              fill="#FFFFFF"
+              opacity={star.opacity}
+            />
+          ))}
+
+          {moon ? (
+            <G>
+              <Circle cx={VIEW_WIDTH - 40} cy={26} r={13} fill="#FFFFFF" opacity={0.08} />
+              <Path
+                d={`M${VIEW_WIDTH - 36},17 a9,9 0 1 0 0.6,17.8 a7,7 0 1 1 -0.6,-17.8 Z`}
+                fill="#F2F5FF"
+                opacity={0.92}
+              />
+            </G>
+          ) : null}
+
+          {placed.map((item) => (
+            <G key={item.key}>
+              <Rect
+                x={item.x}
+                y={item.top}
+                width={item.width}
+                height={height - GROUND - item.top}
+                fill={item.fill}
+              />
+              {item.roof ? <Path d={item.roof} fill={item.fill} /> : null}
+              {item.windows.map((window, index) => (
+                <Rect
+                  key={index}
+                  x={window.x}
+                  y={window.y}
+                  width={window.width}
+                  height={window.height}
+                  rx={0.6}
+                  fill={window.fill}
+                  opacity={window.opacity}
+                />
+              ))}
+              {item.crane ? <Path d={item.crane} fill="#FFD23F" opacity={0.95} /> : null}
+            </G>
+          ))}
+
+          <Rect x={0} y={height - GROUND} width={VIEW_WIDTH} height={GROUND} fill={GROUND_LINE} />
+        </Svg>
+      </View>
+    );
+  },
+  (prev, next) =>
+    prev.height === next.height &&
+    prev.moon === next.moon &&
+    prev.style === next.style &&
+    sameBuildings(prev.buildings, next.buildings),
+);
 
 export { buildingFor, relativeBuildings, type Building } from './skylineShapes';
 

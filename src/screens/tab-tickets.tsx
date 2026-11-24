@@ -69,7 +69,7 @@ export default function TicketsScreen() {
   useTabParam<Tab>(params.tab, ['kopen', 'mijne'], setTab);
   useTrackView(`tickets:${tab}`);
 
-  const sales = useResource('tickets', () => fetchTicketEvents(locale), locale);
+  const sales = useResource('tickets', () => fetchTicketEvents(locale), locale, tab === 'kopen');
   const mine = useResource(
     'mijn-tickets',
     () => (viewer ? fetchMyTickets(locale) : Promise.resolve([])),

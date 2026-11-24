@@ -2,6 +2,7 @@
 
 import { Stack } from 'expo-router';
 
+import { TabScope } from '../../../src/navigation';
 import { COLORS } from '../../../src/theme/tokens';
 
 /**
@@ -25,14 +26,16 @@ export const unstable_settings = { anchor: 'index' };
 
 export default function MeerStackLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: COLORS.paper },
-        // De veeg vanaf de linkerrand. Op iOS is dit de standaard, op Android niet.
-        gestureEnabled: true,
-        animation: 'slide_from_right',
-      }}
-    />
+    <TabScope tab="meer">
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: COLORS.paper },
+          // De veeg vanaf de linkerrand. Op iOS is dit de standaard, op Android niet.
+          gestureEnabled: true,
+          animation: 'slide_from_right',
+        }}
+      />
+    </TabScope>
   );
 }

@@ -36,6 +36,43 @@ export type Resource<T> = {
   reload: () => Promise<void>;
 };
 
+type ResourceState<T> = {
+  key: string;
+  enabled: boolean;
+  data: T | null;
+  hasCache: boolean;
+  loading: boolean;
+  refreshing: boolean;
+  stale: boolean;
+  error: Error | null;
+};
+
+function initialState<T>(key: string, enabled: boolean): ResourceState<T> {
+  if (!enabled) {
+    return {
+      key,
+      enabled: false,
+      data: null,
+      hasCache: false,
+      loading: false,
+      refreshing: false,
+      stale: false,
+      error: null,
+    };
+  }
+  const fromCache = readCache<T>(key);
+  return {
+    key,
+    enabled: true,
+    data: fromCache?.value ?? null,
+    hasCache: Boolean(fromCache),
+    loading: !fromCache,
+    refreshing: false,
+    stale: false,
+    error: null,
+  };
+}
+
 export function useResource<T>(
   cacheKey: string,
   fetcher: () => Promise<T>,
@@ -50,61 +87,76 @@ export function useResource<T>(
    */
   enabled: boolean = true,
 ): Resource<T> {
-  const cached = useRef<{ key: string; value: T } | null>(null);
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [stale, setStale] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const key = `${cacheKey}:${deps}`;
+  const [state, setState] = useState<ResourceState<T>>(() => initialState<T>(key, enabled));
+
+  let current = state;
+  if (state.key !== key || state.enabled !== enabled) {
+    current = initialState<T>(key, enabled);
+    setState(current);
+  }
 
   // De fetcher wordt bij elke render opnieuw aangemaakt door de beller; hem in
   // een ref houden voorkomt dat het effect daarop opnieuw draait.
   const fetcherRef = useRef(fetcher);
-  fetcherRef.current = fetcher;
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+  });
 
-  const key = `${cacheKey}:${deps}`;
+  const seqRef = useRef(0);
 
   const load = useCallback(
     async (mode: 'initial' | 'refresh' | 'reload') => {
       if (!enabled) return;
-      if (mode === 'refresh') setRefreshing(true);
+      const requestSeq = ++seqRef.current;
+      if (mode === 'refresh') {
+        setState((prev) => (prev.key === key && prev.enabled ? { ...prev, refreshing: true } : prev));
+      }
       try {
         const value = await fetcherRef.current();
-        setData(value);
+        if (seqRef.current !== requestSeq) return;
         writeCache(key, value);
-        setStale(false);
-        setError(null);
+        setState((prev) =>
+          prev.key === key && prev.enabled
+            ? {
+                ...prev,
+                data: value,
+                hasCache: true,
+                loading: false,
+                refreshing: false,
+                stale: false,
+                error: null,
+              }
+            : prev,
+        );
       } catch (caught) {
+        if (seqRef.current !== requestSeq) return;
         const failure = caught instanceof Error ? caught : new NetworkError(caught);
-        setError(failure);
-        // Staat er iets uit de cache, dan blijft dat staan en zeggen we erbij dat
-        // het oud is. Staat er niets, dan is dit gewoon een fout.
-        setStale(cached.current?.key === key);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
+        setState((prev) =>
+          prev.key === key && prev.enabled
+            ? {
+                ...prev,
+                loading: false,
+                refreshing: false,
+                // Staat er iets uit de cache, dan blijft dat staan en zeggen we erbij dat
+                // het oud is. Staat er niets, dan is dit gewoon een fout.
+                stale: prev.hasCache,
+                error: failure,
+              }
+            : prev,
+        );
       }
     },
     [key, enabled],
   );
 
   useEffect(() => {
-    if (!enabled) {
-      cached.current = null;
-      setData(null);
-      setLoading(false);
-      setStale(false);
-      setError(null);
-      return;
-    }
-    const fromCache = readCache<T>(key);
-    cached.current = fromCache ? { key, value: fromCache.value } : null;
-    setData(fromCache?.value ?? null);
-    setLoading(!fromCache);
-    setStale(false);
-    setError(null);
+    if (!enabled) return;
     void load('initial');
-  }, [key, load, enabled]);
+    return () => {
+      seqRef.current += 1;
+    };
+  }, [enabled, load]);
 
   // Stabiel, zodat een scherm `refresh` in de afhankelijkheden van een effect of
   // van `useFocusEffect` kan zetten zonder bij elke render opnieuw op te halen.
@@ -112,11 +164,11 @@ export function useResource<T>(
   const reload = useCallback(() => load('reload'), [load]);
 
   return {
-    data,
-    loading,
-    refreshing,
-    stale,
-    error,
+    data: current.data,
+    loading: current.loading,
+    refreshing: current.refreshing,
+    stale: current.stale,
+    error: current.error,
     refresh,
     reload,
   };

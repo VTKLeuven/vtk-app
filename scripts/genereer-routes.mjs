@@ -52,6 +52,7 @@ const GENERATED = '// Gemaakt door scripts/genereer-routes.mjs. Pas src/navigati
 const layout = (tab, up) => `${GENERATED}
 import { Stack } from 'expo-router';
 
+import { TabScope } from '${up}src/navigation';
 import { COLORS } from '${up}src/theme/tokens';
 
 /**
@@ -75,15 +76,17 @@ export const unstable_settings = { anchor: 'index' };
 
 export default function ${NAMES[tab]}StackLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: COLORS.paper },
-        // De veeg vanaf de linkerrand. Op iOS is dit de standaard, op Android niet.
-        gestureEnabled: true,
-        animation: 'slide_from_right',
-      }}
-    />
+    <TabScope tab="${tab}">
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: COLORS.paper },
+          // De veeg vanaf de linkerrand. Op iOS is dit de standaard, op Android niet.
+          gestureEnabled: true,
+          animation: 'slide_from_right',
+        }}
+      />
+    </TabScope>
   );
 }
 `;
