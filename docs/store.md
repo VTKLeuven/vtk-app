@@ -19,7 +19,9 @@ niet opnieuw moet beginnen. Pas het hier aan wanneer je het daar aanpast.
 - **1.2.0**: Een volledig nieuw ontwerp. Home opent met de evenementen van vandaag, wat er
   open is en je volgende lessen. Nieuw: de menu's van de Alma's, tijdsloten bij de
   cursusdienst, vakevaluaties van Burgieclan, en je tickets met de affiche van het
-  evenement.
+  evenement. Je planning toont nu ook per vak wat je nog moet inhalen, het hele
+  semester in één raster en een blokkalender voor je examens; houd een plek in je
+  week ingedrukt om er zelf iets in te zetten. En inzoomen op foto's gaat vlot.
 - **1.1.0**: Een nieuw icoon: het VTK-logo in navy op geel. Home toont nu je volgende drie
   lessen, ook als je vandaag geen les meer hebt.
 
