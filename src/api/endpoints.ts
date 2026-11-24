@@ -1,6 +1,7 @@
 import { apiFetch, appApi } from './client';
 import type {
   AppAdminDashboard,
+  AppAlma,
   AppAlbumDetail,
   AppBurgieclanCourse,
   AppBurgieclanCourseDetail,
@@ -566,4 +567,15 @@ export function cancelCudiLine(locale: AppLocale, orderItemId: string): Promise<
 
 export function cudiCheckout(locale: AppLocale, orderId: string): Promise<{ checkoutUrl: string }> {
   return apiFetch(appApi('/cudi/betalen', { locale }), { method: 'POST', body: { orderId }, timeout: 20_000 });
+}
+
+// ── Alma ────────────────────────────────────────────────────────────────────
+
+/**
+ * De Alma's op campus Arenberg: open of niet, de uren van de week en het menu van
+ * een dag (standaard vandaag). De site leest alma.be en houdt het een half uur
+ * bij; de app praat enkel met vtk.be. Werkt zonder login.
+ */
+export function fetchAlma(locale: AppLocale, datum?: string): Promise<AppAlma> {
+  return apiFetch<AppAlma>(appApi('/alma', { locale, datum }), { timeout: 15_000 });
 }

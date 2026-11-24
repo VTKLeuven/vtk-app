@@ -55,6 +55,7 @@ export const TAB_ROUTES = {
     'broodjes',
     'bestellen',
     'peilingen',
+    'alma',
   ],
   kalender: ['evenement/[id]', 'ticket/[slug]', 'mijn-tickets', 'meldingen'],
   studies: [

@@ -6,6 +6,7 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'r
 import type { AppCalendarEvent, AppLocale } from '../api/contract';
 import { fetchToday } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
+import { AlmaToday } from '../components/AlmaToday';
 import { HomeHero, shortWhen } from '../components/HomeHero';
 import { CARD_SHADOW, HomeSection } from '../components/HomeSection';
 import { PageHead } from '../components/PageHead';
@@ -36,6 +37,8 @@ const MAX_EVENTS = 6;
  * - Theokot, cudi en 't ElixIr als één witte balk (`ServiceList`);
  * - je volgende drie lessen in één kaart (`UpcomingLessonsList`), voor wie een
  *   lessenrooster koppelde;
+ * - de vier Alma's op campus Arenberg (`AlmaToday`): open of niet en wat er
+ *   warm op het menu staat;
  * - "Voor jou" als witte kaarten (`TaskCard`), de broodjes met een foto;
  * - de aankomende evenementen nog eens als lijst, en "Snel naar".
  *
@@ -152,6 +155,9 @@ export default function HomeScreen() {
           upcoming={upcoming}
           onOpen={() => router.push({ pathname: '/kalender', params: { tab: 'planning' } })}
         />
+
+        {/* De Alma's op campus: open of niet, en wat er warm op het menu staat. */}
+        <AlmaToday />
 
         {today.tasks.length > 0 ? (
           <HomeSection title="Voor jou">

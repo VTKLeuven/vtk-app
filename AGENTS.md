@@ -238,6 +238,13 @@ uitzondering: die werkt in Expo Go niet.
   evenement- en ticketbeschrijvingen).
 - `src/campus/` - geografie, positiebepaling (`expo-location`) en wandelroutes
   op campus Arenberg voor de lokalenzoeker (`src/screens/lokalen.tsx`).
+- `src/alma.ts`, `src/screens/alma.tsx`, `src/components/AlmaToday.tsx` - de
+  vier Alma's op campus Arenberg (Alma 3, Quadrivium, De Moete, ESAT2): open of
+  niet, de uren van de week en het menu per dag, op Home onder je lessen en als
+  eigen scherm. Alma heeft geen API; vtk.be leest hun pagina's (`lib/alma/` op de
+  site, een half uur in de cache) en geeft ze door via `/api/app/v1/alma`. Wijzigt
+  alma.be zijn opmaak, dan valt het menu weg tot `lib/alma/parse.ts` mee is; de
+  app praat nooit zelf met alma.be.
 - `src/api/useResource.ts` - het patroon van elk scherm dat gegevens ophaalt:
   cache tonen, ophalen, en het zeggen wanneer die verversing niet lukte.
 - `src/format.ts` - datums, uren en geld, altijd in `Europe/Brussels`.
