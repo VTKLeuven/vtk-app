@@ -105,7 +105,8 @@ uitzondering: die werkt in Expo Go niet.
    vragen, uploaden op Burgieclan, tweedehands en printen op cudi) horen
    daar. Sinds november 2026 is er één uitzondering bij, `src/screens/web.tsx`:
    een onderdeel van de admin (zie 3), en de twee eenmalige stappen op cudi die
-   bij je account horen (voorwaarden aanvaarden, je vakken aanduiden). Enkel
+   bij je account horen (voorwaarden aanvaarden, je vakken aanduiden), en het
+   feedbackformulier van de app op dopl.vtk.be (Meer › Feedback App). Enkel
    `*.vtk.be` opent daar.
 3. **De admin niet nabouwen.** Tot november 2026 stond hier "geen admin". Nu
    heeft wie in het beheer mag (dezelfde regel als de link op de site: een recht

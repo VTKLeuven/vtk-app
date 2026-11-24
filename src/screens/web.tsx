@@ -24,6 +24,8 @@ import { COLORS } from '../theme/tokens';
  *   nabouwen zou ze op twee plaatsen laten leven.
  * - **Twee stappen op cudi** die bij je account horen: de voorwaarden aanvaarden
  *   en je vakken aanduiden. Eén keer, en daarna doet de app de rest native.
+ * - **Het feedbackformulier van de app** op dopl.vtk.be (Meer › Feedback App),
+ *   in je taal en met je naam en e-mail al ingevuld.
  *
  * Een pagina van de site of van cudi krijgt `data-vtk-app` op `<html>` nog voor
  * ze laadt; de site laat dan haar kop, voet en adminzijbalk weg

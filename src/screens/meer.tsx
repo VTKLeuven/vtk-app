@@ -1,12 +1,12 @@
 import { Image } from 'expo-image';
 
 import * as WebBrowser from 'expo-web-browser';
-import { ChevronDown, ChevronRight, ExternalLink, Search } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, ExternalLink, MessageSquare, Search } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { baseUrl } from '../api/client';
-import type { AppNavTab } from '../api/contract';
+import type { AppLocale, AppNavTab } from '../api/contract';
 import { CARD_SHADOW } from '../components/HomeSection';
 import { PageHead } from '../components/PageHead';
 import { ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice, type RegisterLink } from '../components/ui';
@@ -42,7 +42,7 @@ type Link = RegisterLink;
 
 export default function MeerScreen() {
   const router = useTabRouter();
-  const { bootstrap, viewer, loading, stale, error, refresh } = useApp();
+  const { bootstrap, viewer, locale, loading, stale, error, refresh } = useApp();
   const [open, setOpen] = useState<string | null>(null);
 
   if (loading) return <Loading />;
@@ -115,6 +115,23 @@ export default function MeerScreen() {
               {viewer ? 'Je profiel en meldingen' : 'Log in om te bestellen en tickets te kopen'}
             </Text>
           </View>
+          <ChevronRight color={COLORS.muted} size={18} />
+        </Pressable>
+
+        {/* Feedback op de app gaat naar Dopl, het formulier zonder zijn eigen kop,
+            in je taal en met je naam en e-mail al ingevuld als je ingelogd bent. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Feedback over de app geven"
+          onPress={() =>
+            router.push({ pathname: '/web', params: { url: feedbackUrl(locale, viewer), title: 'Feedback App' } })
+          }
+          style={({ pressed }) => [styles.search, pressed && styles.pressedDark]}
+        >
+          <View style={styles.searchIcon}>
+            <MessageSquare color={COLORS.ink} size={15} />
+          </View>
+          <Text style={[styles.feedbackText, styles.flex]}>Feedback App</Text>
           <ChevronRight color={COLORS.muted} size={18} />
         </Pressable>
 
@@ -285,6 +302,16 @@ function TabTile({
   );
 }
 
+/** Het feedbackformulier van de app op Dopl (`?embed=1` laat zijn eigen kop weg). */
+const FEEDBACK_FORM = 'https://dopl.vtk.be/f/dopl-app-feedback';
+
+function feedbackUrl(locale: AppLocale, viewer: { name: string; email: string } | null): string {
+  const params = new URLSearchParams({ embed: '1', lang: locale });
+  if (viewer?.email) params.set('email', viewer.email);
+  if (viewer?.name) params.set('name', viewer.name);
+  return `${FEEDBACK_FORM}?${params.toString()}`;
+}
+
 function initialsOf(name: string): string {
   return name
     .split(' ')
@@ -329,6 +356,7 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   searchText: { ...TYPE.small, fontSize: 14, color: COLORS.muted },
+  feedbackText: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink },
   searchIcon: {
     width: 30,
     height: 30,
