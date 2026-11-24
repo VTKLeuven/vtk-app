@@ -16,6 +16,10 @@ niet opnieuw moet beginnen. Pas het hier aan wanneer je het daar aanpast.
 
 **What's New in This Version** (per versie, verplicht vanaf de tweede):
 
+- **1.2.0**: Een volledig nieuw ontwerp. Home opent met de evenementen van vandaag, wat er
+  open is en je volgende lessen. Nieuw: de menu's van de Alma's, tijdsloten bij de
+  cursusdienst, vakevaluaties van Burgieclan, en je tickets met de affiche van het
+  evenement.
 - **1.1.0**: Een nieuw icoon: het VTK-logo in navy op geel. Home toont nu je volgende drie
   lessen, ook als je vandaag geen les meer hebt.
 
