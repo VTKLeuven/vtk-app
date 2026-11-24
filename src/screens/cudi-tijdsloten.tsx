@@ -79,26 +79,18 @@ export default function CudiTijdslotenScreen() {
     }
   };
 
-  const release = (registrationId: string, label: string) => {
-    Alert.alert('Tijdslot verwijderen?', label, [
-      { text: 'Houden', style: 'cancel' },
-      {
-        text: 'Verwijderen',
-        style: 'destructive',
-        onPress: async () => {
-          setBusy(registrationId);
-          try {
-            const result = await releaseCudiTimeslot(locale, registrationId);
-            if (result.ok) setState(result);
-            else Alert.alert('Niet verwijderd', timeslotError(result.code, result.message));
-          } catch (error) {
-            Alert.alert('Niet verwijderd', messageFor(error instanceof Error ? error : null));
-          } finally {
-            setBusy(null);
-          }
-        },
-      },
-    ]);
+  // Meteen verwijderen, zonder te vragen: een tijdslot neem je zo weer opnieuw.
+  const release = async (registrationId: string) => {
+    setBusy(registrationId);
+    try {
+      const result = await releaseCudiTimeslot(locale, registrationId);
+      if (result.ok) setState(result);
+      else Alert.alert('Niet verwijderd', timeslotError(result.code, result.message));
+    } catch (error) {
+      Alert.alert('Niet verwijderd', messageFor(error instanceof Error ? error : null));
+    } finally {
+      setBusy(null);
+    }
   };
 
   const slotLabel = (start: string, end: string) =>
@@ -135,7 +127,7 @@ export default function CudiTijdslotenScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={`${slotLabel(mine.start, mine.end)} verwijderen`}
                     disabled={busy !== null}
-                    onPress={() => release(mine.registrationId, slotLabel(mine.start, mine.end))}
+                    onPress={() => void release(mine.registrationId)}
                     style={({ pressed }) => [styles.release, pressed && styles.pressed]}
                   >
                     {busy === mine.registrationId ? (

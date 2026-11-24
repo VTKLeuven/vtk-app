@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
+  FlatList,
   Linking,
   PanResponder,
   Pressable,
@@ -10,13 +11,14 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
   type ScrollViewInstance,
 } from 'react-native';
 
 import type { AppAlma, AppAlmaDish, AppAlmaRestaurant } from '../api/contract';
 import { fetchAlma } from '../api/endpoints';
-import { messageFor, useResource } from '../api/useResource';
+import { messageFor, useResource, type Resource } from '../api/useResource';
 import { almaClock, almaPrice, almaStatusLine } from '../alma';
 import { PageHead } from '../components/PageHead';
 import { CardList, Empty, ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice } from '../components/ui';
@@ -29,8 +31,8 @@ const SLUGS: Slug[] = ['alma-3', 'alma-quadrivium', 'de-moete', 'esat2'];
 
 /** Zoveel dagen staan er in de rij om te kiezen; Alma zet soms tot twee maanden online. */
 const SHOWN_DAYS = 10;
-/** Zo ver moet je opzij vegen voor een andere dag. */
-const SWIPE_PX = 60;
+/** Zo ver moet je over de kop naar rechts vegen om terug te gaan. */
+const BACK_SWIPE_PX = 80;
 
 /** Zoveel gerechten toont een lange sectie (drank, broodjes) voor "Toon alle". */
 const FOLD = 5;
@@ -59,69 +61,71 @@ const CLIMATE: Record<NonNullable<AppAlmaDish['climate']>, string> = {
  */
 export default function AlmaScreen() {
   const { locale } = useApp();
+  const router = useRouter();
+  const navigation = useNavigation();
+  const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ restaurant?: string }>();
   const [slug, setSlug] = useState<Slug>(
     SLUGS.includes(params.restaurant as Slug) ? (params.restaurant as Slug) : 'alma-3',
   );
-  const [date, setDate] = useState<string | null>(null);
-  const resource = useResource('alma', () => fetchAlma(locale, date ?? undefined), `${locale}:${date ?? ''}`);
-  // Een andere dag is een nieuw verzoek, en dan is `resource.data` even leeg.
-  // Tot de nieuwe dag binnen is, blijven de pillen, de dagen en de uren van de
-  // vorige staan; enkel het menu wacht.
-  const [previous, setPrevious] = useState<AppAlma | null>(null);
-  if (resource.data && resource.data !== previous) setPrevious(resource.data);
-  const data = resource.data ?? previous;
-  const switching = !resource.data && resource.loading && previous !== null;
+  // Vandaag: de status, de pillen, de dagen met een menu en het menu van vandaag.
+  const base = useResource('alma', () => fetchAlma(locale), `${locale}:`);
+  const data = base.data;
   const restaurant = data?.restaurants.find((candidate) => candidate.slug === slug) ?? null;
 
-  // Opzij vegen over het menu gaat naar de vorige of volgende dag met een menu,
-  // binnen de dagen die de rij erboven toont.
-  const shownDates = (data?.dates ?? []).slice(0, SHOWN_DAYS);
-  const selected = date ?? data?.date ?? null;
-  const goDay = (delta: number) => {
-    if (!selected || shownDates.length === 0) return;
-    const at = shownDates.indexOf(selected);
-    const next =
-      at >= 0
-        ? shownDates[at + delta]
-        : delta > 0
-          ? shownDates.find((candidate) => candidate > selected)
-          : [...shownDates].reverse().find((candidate) => candidate < selected);
-    if (next) setDate(next);
+  // De pagina's: vandaag en de dagen met een menu, zoals de rij met dagen ze toont.
+  const pages = useMemo(
+    () =>
+      data
+        ? [...new Set([data.date, ...data.dates])]
+            .filter((date) => date >= data.date)
+            .sort()
+            .slice(0, SHOWN_DAYS)
+        : [],
+    [data],
+  );
+  const [index, setIndex] = useState(0);
+  const pager = useRef<FlatList<string>>(null);
+  const goTo = (next: number) => {
+    if (next < 0 || next >= pages.length) return;
+    pager.current?.scrollToIndex({ index: next, animated: true });
+    setIndex(next);
   };
-  const goDayRef = useRef(goDay);
-  useEffect(() => {
-    goDayRef.current = goDay;
-  });
-  const [swipe] = useState(() =>
-      PanResponder.create({
-        // Enkel een duidelijk horizontale veeg; al de rest is gewoon scrollen.
-        onMoveShouldSetPanResponderCapture: (_, gesture) =>
-          Math.abs(gesture.dx) > 14 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.6,
-        onPanResponderRelease: (_, gesture) => {
-          if (Math.abs(gesture.dx) > SWIPE_PX) goDayRef.current(gesture.dx < 0 ? 1 : -1);
-        },
-        onPanResponderTerminationRequest: () => true,
-      }),
+
+  // Opzij vegen over de dagen bladert, dus de iOS-veeg terug staat hier uit: die
+  // nam een veeg naar rechts over en bracht je terug naar Home. Terug kan met de
+  // knop, of door naar rechts te vegen over de kop (titel en pillen).
+  useLayoutEffect(() => {
+    navigation.setOptions({ gestureEnabled: false });
+  }, [navigation]);
+  const [backSwipe] = useState(() =>
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) => gesture.dx > 16 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 2,
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dx > BACK_SWIPE_PX && router.canGoBack()) router.back();
+      },
+    }),
   );
 
   const head = (
-    <PageHead
-      title="Alma"
-      subtitle="De restaurants op campus Arenberg"
-      tabs={{
-        value: slug,
-        onChange: setSlug,
-        scroll: true,
-        options: (data?.restaurants ?? []).map((candidate) => ({
-          value: candidate.slug,
-          label: candidate.shortName,
-        })),
-      }}
-    />
+    <View {...backSwipe.panHandlers}>
+      <PageHead
+        title="Alma"
+        subtitle="De restaurants op campus Arenberg"
+        tabs={{
+          value: slug,
+          onChange: setSlug,
+          scroll: true,
+          options: (data?.restaurants ?? []).map((candidate) => ({
+            value: candidate.slug,
+            label: candidate.shortName,
+          })),
+        }}
+      />
+    </View>
   );
 
-  if (resource.loading && !data) {
+  if (base.loading && !data) {
     return (
       <>
         {head}
@@ -133,7 +137,7 @@ export default function AlmaScreen() {
     return (
       <>
         {head}
-        <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
+        <ErrorState message={messageFor(base.error)} onRetry={() => void base.refresh()} />
       </>
     );
   }
@@ -141,63 +145,98 @@ export default function AlmaScreen() {
   return (
     <View style={styles.root}>
       {head}
-      <ScrollView
-        contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={resource.refreshing}
-            onRefresh={() => void resource.refresh()}
-            tintColor={COLORS.navy}
-          />
-        }
-      >
-        {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
+      {base.stale ? <StaleNotice onRetry={() => void base.refresh()} /> : null}
+      <Status restaurant={restaurant} />
+      <Days dates={pages} selected={pages[index] ?? data.date} onSelect={(date) => goTo(pages.indexOf(date))} />
 
-        <Status restaurant={restaurant} />
-
-        <Days dates={data.dates} selected={date ?? data.date} onSelect={setDate} />
-
-        <View
-          {...swipe.panHandlers}
-          style={styles.swipeArea}
-          accessibilityHint="Veeg opzij voor de vorige of volgende dag"
-        >
-          {switching ? (
-            <Loading />
-          ) : (
-            <Menu restaurant={restaurant} date={data.date} key={`${restaurant.slug}:${data.date}`} />
-          )}
-
-          <Hours restaurant={restaurant} />
-        </View>
-
-        <MarginRegister
-          title="Meer"
-          style={styles.register}
-          links={[
-            ...(restaurant.location
-              ? [
-                  {
-                    label: 'Route',
-                    hint: restaurant.address ?? undefined,
-                    external: true,
-                    onPress: () =>
-                      void Linking.openURL(
-                        `https://www.google.com/maps/dir/?api=1&destination=${restaurant.location!.lat},${restaurant.location!.lng}&travelmode=walking`,
-                      ),
-                  },
-                ]
-              : []),
-            {
-              label: 'Op alma.be',
-              hint: 'Allergenen en alle prijzen',
-              external: true,
-              onPress: () => void WebBrowser.openBrowserAsync(restaurant.url),
-            },
-          ]}
-        />
-      </ScrollView>
+      {/* Eén pagina per dag. De pagina volgt je vinger, dus halverwege zie je de
+          helft van beide dagen; loslaten schuift door naar de dag waar je het
+          meest naartoe trok. */}
+      <FlatList
+        ref={pager}
+        style={styles.pager}
+        data={pages}
+        keyExtractor={(date) => date}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        getItemLayout={(_, at) => ({ length: width, offset: width * at, index: at })}
+        initialNumToRender={2}
+        windowSize={3}
+        onMomentumScrollEnd={(event) => setIndex(Math.round(event.nativeEvent.contentOffset.x / width))}
+        renderItem={({ item }) => (
+          <DayPage date={item} width={width} slug={slug} today={item === data.date ? base : null} />
+        )}
+      />
     </View>
+  );
+}
+
+/**
+ * Eén dag: het menu van het gekozen restaurant, de uren en de links. Een andere
+ * dag dan vandaag haalt zijn eigen menu op (met de leescache per dag).
+ */
+function DayPage({
+  date,
+  width,
+  slug,
+  today,
+}: {
+  date: string;
+  width: number;
+  slug: Slug;
+  /** De gegevens van vandaag, al opgehaald; `null` voor een andere dag. */
+  today: Resource<AppAlma> | null;
+}) {
+  const { locale } = useApp();
+  const own = useResource('alma', () => fetchAlma(locale, date), `${locale}:${date}`, today === null);
+  const resource = today ?? own;
+  const restaurant = resource.data?.restaurants.find((candidate) => candidate.slug === slug) ?? null;
+
+  return (
+    <ScrollView
+      style={{ width }}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl refreshing={resource.refreshing} onRefresh={() => void resource.refresh()} tintColor={COLORS.navy} />
+      }
+    >
+      {resource.loading && !resource.data ? (
+        <Loading />
+      ) : !restaurant ? (
+        <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
+      ) : (
+        <>
+          <Menu restaurant={restaurant} date={date} key={`${restaurant.slug}:${date}`} />
+          <Hours restaurant={restaurant} />
+          <MarginRegister
+            title="Meer"
+            style={styles.register}
+            links={[
+              ...(restaurant.location
+                ? [
+                    {
+                      label: 'Route',
+                      hint: restaurant.address ?? undefined,
+                      external: true,
+                      onPress: () =>
+                        void Linking.openURL(
+                          `https://www.google.com/maps/dir/?api=1&destination=${restaurant.location!.lat},${restaurant.location!.lng}&travelmode=walking`,
+                        ),
+                    },
+                  ]
+                : []),
+              {
+                label: 'Op alma.be',
+                hint: 'Allergenen en alle prijzen',
+                external: true,
+                onPress: () => void WebBrowser.openBrowserAsync(restaurant.url),
+              },
+            ]}
+          />
+        </>
+      )}
+    </ScrollView>
   );
 }
 
@@ -238,7 +277,7 @@ function dayLabel(date: string): string {
 
 function Days({ dates, selected, onSelect }: { dates: string[]; selected: string; onSelect: (date: string) => void }) {
   // Twee weken vooruit is genoeg; Alma zet soms tot twee maanden online.
-  const shown = dates.slice(0, SHOWN_DAYS);
+  const shown = dates;
   const strip = useRef<ScrollViewInstance>(null);
   const offsets = useRef<Record<string, number>>({});
   // Na een veeg over het menu: de gekozen dag in beeld houden.
@@ -420,9 +459,9 @@ function Hours({ restaurant }: { restaurant: AppAlmaRestaurant }) {
 }
 
 const styles = StyleSheet.create({
-  swipeArea: { gap: SPACING.xl },
+  pager: { flex: 1 },
   root: { flex: 1, backgroundColor: COLORS.paper },
-  content: { paddingBottom: SPACING.xxl * 2 },
+  content: { paddingTop: SPACING.sm, paddingBottom: SPACING.xxl * 2, gap: SPACING.xl },
   status: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -2,7 +2,6 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { AppLocale } from '../api/contract';
 import { COLORS, FONTS } from '../theme/tokens';
-import { CARD_SHADOW } from './HomeSection';
 
 const TZ = 'Europe/Brussels';
 
@@ -69,8 +68,9 @@ const styles = StyleSheet.create({
   md: { width: 54, height: 54, borderRadius: 14 },
   sm: { width: 44, height: 44, borderRadius: 12 },
   quiet: { backgroundColor: COLORS.paper2 },
-  // Een dag om te kiezen, zoals bij de broodjes: wit met de zachte schaduw van een kaart.
-  plain: { backgroundColor: COLORS.surface, ...CARD_SHADOW },
+  // Een dag om te kiezen, zoals bij de broodjes: wit met een dun randje, zonder
+  // schaduw. Vier schaduwen naast elkaar liepen in elkaar over tot een grijze band.
+  plain: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.line2 },
   // De gekozen dag: inkt, met de weekdag in het geel.
   ink: { backgroundColor: COLORS.ink },
   smallInk: { color: COLORS.yellow },

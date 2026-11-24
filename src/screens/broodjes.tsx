@@ -17,7 +17,6 @@ import { messageFor, useResource } from '../api/useResource';
 import { DatePin } from '../components/DatePin';
 import { PhotoHead } from '../components/PageHead';
 import { Stepper } from '../components/Stepper';
-import { CARD_SHADOW } from '../components/HomeSection';
 import { Button, Card, CardList, Empty, ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
 import { formatDate, formatDay, formatEuro, formatTime, formatTimeRange } from '../format';
 import { useApp } from '../state/app';
@@ -529,7 +528,7 @@ function SessionView({
             ) : null}
 
             <SectionHeading>Het aanbod</SectionHeading>
-            <CardList>
+            <CardList style={styles.flat}>
               {regular.map((item) => {
                 const { quantity, available, max } = limitFor(item);
                 return (
@@ -572,7 +571,7 @@ function SessionView({
               Na de deadline geannuleerd en al gemaakt. Neem je een broodje over, dan haal je het
               af en betaal je aan de balie, tot {pickupEnd}.
             </Text>
-            <CardList>
+            <CardList style={styles.flat}>
               {offered.map((item) => {
                 const full =
                   ownCount + 1 > maxItems || (item.isWeeklySpecial && ownWeekly + 1 > maxWeeklySpecial);
@@ -719,6 +718,9 @@ const styles = StyleSheet.create({
   },
   when: { ...TYPE.small, fontSize: 14, lineHeight: 20, color: COLORS.body },
 
+  // Op Broodjes is alles één vlak: kaarten met een dun randje en zonder schaduw,
+  // want de schaduwen kleurden de grond rond de dagen en de kaarten grijzer.
+  flat: { shadowOpacity: 0, elevation: 0, borderWidth: 1, borderColor: COLORS.line2 },
   yours: {
     backgroundColor: COLORS.surface,
     borderRadius: 22,
@@ -726,7 +728,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.yellow,
     padding: SPACING.lg,
     gap: SPACING.sm,
-    ...CARD_SHADOW,
   },
   buttons: { flexDirection: 'row', gap: SPACING.sm },
   lines: { gap: SPACING.xs },
@@ -747,7 +748,8 @@ const styles = StyleSheet.create({
   special: {
     backgroundColor: COLORS.surface,
     borderRadius: 22,
-    ...CARD_SHADOW,
+    borderWidth: 1,
+    borderColor: COLORS.line2,
   },
   specialPhoto: {
     width: '100%',

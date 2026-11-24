@@ -145,17 +145,43 @@ export default function VervoerScreen() {
   const fitHour = Math.max(MIN_HOUR_PX, (paneHeight - HEAD_HEIGHT) / HOURS);
   const hourPx = fitHour * zoom;
 
-  // Waar de agenda staat: de eerste dag in beeld. Komt er een week vóór bij, dan
-  // schuift alles zeven kolommen op; hier springt de agenda dan mee terug, zodat
-  // je blijft kijken naar wat je zag.
+  // Waar de agenda staat: de eerste dag in beeld. Bij het openen is dat vandaag.
   const anchor = firstVisible ?? (days.includes(today) ? today : (current?.weekStart ?? null));
   const anchorIndex = anchor ? Math.max(0, days.indexOf(anchor)) : 0;
+
+  // De agenda schuift enkel zelf in twee gevallen: bij het openen (naar vandaag)
+  // en wanneer er een week vóór bijkomt (alles schuift dan zeven kolommen op, en de
+  // agenda springt mee terug). Nooit na een veeg: dat zette hem vroeger vast op
+  // waar je losliet, midden in het uitglijden, en dan stopte een veeg na één dag.
+  const offsetX = useRef(0);
+  const shownFirstDay = useRef<string | null>(null);
+  const firstDay = days[0] ?? null;
   useLayoutEffect(() => {
-    if (paneHeight === 0 || days.length === 0) return;
-    horizontal.current?.scrollTo({ x: anchorIndex * column, animated: false });
-  }, [anchorIndex, column, days.length, paneHeight]);
+    if (paneHeight === 0 || !firstDay) return;
+    if (shownFirstDay.current === null) {
+      offsetX.current = anchorIndex * column;
+      horizontal.current?.scrollTo({ x: offsetX.current, animated: false });
+    } else if (firstDay < shownFirstDay.current) {
+      offsetX.current += days.indexOf(shownFirstDay.current) * column;
+      horizontal.current?.scrollTo({ x: offsetX.current, animated: false });
+    }
+    shownFirstDay.current = firstDay;
+    // Enkel bij een nieuwe eerste dag of een andere kolombreedte; niet bij elke veeg.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstDay, column, paneHeight]);
+
+  // Een veeg schuift drie dagen op, zoals er drie in beeld staan. De stappen
+  // vertrekken van de dag waarmee de agenda opende, zodat je altijd op een rand van
+  // drie dagen uitkomt.
+  const snapBase = anchorIndex % VISIBLE_DAYS;
+  const snapOffsets = useMemo(() => {
+    const offsets: number[] = [];
+    for (let i = snapBase; i <= days.length - VISIBLE_DAYS; i += VISIBLE_DAYS) offsets.push(i * column);
+    return offsets;
+  }, [snapBase, days.length, column]);
 
   const settle = (x: number) => {
+    offsetX.current = x;
     const index = Math.max(0, Math.min(days.length - 1, Math.round(x / column)));
     const key = days[index];
     if (!key) return;
@@ -308,14 +334,14 @@ export default function VervoerScreen() {
                     ref={horizontal}
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    snapToInterval={column}
+                    snapToOffsets={snapOffsets}
+                    disableIntervalMomentum
                     decelerationRate="fast"
                     scrollEventThrottle={16}
                     onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
                       useNativeDriver: true,
                     })}
                     onMomentumScrollEnd={(event) => settle(event.nativeEvent.contentOffset.x)}
-                    onScrollEndDrag={(event) => settle(event.nativeEvent.contentOffset.x)}
                   >
                     {days.map((key, at) => {
                       const blocks = placed.get(key) ?? [];
