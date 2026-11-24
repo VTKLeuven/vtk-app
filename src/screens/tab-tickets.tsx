@@ -3,7 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { Image } from 'expo-image';
 import { useKeepAwake } from 'expo-keep-awake';
-import { CircleCheck, Maximize2, ScanLine, X } from 'lucide-react-native';
+import { CircleCheck, Clock, MapPin, Maximize2, ScanLine, X } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   Modal,
@@ -26,7 +26,7 @@ import { HeadButton, PageHead } from '../components/PageHead';
 import { DatePin } from '../components/DatePin';
 import { VtkQr } from '../components/VtkQr';
 import { Button, Card, Empty, ErrorState, Loading, StaleNotice } from '../components/ui';
-import { formatDay, formatEuro } from '../format';
+import { formatDay, formatEuro, formatTime } from '../format';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
@@ -311,6 +311,10 @@ function isPast(order: AppMyOrder): boolean {
 
 type Enlarged = { ticket: AppMyTicket; title: string } | null;
 
+/**
+ * Eén bestelling als ticket: de banner van het event met de gele datumpin, de
+ * titel, wanneer en waar, en daaronder elk ticket na een scheurlijn, met de QR.
+ */
 function Order({
   order,
   locale,
@@ -322,37 +326,70 @@ function Order({
   onEnlarge: (next: Enlarged) => void;
   past?: boolean;
 }) {
+  const when = `${formatDay(order.event.startsAt, locale)}, ${formatTime(order.event.startsAt, locale)}`;
   return (
-    <View style={[styles.order, past && styles.orderPast]}>
-      <Text accessibilityRole="header" style={styles.orderTitle}>
-        {order.event.title}
-      </Text>
-      <Text style={styles.hint}>{formatDay(order.event.startsAt, locale)}</Text>
-      {order.event.location ? <Text style={styles.hint}>{order.event.location}</Text> : null}
-      <Text style={styles.hint}>Bestelling {order.orderNumber}</Text>
+    <View style={[styles.ticket, past && styles.orderPast]}>
+      {order.event.imageUrl ? (
+        <View style={styles.shot}>
+          <Image source={{ uri: order.event.imageUrl }} style={styles.photo} contentFit="cover" transition={120} />
+          <View style={styles.pin}>
+            <DatePin iso={order.event.startsAt} locale={locale} month={false} shadow />
+          </View>
+        </View>
+      ) : null}
+      <View style={styles.orderBody}>
+        <View style={[styles.titleWrap, order.event.imageUrl ? styles.besidePin : null]}>
+          <Text accessibilityRole="header" style={styles.orderTitle}>
+            {order.event.title}
+          </Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Clock color={COLORS.muted} size={15} />
+          <Text style={styles.infoText}>{when.charAt(0).toUpperCase() + when.slice(1)}</Text>
+        </View>
+        {order.event.location ? (
+          <View style={styles.infoRow}>
+            <MapPin color={COLORS.muted} size={15} />
+            <Text style={styles.infoText}>{order.event.location}</Text>
+          </View>
+        ) : null}
+        <Text style={styles.orderNumber}>Bestelling {order.orderNumber}</Text>
+      </View>
 
       {order.tickets.map((ticket) => (
-        <TicketCard
-          key={ticket.id}
-          ticket={ticket}
-          onEnlarge={() => onEnlarge({ ticket, title: order.event.title })}
-        />
+        <View key={ticket.id}>
+          <Perforation />
+          <TicketBlock ticket={ticket} onEnlarge={() => onEnlarge({ ticket, title: order.event.title })} />
+        </View>
       ))}
     </View>
   );
 }
 
-function TicketCard({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: () => void }) {
+/** De scheurlijn van een ticket: twee halve cirkels in de kleur van de grond, een stippellijn ertussen. */
+function Perforation() {
+  return (
+    <View style={styles.perforation} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View style={[styles.notch, styles.notchLeft]} />
+      <View style={styles.dashes} />
+      <View style={[styles.notch, styles.notchRight]} />
+    </View>
+  );
+}
+
+function TicketBlock({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: () => void }) {
   const { width } = useWindowDimensions();
   const [open, setOpen] = useState(false);
 
-  const size = Math.min(220, width - SPACING.lg * 4);
+  const size = Math.min(200, width - SPACING.lg * 6);
   const used = Boolean(ticket.checkedInAt);
 
   return (
-    <Card>
-      <Text style={styles.cardTitle}>{ticket.typeName}</Text>
-      {ticket.attendeeName ? <Text style={styles.body}>{ticket.attendeeName}</Text> : null}
+    <View style={styles.ticketBlock}>
+      <View style={styles.ticketHead}>
+        <Text style={[styles.cardTitle, styles.flex]}>{ticket.typeName}</Text>
+        {ticket.attendeeName ? <Text style={styles.hint}>{ticket.attendeeName}</Text> : null}
+      </View>
 
       {used ? (
         <View style={styles.usedRow}>
@@ -376,11 +413,7 @@ function TicketCard({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: () 
         <Text style={styles.code}>{ticket.publicId}, tik om te vergroten</Text>
       </Pressable>
 
-      <Button
-        label={open ? 'Minder' : 'PDF en wallet'}
-        variant="ghost"
-        onPress={() => setOpen(!open)}
-      />
+      <Button label={open ? 'Minder' : 'PDF en wallet'} variant={open ? 'ghost' : 'primary'} onPress={() => setOpen(!open)} />
 
       {open ? (
         <>
@@ -408,7 +441,7 @@ function TicketCard({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: () 
           </Text>
         </>
       ) : null}
-    </Card>
+    </View>
   );
 }
 
@@ -527,8 +560,26 @@ const styles = StyleSheet.create({
   },
   ctaLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.paper },
 
-  order: { gap: SPACING.sm },
-  orderTitle: { fontFamily: FONTS.bold, fontSize: 22, lineHeight: 27, letterSpacing: -0.6, color: COLORS.ink },
+  orderBody: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.md, paddingBottom: SPACING.sm, gap: 6 },
+  besidePin: { marginRight: 70 },
+  orderTitle: { fontFamily: FONTS.bold, fontSize: 21, lineHeight: 26, letterSpacing: -0.6, color: COLORS.ink },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  infoText: { ...TYPE.small, fontSize: 14, color: COLORS.body, flexShrink: 1 },
+  orderNumber: { ...TYPE.small, fontSize: 12, color: COLORS.muted },
+  flex: { flex: 1 },
+  perforation: { height: 24, flexDirection: 'row', alignItems: 'center' },
+  notch: { width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.paper },
+  notchLeft: { marginLeft: -12 },
+  notchRight: { marginRight: -12 },
+  dashes: {
+    flex: 1,
+    marginHorizontal: SPACING.sm,
+    borderTopWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: COLORS.line2,
+  },
+  ticketBlock: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.xs, paddingBottom: SPACING.lg, gap: SPACING.sm },
+  ticketHead: { flexDirection: 'row', alignItems: 'baseline', gap: SPACING.md },
   orderPast: { opacity: 0.7 },
   cardTitle: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },

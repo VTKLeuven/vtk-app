@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 
-import { ChevronRight, Pause, Play, Plus, Settings2, Square } from 'lucide-react-native';
+import { ChevronRight, Pause, Play, Plus, Settings2, Square, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppState,
@@ -33,7 +33,7 @@ import { Button, Card, ErrorState, Loading, StaleNotice } from '../../components
 import { formatClock, formatSpan } from '../../format';
 import { useApp } from '../../state/app';
 import { useTabRouter } from '../../navigation';
-import { COLORS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
+import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import type { StudiesTabs } from './tabs';
 import { CARD_SHADOW } from '../HomeSection';
 
@@ -332,6 +332,7 @@ function SessionPanel({
 
           <Button
             label={busy ? 'Bezig' : 'Beginnen'}
+            variant="accent"
             onPress={() => onStart(subject.trim() || undefined)}
           />
         </View>
@@ -701,7 +702,12 @@ function GroupChips({
 function NoGroups({ onNew }: { onNew: () => void }) {
   return (
     <Card>
-      <Text style={styles.cardTitle}>Blok samen</Text>
+      <View style={styles.cardHead}>
+        <View style={styles.cardIcon}>
+          <Users color={COLORS.ink} size={21} />
+        </View>
+        <Text style={styles.cardHeadTitle}>Blok samen</Text>
+      </View>
       <Text style={styles.body}>
         Maak een groep, deel de code met je vrienden, en jullie zien van elkaar wie
         er zit. Je tijd is enkel zichtbaar voor wie in dezelfde groep zit.
@@ -717,11 +723,21 @@ const styles = StyleSheet.create({
 
   panel: {
     backgroundColor: COLORS.navy,
-    borderRadius: RADIUS.lg,
+    borderRadius: 26,
     overflow: 'hidden',
   },
-  panelBody: { padding: SPACING.lg, gap: SPACING.sm },
-  panelTitle: { ...TYPE.sectionTitle, color: COLORS.onDark },
+  panelBody: { padding: SPACING.lg + 2, gap: SPACING.md },
+  panelTitle: { fontFamily: FONTS.bold, fontSize: 22, letterSpacing: -0.6, color: COLORS.onDark },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  cardIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: COLORS.yellow,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardHeadTitle: { fontFamily: FONTS.bold, fontSize: 18, letterSpacing: -0.4, color: COLORS.ink },
   panelHint: { ...TYPE.small, color: COLORS.onDarkMuted },
   clock: {
     ...TYPE.pageTitle,
@@ -754,10 +770,10 @@ const styles = StyleSheet.create({
     color: COLORS.onDark,
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    borderRadius: RADIUS.sm,
+    borderColor: COLORS.onDarkControlBorder,
+    borderRadius: 14,
     paddingHorizontal: SPACING.md,
-    paddingVertical: 10,
+    minHeight: 48,
   },
 
   chipRow: { flexGrow: 0 },

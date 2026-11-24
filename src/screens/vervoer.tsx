@@ -7,8 +7,8 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
-  type GestureResponderEvent,
   type ScrollViewInstance,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,35 +22,44 @@ import { ErrorState, Loading, StaleNotice } from '../components/ui';
 import { formatTime } from '../format';
 import { dayKeyOf, todayKey } from '../monthGrid';
 import { useApp } from '../state/app';
-import { COLORS, DARK_GLASS, FONTS, RADIUS, SPACING, TRANSPORT, TYPE } from '../theme/tokens';
+import { COLORS, FONTS, RADIUS, SPACING, TRANSPORT, TYPE } from '../theme/tokens';
+import { CARD_SHADOW } from '../components/HomeSection';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOURS = 24;
-/** De uurhoogte en de urenkolom van de telefoonweergave op logistiek.vtk.be. */
-const HOUR_PX = 56;
-const GUTTER = 46;
-/** Hoe ver je horizontaal moet vegen voor het een dagwissel is, zoals daar. */
-const SWIPE_PX = 56;
+/** De urenkolom, 3.25rem op logistiek.vtk.be. */
+const GUTTER = 52;
+/** Zoveel dagen staan er naast elkaar in beeld, zoals daar op een telefoon. */
+const VISIBLE_DAYS = 3;
+/** De hoogte van de dagkop (`.tg-dayhead`): naam, nummer en maand, en eronder het aantal ritten. */
+const HEAD_HEIGHT = 54;
+/** De kleinste uurhoogte, `MIN_HOUR_PX` daar. */
+const MIN_HOUR_PX = 18;
+/** De marge links en rechts van de witte kaart rond het raster. */
+const GRID_MARGIN = 12;
 /** De strook rechts naast de blokken, zodat ze niet tegen de rand plakken. */
-const BLOCK_GUTTER = 10;
+const BLOCK_GUTTER = 6;
 
 type Placed = { trip: AppTransportTrip; from: number; to: number; lane: number; lanes: number };
 
 /**
- * Transport: de planning van Logistiek, precies zoals logistiek.vtk.be ze op een
- * telefoon toont (`MobileCalendar` in apps/logistiek): **één dag over de volle
- * breedte**, met de week als dagstrip erboven.
+ * Transport: de planning van Logistiek.
  *
- * - De kop zegt welke week ("Week 48") en het datumbereik, met vorige, vandaag
- *   en volgende, zoals `CalendarNav` naast de titel daar.
- * - De dagstrip toont de zeven dagen met een gele stip als er iets staat;
- *   aantikken springt naar die dag. Vegen gaat naar de dag ernaast, en voorbij
- *   zondag of maandag naar de week ernaast.
- * - Het rooster heeft de uren links en de ritten als blokken op hun uur. **De
- *   vulkleur is de chauffeur, de arcering het voertuig, de rand de staat**: een
- *   streepjesrand zonder chauffeur, een streep bovenaan wat nog beslist moet
+ * De pagina spreekt de taal van de rest van de app (lichte kop, witte kaart), maar
+ * **de agenda zelf is die van logistiek.vtk.be** (`TimeGrid` in apps/logistiek),
+ * zoals die op een telefoon opent: de week als kolommen naast elkaar, waarvan er
+ * drie in beeld staan, en de hele dag van 00:00 tot 24:00 in één scherm (zoom 1
+ * daar: de uurhoogte volgt uit de hoogte van het raster). Vegen schuift door de
+ * week; vorige en volgende wisselen van week.
+ *
+ * - De dagkop zoals `.tg-dayhead`: "MA 23 nov" met het aantal ritten, vandaag met
+ *   het nummer in een gele cirkel. Vandaag krijgt een warme tint, het weekend een
+ *   lichte.
+ * - **De vulkleur is de chauffeur, de arcering het voertuig, de rand de staat**:
+ *   een streepjesrand zonder chauffeur, een streep bovenaan wat nog beslist moet
  *   worden, een rail links voor je eigen post. De kleuren rekent de site uit met
  *   dezelfde functies als logistiek (`AppTransportTrip.fill`).
+ * - De rode lijn van nu, met het uur als pil in de urenkolom (`.tg-now-pill`).
  * - Aantikken opent de rit; onderaan staat welke arcering bij welk voertuig hoort.
  *
  * Wie hier komt, mag het zien: de server geeft deze week enkel aan een
@@ -61,9 +70,11 @@ type Placed = { trip: AppTransportTrip; from: number; to: number; lane: number; 
 export default function VervoerScreen() {
   const { locale } = useApp();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const [week, setWeek] = useState<string | undefined>(undefined);
-  const [day, setDay] = useState<string>(() => todayKey());
   const [open, setOpen] = useState<AppTransportTrip | null>(null);
+  const [paneHeight, setPaneHeight] = useState(0);
+  const [, setTick] = useState(0);
   const scroll = useRef<ScrollViewInstance>(null);
   const resource = useResource(
     `vervoer-${week ?? 'nu'}`,
@@ -71,58 +82,44 @@ export default function VervoerScreen() {
     `${locale}:${week ?? 'nu'}`,
   );
 
+  // De nu-lijn schuift mee met de klok.
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const data = resource.data;
   const days = useMemo(() => (data ? Array.from({ length: 7 }, (_, i) => shiftKey(data.weekStart, i)) : []), [data]);
-  // Zit de gekozen dag niet in de week die er staat (net gewisseld), dan de eerste
-  // dag ervan, of vandaag als die erin zit.
-  const shownDay = days.includes(day) ? day : days.includes(todayKey()) ? todayKey() : (days[0] ?? day);
-  const placed = useMemo(() => (data ? placeForDay(data.trips, shownDay) : []), [data, shownDay]);
-  const perDay = useMemo(() => days.map((key) => (data ? placeForDay(data.trips, key).length : 0)), [data, days]);
+  const placed = useMemo(
+    () => new Map(days.map((key) => [key, data ? placeForDay(data.trips, key) : []])),
+    [data, days],
+  );
   const vehicles = useMemo(() => new Map((data?.vehicles ?? []).map((v) => [v.id, v])), [data]);
 
-  // Bij elke dagwissel naar het eerste dat er staat, min een half uur; anders 08:00.
-  const earliest = placed.reduce((soonest, block) => Math.min(soonest, block.from), Number.POSITIVE_INFINITY);
-  const scrollTarget = ((Number.isFinite(earliest) ? Math.max(0, earliest - 30) : 8 * 60) / 60) * HOUR_PX;
+  const today = todayKey();
+  const todayIndex = days.indexOf(today);
+  // Drie dagen in beeld, zoals op een telefoon op logistiek.vtk.be.
+  const column = (width - GRID_MARGIN * 2 - GUTTER) / VISIBLE_DAYS;
+  // Zoom 1: de hele dag past in het raster, zoals daar (`fitHourPx`).
+  const hourPx = Math.max(MIN_HOUR_PX, (paneHeight - HEAD_HEIGHT) / HOURS);
+
+  // Bij een nieuwe week naar vandaag als die erin zit, anders naar maandag.
+  const firstShown = Math.max(0, Math.min(todayIndex, 7 - VISIBLE_DAYS));
   useEffect(() => {
-    scroll.current?.scrollTo({ y: scrollTarget, animated: false });
-  }, [shownDay, scrollTarget]);
-
-  const goWeek = (delta: number, landOn: 'first' | 'last' | 'today') => {
     if (!data) return;
-    const start = shiftKey(data.weekStart, delta * 7);
+    const id = requestAnimationFrame(() => scroll.current?.scrollTo({ x: firstShown * column, animated: false }));
+    return () => cancelAnimationFrame(id);
+  }, [data, firstShown, column]);
+
+  const goWeek = (delta: number) => {
+    if (!data) return;
     setOpen(null);
-    setWeek(start);
-    setDay(landOn === 'last' ? shiftKey(start, 6) : landOn === 'first' ? start : todayKey());
+    setWeek(shiftKey(data.weekStart, delta * 7));
   };
 
-  const goDay = (delta: number) => {
-    const at = days.indexOf(shownDay) + delta;
-    if (at < 0) return goWeek(-1, 'last');
-    if (at > 6) return goWeek(1, 'first');
-    setDay(days[at]);
-  };
-
-  // Vegen: enkel een duidelijk horizontale beweging, anders is het gewoon scrollen.
-  const touch = useRef<{ x: number; y: number } | null>(null);
-  const swipe = {
-    onTouchStart: (event: GestureResponderEvent) => {
-      const { pageX, pageY } = event.nativeEvent;
-      touch.current = { x: pageX, y: pageY };
-    },
-    onTouchEnd: (event: GestureResponderEvent) => {
-      const start = touch.current;
-      touch.current = null;
-      if (!start) return;
-      const dx = event.nativeEvent.pageX - start.x;
-      const dy = event.nativeEvent.pageY - start.y;
-      if (Math.abs(dx) > SWIPE_PX && Math.abs(dx) > Math.abs(dy) * 1.5) goDay(dx < 0 ? 1 : -1);
-    },
-  };
-
-  const thisWeek = data ? days.includes(todayKey()) : true;
+  const thisWeek = data ? todayIndex >= 0 : true;
   const head = (
     <PageHead
-      navy
       title={data?.weekNumber ? `Week ${data.weekNumber}` : 'Transport'}
       subtitle={data ? weekLabel(data.weekStart, locale) : 'De ritten van Logistiek'}
     >
@@ -130,39 +127,45 @@ export default function VervoerScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Vorige week"
-          onPress={() => goWeek(-1, 'first')}
-          style={({ pressed }) => [styles.navButton, pressed && styles.pressed]}
+          onPress={() => goWeek(-1)}
+          style={({ pressed }) => [styles.navPill, pressed && styles.pressed]}
         >
-          <ChevronLeft size={18} color={COLORS.onDark} />
+          <ChevronLeft size={17} color={COLORS.ink} />
+          <Text style={styles.navLabel}>Vorige</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Vandaag"
-          accessibilityState={{ selected: thisWeek && shownDay === todayKey() }}
+          accessibilityLabel="Deze week"
+          accessibilityState={{ selected: thisWeek }}
           onPress={() => {
             setOpen(null);
             setWeek(undefined);
-            setDay(todayKey());
           }}
-          style={({ pressed }) => [
-            styles.navToday,
-            thisWeek && shownDay === todayKey() && styles.navTodayActive,
-            pressed && styles.pressed,
-          ]}
+          style={({ pressed }) => [styles.navPill, thisWeek && styles.navPillActive, pressed && styles.pressed]}
         >
-          <Text style={[styles.navTodayLabel, thisWeek && shownDay === todayKey() && styles.navTodayLabelActive]}>
-            Vandaag
-          </Text>
+          <Text style={[styles.navLabel, thisWeek && styles.navLabelActive]}>Deze week</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Volgende week"
-          onPress={() => goWeek(1, 'first')}
-          style={({ pressed }) => [styles.navButton, pressed && styles.pressed]}
+          onPress={() => goWeek(1)}
+          style={({ pressed }) => [styles.navPill, pressed && styles.pressed]}
         >
-          <ChevronRight size={18} color={COLORS.onDark} />
+          <Text style={styles.navLabel}>Volgende</Text>
+          <ChevronRight size={17} color={COLORS.ink} />
         </Pressable>
       </View>
+      {data ? (
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="Een rit aanvragen, opent logistiek.vtk.be"
+          onPress={() => void WebBrowser.openBrowserAsync(data.logistiekUrl)}
+          hitSlop={8}
+          style={({ pressed }) => [styles.request, pressed && styles.pressed]}
+        >
+          <Text style={styles.requestLabel}>Rit aanvragen ↗</Text>
+        </Pressable>
+      ) : null}
     </PageHead>
   );
 
@@ -183,8 +186,8 @@ export default function VervoerScreen() {
     );
   }
 
-  const today = todayKey();
-  const nowMinutes = shownDay === today ? minutesOfDay(new Date().toISOString()) : null;
+  const nowMinutes = todayIndex >= 0 ? minutesOfDay(new Date().toISOString()) : null;
+  const ready = paneHeight > 0;
 
   return (
     <View style={styles.root}>
@@ -195,83 +198,95 @@ export default function VervoerScreen() {
         </View>
       ) : null}
 
-      <View style={styles.bar}>
-        <Text style={styles.barDay} numberOfLines={1}>
-          {dayName(shownDay, locale)}
-        </Text>
-        <Pressable
-          accessibilityRole="link"
-          accessibilityLabel="Een rit aanvragen, opent logistiek.vtk.be"
-          onPress={() => void WebBrowser.openBrowserAsync(data.logistiekUrl)}
-          hitSlop={8}
-          style={({ pressed }) => [styles.barButton, pressed && styles.pressed]}
-        >
-          <Text style={styles.barButtonLabel}>Aanvragen ↗</Text>
-        </Pressable>
-      </View>
+      <View style={styles.pane} onLayout={(event) => setPaneHeight(event.nativeEvent.layout.height)}>
+        {ready ? (
+          <View style={styles.paneRow}>
+            {/* De urenkolom staat vast; de dagen schuiven ernaast. */}
+            <View style={{ width: GUTTER }} importantForAccessibility="no-hide-descendants">
+              <View style={{ height: HEAD_HEIGHT }} />
+              <View style={{ height: HOURS * hourPx }}>
+                {Array.from({ length: HOURS - 1 }, (_, i) => i + 1).map((hour) => (
+                  <Text
+                    key={hour}
+                    style={[styles.hour, { top: hour * hourPx - 7 }]}
+                    accessibilityElementsHidden
+                  >
+                    {String(hour).padStart(2, '0')}:00
+                  </Text>
+                ))}
+                {nowMinutes !== null ? (
+                  <View style={[styles.nowPill, { top: (nowMinutes / 60) * hourPx - 8 }]}>
+                    <Text style={styles.nowPillText}>{formatTime(new Date().toISOString(), locale)}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
 
-      <View style={styles.days} accessibilityRole="tablist">
-        {days.map((key, at) => {
-          const active = key === shownDay;
-          const isToday = key === today;
-          return (
-            <Pressable
-              key={key}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={`${dayName(key, locale)}${perDay[at] > 0 ? `, ${perDay[at]} ritten` : ''}`}
-              onPress={() => setDay(key)}
-              style={[styles.day, active && styles.dayActive]}
+            <ScrollView
+              ref={scroll}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={column}
+              decelerationRate="fast"
+              contentOffset={{ x: firstShown * column, y: 0 }}
             >
-              <Text style={[styles.dayName, active && styles.dayTextActive]}>{weekday(key, locale)}</Text>
-              <Text style={[styles.dayNumber, isToday && styles.dayNumberToday, active && styles.dayTextActive]}>
-                {Number(key.slice(8))}
-              </Text>
-              <View style={[styles.dot, perDay[at] > 0 && styles.dotOn]} />
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <View style={styles.body} {...swipe}>
-        <ScrollView ref={scroll} contentContainerStyle={styles.gridPad} contentOffset={{ x: 0, y: scrollTarget }}>
-          <View style={{ height: HOURS * HOUR_PX }}>
-            <View style={[styles.gutter, { width: GUTTER }]} importantForAccessibility="no-hide-descendants">
-              {Array.from({ length: HOURS }, (_, hour) => (
-                <Text
-                  key={hour}
-                  style={[styles.hour, { top: hour * HOUR_PX - (hour === 0 ? 0 : 7) }]}
-                  accessibilityElementsHidden
-                >
-                  {String(hour).padStart(2, '0')}:00
-                </Text>
-              ))}
-            </View>
-            <View style={[styles.column, { marginLeft: GUTTER }]}>
-              {Array.from({ length: HOURS }, (_, hour) => (
-                <View key={hour} style={[styles.line, { top: hour * HOUR_PX }]} />
-              ))}
-              {placed.length === 0 ? (
-                <Text style={[styles.empty, { top: 8 * HOUR_PX + SPACING.sm }]}>Geen ritten op deze dag.</Text>
-              ) : null}
-              {placed.map((block) => (
-                <TripBlock
-                  key={block.trip.id}
-                  block={block}
-                  vehicle={vehicles.get(block.trip.vehicleId) ?? null}
-                  dayKey={shownDay}
-                  locale={locale}
-                  onPress={() => setOpen(block.trip)}
-                />
-              ))}
-              {nowMinutes !== null ? <View style={[styles.now, { top: (nowMinutes / 60) * HOUR_PX }]} /> : null}
-            </View>
+              {days.map((key, at) => {
+                const blocks = placed.get(key) ?? [];
+                const isToday = key === today;
+                const weekend = at >= 5;
+                return (
+                  <View key={key} style={{ width: column }}>
+                    <View
+                      style={[styles.dayHead, { height: HEAD_HEIGHT }]}
+                      accessibilityLabel={`${dayName(key, locale)}, ${tripCount(blocks.length)}`}
+                    >
+                      <View style={styles.dayHeadRow}>
+                        <Text style={styles.dayHeadName}>{weekday(key, locale).toUpperCase()}</Text>
+                        <View style={[styles.dayHeadNum, isToday && styles.dayHeadNumToday]}>
+                          <Text style={[styles.dayHeadNumText, isToday && styles.dayHeadNumTextToday]}>
+                            {Number(key.slice(8))}
+                          </Text>
+                        </View>
+                        {!isToday ? <Text style={styles.dayHeadMuted}>{monthShort(key, locale)}</Text> : null}
+                      </View>
+                      <Text style={styles.dayHeadMuted}>{tripCount(blocks.length)}</Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.dayBody,
+                        { height: HOURS * hourPx },
+                        isToday && styles.dayToday,
+                        weekend && !isToday && styles.dayWeekend,
+                      ]}
+                    >
+                      {Array.from({ length: HOURS - 1 }, (_, i) => i + 1).map((hour) => (
+                        <View key={hour} style={[styles.line, { top: hour * hourPx }]} />
+                      ))}
+                      {blocks.map((block) => (
+                        <TripBlock
+                          key={block.trip.id}
+                          block={block}
+                          hourPx={hourPx}
+                          vehicle={vehicles.get(block.trip.vehicleId) ?? null}
+                          dayKey={key}
+                          locale={locale}
+                          onPress={() => setOpen(block.trip)}
+                        />
+                      ))}
+                      {isToday && nowMinutes !== null ? (
+                        <View style={[styles.now, { top: (nowMinutes / 60) * hourPx }]} />
+                      ) : null}
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
           </View>
-        </ScrollView>
+        ) : null}
       </View>
 
-      <View style={[styles.footer, { paddingBottom: SPACING.sm + insets.bottom }]}>
-        {data.vehicles.length > 0 ? (
+      {data.vehicles.length > 0 ? (
+        <View style={[styles.footer, { paddingBottom: SPACING.sm + insets.bottom }]}>
           <View style={styles.legend}>
             {data.vehicles.map((vehicle) => (
               <View key={vehicle.id} style={styles.legendItem}>
@@ -285,9 +300,8 @@ export default function VervoerScreen() {
               </View>
             ))}
           </View>
-        ) : null}
-        <Text style={styles.hint}>Veeg opzij voor de vorige of volgende dag.</Text>
-      </View>
+        </View>
+      ) : null}
 
       <TripSheet
         trip={open}
@@ -299,15 +313,30 @@ export default function VervoerScreen() {
   );
 }
 
+/** "vrij", "1 rit", "4 ritten", zoals `tripCount` op logistiek. */
+function tripCount(count: number): string {
+  return count === 0 ? 'vrij' : count === 1 ? '1 rit' : `${count} ritten`;
+}
+
+/** "nov" */
+function monthShort(key: string, locale: AppLocale): string {
+  return new Intl.DateTimeFormat(tagOf(locale), { timeZone: 'Europe/Brussels', month: 'short' })
+    .format(noonOf(key))
+    .replace('.', '');
+}
+
 /** Eén rit op zijn uur, met de regels van `BlockContent` op logistiek. */
 function TripBlock({
   block,
+  hourPx,
   vehicle,
   dayKey,
   locale,
   onPress,
 }: {
   block: Placed;
+  /** De uurhoogte van het raster; die volgt uit de hoogte van het scherm. */
+  hourPx: number;
   vehicle: AppTransportVehicle | null;
   dayKey: string;
   locale: AppLocale;
@@ -317,8 +346,9 @@ function TripBlock({
   const awaitsDriver = !trip.driver && (vehicle?.needsDriver ?? true);
   const continuesBefore = dayKeyOf(trip.start) !== dayKey;
   const continuesAfter = endKey(trip) !== dayKey;
-  const compact = block.lanes > 2;
-  const height = Math.max(26, ((block.to - block.from) / 60) * HOUR_PX);
+  // Een smalle kolom gedeeld door twee of meer: enkel het beginuur, zoals daar.
+  const compact = block.lanes > 1;
+  const height = Math.max(18, ((block.to - block.from) / 60) * hourPx);
   const width = `${100 / block.lanes}%` as const;
   const time = `${continuesBefore ? '↑ ' : ''}${formatTime(trip.start, locale)}${
     compact ? '' : `-${formatTime(trip.end, locale)}`
@@ -339,7 +369,7 @@ function TripBlock({
       style={[
         styles.blockBox,
         {
-          top: (block.from / 60) * HOUR_PX,
+          top: (block.from / 60) * hourPx,
           height,
           left: `${(100 / block.lanes) * block.lane}%`,
           width,
@@ -622,103 +652,85 @@ const styles = StyleSheet.create({
   hint: { ...TYPE.small, fontSize: 11.5, color: COLORS.muted },
   stale: { paddingHorizontal: SPACING.md, paddingTop: SPACING.sm },
 
-  weekNav: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md },
-  navButton: {
-    width: 36,
-    height: 36,
-    borderRadius: RADIUS.pill,
-    borderWidth: 1,
-    borderColor: COLORS.onDarkControlBorder,
+  weekNav: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.md },
+  navPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navToday: {
-    height: 36,
+    gap: 4,
+    height: 44,
     paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.pill,
-    backgroundColor: DARK_GLASS.background,
-    borderWidth: 1,
-    borderColor: DARK_GLASS.border,
-    justifyContent: 'center',
+    backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
   },
-  navTodayActive: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
-  navTodayLabel: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.onDark },
-  navTodayLabelActive: { color: COLORS.ink },
+  navPillActive: { backgroundColor: COLORS.ink },
+  navLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink },
+  navLabelActive: { color: COLORS.paper },
+  request: { alignSelf: 'flex-start', marginTop: SPACING.md, borderBottomWidth: 2, borderBottomColor: COLORS.yellow },
+  requestLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink, paddingBottom: 2 },
 
-  bar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line,
-    backgroundColor: COLORS.surface,
-  },
-  barDay: { flex: 1, fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink },
-  barButton: {
-    height: 36,
-    paddingHorizontal: 12,
-    borderRadius: RADIUS.pill,
-    borderWidth: 1,
-    borderColor: TRANSPORT.border,
-    backgroundColor: COLORS.surface,
-    justifyContent: 'center',
-  },
-  barButtonLabel: { fontFamily: FONTS.semibold, fontSize: 12, color: COLORS.ink },
-
-  days: {
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingTop: 8,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line,
-    backgroundColor: COLORS.surface,
-  },
-  day: {
+  // Het raster als witte kaart; onderaan loopt hij tot tegen de legende.
+  pane: {
     flex: 1,
-    alignItems: 'center',
-    gap: 2,
-    minHeight: 44,
-    paddingTop: 4,
-    paddingBottom: 6,
-    borderRadius: 12,
+    marginHorizontal: GRID_MARGIN,
+    marginTop: SPACING.xs,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    backgroundColor: COLORS.surface,
+    overflow: 'hidden',
   },
-  dayActive: { backgroundColor: TRANSPORT.emphasis },
-  dayName: { fontSize: 11, lineHeight: 12, fontFamily: FONTS.regular, color: COLORS.muted },
-  dayNumber: { fontSize: 15, lineHeight: 18, fontFamily: FONTS.semibold, color: COLORS.ink, fontVariant: ['tabular-nums'] },
-  dayNumberToday: { color: TRANSPORT.emphasis, textDecorationLine: 'underline' },
-  dayTextActive: { color: COLORS.paper },
-  dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: 'transparent' },
-  dotOn: { backgroundColor: COLORS.yellow },
-
-  body: { flex: 1, backgroundColor: COLORS.surface },
-  gridPad: { paddingTop: 8, paddingRight: 10, paddingBottom: 24 },
-  gutter: { position: 'absolute', top: 0, left: 0, bottom: 0 },
+  paneRow: { flexDirection: 'row' },
   hour: {
     position: 'absolute',
-    right: 8,
-    fontSize: 11,
+    right: 6,
+    fontSize: 10.5,
     lineHeight: 14,
     fontFamily: FONTS.regular,
     color: COLORS.muted,
     fontVariant: ['tabular-nums'],
   },
-  column: { position: 'relative', flex: 1, height: '100%' },
+  // `.tg-now-pill`: het uur van nu, op de hoogte van de rode lijn.
+  nowPill: {
+    position: 'absolute',
+    right: 2,
+    paddingHorizontal: 5,
+    borderRadius: RADIUS.pill,
+    backgroundColor: TRANSPORT.now,
+    zIndex: 3,
+  },
+  nowPillText: { fontSize: 10, lineHeight: 16, fontFamily: FONTS.bold, color: COLORS.surface, fontVariant: ['tabular-nums'] },
+  // `.tg-dayhead`
+  dayHead: {
+    justifyContent: 'center',
+    gap: 1,
+    paddingHorizontal: 8,
+    borderLeftWidth: 1,
+    borderLeftColor: COLORS.line,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.line2,
+  },
+  dayHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  dayHeadName: { fontSize: 11, fontFamily: FONTS.semibold, letterSpacing: 0.7, color: COLORS.muted },
+  dayHeadNum: { minWidth: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  dayHeadNumToday: { borderRadius: RADIUS.pill, backgroundColor: COLORS.yellow, paddingHorizontal: 4 },
+  dayHeadNumText: { fontSize: 18, fontFamily: FONTS.bold, letterSpacing: -0.3, color: COLORS.ink, fontVariant: ['tabular-nums'] },
+  dayHeadNumTextToday: { fontSize: 15 },
+  dayHeadMuted: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.muted },
+  dayBody: { borderLeftWidth: 1, borderLeftColor: COLORS.line },
+  // Vandaag warm getint, het weekend licht, zoals daar.
+  dayToday: { backgroundColor: TRANSPORT.today },
+  dayWeekend: { backgroundColor: 'rgba(239, 242, 248, 0.45)' },
   line: { position: 'absolute', left: 0, right: 0, height: 1, backgroundColor: COLORS.line },
-  empty: { position: 'absolute', left: SPACING.sm, ...TYPE.small, color: COLORS.muted },
-  now: { position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: TRANSPORT.now },
+  now: { position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: TRANSPORT.now, zIndex: 2 },
 
-  blockBox: { position: 'absolute', paddingRight: BLOCK_GUTTER / 2, paddingBottom: 1 },
+  blockBox: { position: 'absolute', paddingHorizontal: 2, paddingRight: BLOCK_GUTTER / 2, paddingBottom: 1 },
   block: {
     flex: 1,
     overflow: 'hidden',
     borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    gap: 1,
+    paddingHorizontal: 5,
+    paddingVertical: 3,
+    gap: 0,
   },
   blockBorder: { borderWidth: 1, borderColor: TRANSPORT.border },
   blockNoDriver: { borderWidth: 2, borderStyle: 'dashed', borderColor: TRANSPORT.edge },
@@ -746,8 +758,9 @@ const styles = StyleSheet.create({
 
   footer: {
     gap: 6,
+    marginHorizontal: GRID_MARGIN,
     paddingHorizontal: 12,
-    paddingTop: 8,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: COLORS.line,
     backgroundColor: COLORS.surface,

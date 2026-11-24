@@ -1,4 +1,5 @@
-import { ChevronRight } from 'lucide-react-native';
+import { Image } from 'expo-image';
+import { ChevronRight, Soup } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { AppAlmaRestaurant } from '../api/contract';
@@ -7,7 +8,7 @@ import { useResource } from '../api/useResource';
 import { almaHighlights, almaStatusLine } from '../alma';
 import { useTabRouter } from '../navigation';
 import { useApp } from '../state/app';
-import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { COLORS, FONTS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW, HomeSection } from './HomeSection';
 
 /**
@@ -62,6 +63,12 @@ function Row({
   const highlights = almaHighlights(restaurant);
   const dishes = highlights?.dishes.map((dish) => dish.name).join(' · ') ?? null;
   const line = highlights?.kind === 'soep' ? `Soep: ${dishes}` : dishes;
+  // De foto van het gerecht van de dag; anders die van het eerste gerecht met een foto.
+  const photo =
+    highlights?.dishes.find((dish) => dish.imageUrl)?.imageUrl ??
+    restaurant.menu.flatMap((section) => section.groups.flatMap((group) => group.dishes)).find((dish) => dish.imageUrl)
+      ?.imageUrl ??
+    null;
 
   return (
     <Pressable
@@ -70,12 +77,18 @@ function Row({
       onPress={onPress}
       style={({ pressed }) => [styles.row, !last && styles.divider, pressed && styles.pressed]}
     >
+      <View style={styles.photo}>
+        {photo ? (
+          <Image source={{ uri: photo }} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} />
+        ) : (
+          <Soup color={COLORS.muted} size={22} />
+        )}
+      </View>
       <View style={styles.text}>
         <View style={styles.head}>
           <Text style={styles.name} numberOfLines={1}>
             {restaurant.name}
           </Text>
-          <View style={[styles.dot, restaurant.openNow ? styles.dotOpen : styles.dotClosed]} />
           <Text style={[styles.status, restaurant.openNow && styles.statusOpen]} numberOfLines={1}>
             {status}
           </Text>
@@ -103,12 +116,19 @@ const styles = StyleSheet.create({
   divider: { borderBottomWidth: 1, borderBottomColor: COLORS.line },
   pressed: { backgroundColor: COLORS.paper2 },
   text: { flex: 1, gap: 4 },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name: { ...TYPE.cardTitle, fontSize: 15, lineHeight: 20, color: COLORS.ink, flexShrink: 0, marginRight: 4 },
-  dot: { width: 8, height: 8, borderRadius: RADIUS.pill },
-  dotOpen: { backgroundColor: COLORS.yellowDeep, borderWidth: 1.5, borderColor: COLORS.coinRim },
-  dotClosed: { borderWidth: 1.5, borderColor: COLORS.muted },
-  status: { flexShrink: 1, fontFamily: FONTS.regular, fontSize: 13, color: COLORS.muted },
-  statusOpen: { color: COLORS.body },
+  head: { flexDirection: 'row', alignItems: 'baseline', gap: SPACING.sm },
+  name: { ...TYPE.cardTitle, fontSize: 15, lineHeight: 20, color: COLORS.ink, flexShrink: 0 },
+  status: { flexShrink: 1, fontFamily: FONTS.medium, fontSize: 12.5, color: COLORS.muted },
+  statusOpen: { fontFamily: FONTS.semibold, color: COLORS.okInk },
+  // Het gerecht van de dag, links: zonder foto zag een rij er levenloos uit.
+  photo: {
+    width: 60,
+    height: 60,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: COLORS.paper2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dishes: { ...TYPE.small, color: COLORS.body },
 });

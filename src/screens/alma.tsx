@@ -152,8 +152,9 @@ export default function AlmaScreen() {
 function Status({ restaurant }: { restaurant: AppAlmaRestaurant }) {
   return (
     <View style={styles.status}>
-      <View style={[styles.dot, restaurant.openNow ? styles.dotOpen : styles.dotClosed]} />
-      <Text style={[styles.statusText, restaurant.openNow && styles.statusOpen]}>{almaStatusLine(restaurant)}</Text>
+      <View style={[styles.statusPill, restaurant.openNow && styles.statusPillOpen]}>
+        <Text style={[styles.statusText, restaurant.openNow && styles.statusOpen]}>{almaStatusLine(restaurant)}</Text>
+      </View>
       {restaurant.today.length > 0 ? (
         <Text style={styles.statusToday} numberOfLines={1}>
           {restaurant.today
@@ -367,15 +368,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.lg,
   },
-  dot: { width: 9, height: 9, borderRadius: RADIUS.pill },
-  dotOpen: {
-    backgroundColor: COLORS.yellowDeep,
-    borderWidth: 1.5,
-    borderColor: COLORS.coinRim,
+  // Open in het groen, dicht in het grijs; geen geel bolletje meer.
+  statusPill: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 5,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.paper2,
   },
-  dotClosed: { borderWidth: 1.5, borderColor: COLORS.muted },
-  statusText: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.muted },
-  statusOpen: { color: COLORS.ink },
+  statusPillOpen: { backgroundColor: COLORS.okBg },
+  statusText: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.body },
+  statusOpen: { color: COLORS.okInk },
   statusToday: {
     ...TYPE.small,
     color: COLORS.muted,

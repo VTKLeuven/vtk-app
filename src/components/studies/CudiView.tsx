@@ -321,6 +321,12 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
             timeslots={timeslots.data}
             onTimeslots={() => router.push('/cudi-tijdsloten')}
           />
+        ) : timeslots.data?.enabled ? (
+          <TimeslotCard
+            timeslots={timeslots.data}
+            locale={locale}
+            onOpen={() => router.push('/cudi-tijdsloten')}
+          />
         ) : null}
 
         {waiting.map((order) => (
@@ -685,6 +691,48 @@ function ReadyCard({
   );
 }
 
+/**
+ * De tijdsloten, ook zonder iets dat klaarligt: op cudi.vtk.be kan je altijd een
+ * tijdslot nemen, dus hier ook. Tot november 2026 stond de knop enkel in
+ * `ReadyCard`, en wie niets klaar had liggen, vond de tijdsloten nergens.
+ */
+function TimeslotCard({
+  timeslots,
+  locale,
+  onOpen,
+}: {
+  timeslots: AppCudiTimeslots;
+  locale: AppLocale;
+  onOpen: () => void;
+}) {
+  const next = timeslots.mine[0] ?? null;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={
+        next
+          ? `Je tijdslot, ${formatDayShort(next.start, locale)} ${formatTime(next.start, locale)}. Wijzigen`
+          : 'Een tijdslot reserveren om af te halen'
+      }
+      onPress={onOpen}
+      style={({ pressed }) => [styles.slotCard, pressed && styles.pressed]}
+    >
+      <View style={styles.slotIcon}>
+        <CalendarClock size={20} color={COLORS.ink} />
+      </View>
+      <View style={styles.flex}>
+        <Text style={styles.title}>{next ? 'Je tijdslot' : 'Tijdslot reserveren'}</Text>
+        <Text style={styles.meta}>
+          {next
+            ? `${formatDayShort(next.start, locale)} ${formatTime(next.start, locale)} - ${formatTime(next.end, locale)}`
+            : 'Kies wanneer je je cursussen komt afhalen'}
+        </Text>
+      </View>
+      <ChevronRight size={18} color={COLORS.muted} />
+    </Pressable>
+  );
+}
+
 function SubjectList({
   catalog,
   cart,
@@ -834,6 +882,23 @@ const pillBase = {
 };
 
 const styles = StyleSheet.create({
+  slotCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    padding: SPACING.md,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
+  },
+  slotIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: COLORS.yellow,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   // In het blad onderaan is de lijst geen kaart: het blad is zelf al wit.
   sheetList: { backgroundColor: 'transparent', borderRadius: 0, shadowOpacity: 0, elevation: 0 },
   root: { flex: 1, backgroundColor: COLORS.paper },

@@ -141,9 +141,12 @@ uitzondering: die werkt in Expo Go niet.
      in beeld is.
    Home opent niet met `PageHead` maar met de aankomende evenementen als foto die
    om de zeven seconden doorschuift (`HomeHero`); zonder evenementen valt het
-   terug op `PageHead`. **De transportplanning (`vervoer.tsx`) blijft bewust in
-   het oude ontwerp** (`PageHead navy`), omdat ze de telefoonweergave van
-   logistiek.vtk.be volgt. Praesidium hield zijn eigen vorm. De scanner aan de deur
+   terug op `PageHead`. Een scherm met een eigen beeld (een evenement, een ticket,
+   de broodjes) opent met `PhotoHead`: de foto over de volle breedte en de titel
+   op papier eronder. **De transportplanning (`vervoer.tsx`) volgt de app, maar
+   haar agenda is exact die van logistiek.vtk.be** (drie dagen naast elkaar, de
+   hele dag in beeld, dezelfde kleuren, arceringen en randen); verander daar
+   niets aan zonder de site. Praesidium hield zijn eigen vorm. De scanner aan de deur
    volgt het lichte ontwerp; enkel het camerabeeld en de feedback na een scan zijn
    een gekleurd vlak.
 9. **Home is vandaag, Meer is waar alles staat.** Home beantwoordt twee vragen:

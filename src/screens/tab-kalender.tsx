@@ -61,7 +61,7 @@ const VIEW_KEY = 'kalender-weergave';
  * bladeren naar vorige maand een leeg rooster geven.
  *
  * **De ster is geen inschrijving.** Ze zet een evenement in jouw lijst (het
- * tabblad "Mijn evenementen" in de kop) en hangt er de herinnering van de dag ervoor aan. Wat ze niet
+ * tabblad "Mijn lijst" in de kop) en hangt er de herinnering van de dag ervoor aan. Wat ze niet
  * doet: een plaats reserveren, een ticket kopen of iemand laten weten dat je
  * komt. Dat onderscheid is de reden dat ze naast de rij staat en niet de rij zelf
  * is.
@@ -86,7 +86,7 @@ export default function KalenderScreen() {
   );
   useTabParam<Tab>(params.tab, ['planning', 'agenda', 'mijn'], setChosen);
   const fallback: Tab = planningAvailable ? 'planning' : 'agenda';
-  // De planning en "Mijn evenementen" vragen een login; uitgelogd valt dat terug op Evenementen.
+  // De planning en "Mijn lijst" vragen een login; uitgelogd valt dat terug op Evenementen.
   const allowed = (option: Tab | null) =>
     option !== null && !(option === 'planning' && !planningAvailable) && !(option === 'mijn' && !viewer);
   const tab: Tab = chosen !== null && allowed(chosen) ? chosen : fallback;
@@ -159,7 +159,7 @@ export default function KalenderScreen() {
     options: [
       ...(planningAvailable ? [{ value: 'planning' as const, label: 'Planning' }] : []),
       { value: 'agenda' as const, label: 'Evenementen' },
-      ...(viewer ? [{ value: 'mijn' as const, label: 'Mijn evenementen' }] : []),
+      ...(viewer ? [{ value: 'mijn' as const, label: 'Mijn lijst' }] : []),
     ],
   };
 

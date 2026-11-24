@@ -316,12 +316,13 @@ const styles = StyleSheet.create({
   input: {
     ...TYPE.body,
     color: COLORS.ink,
-    borderRadius: 20,
+    borderRadius: 12,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.surface,
     minHeight: 96,
     textAlignVertical: 'top',
-    ...CARD_SHADOW,
+    borderWidth: 1,
+    borderColor: COLORS.controlBorder,
   },
 });

@@ -15,7 +15,7 @@ import {
 } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { DatePin } from '../components/DatePin';
-import { PageHead } from '../components/PageHead';
+import { PhotoHead } from '../components/PageHead';
 import { Stepper } from '../components/Stepper';
 import { CARD_SHADOW } from '../components/HomeSection';
 import { Button, Card, CardList, Empty, ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
@@ -50,7 +50,8 @@ export default function BroodjesScreen() {
   const { locale, viewer, gate, refresh: refreshApp } = useApp();
   const resource = useResource('theokot', () => fetchTheokot(locale), locale);
 
-  const head = () => <PageHead title="Broodjes" subtitle="Bij het Theokot" />;
+  // De foto van het Theokot-team bovenaan, zoals een evenement zijn affiche heeft.
+  const head = () => <PhotoHead image={THEOKOT_PHOTO} title="Broodjes" kicker="Bij het Theokot" height={220} />;
 
   if (!viewer) {
     return (
@@ -101,8 +102,8 @@ export default function BroodjesScreen() {
 
   return (
     <View style={styles.root}>
-      {head()}
       <Ordering
+        head={head()}
         data={resource.data}
         stale={resource.stale}
         refreshing={resource.refreshing}
@@ -122,6 +123,7 @@ export default function BroodjesScreen() {
  * Standaard de eerste dag waarop je nog kan bestellen of al iets hebt staan.
  */
 function Ordering({
+  head,
   data,
   stale,
   refreshing,
@@ -129,6 +131,8 @@ function Ordering({
   locale,
   onChanged,
 }: {
+  /** De kop met de foto; scrolt mee met de rest. */
+  head: React.ReactNode;
   data: AppTheokot;
   stale: boolean;
   refreshing: boolean;
@@ -144,6 +148,7 @@ function Ordering({
 
   const header = (
     <>
+      <View style={styles.bleed}>{head}</View>
       {stale ? <StaleNotice onRetry={onRefresh} /> : null}
 
       {ban ? (
@@ -663,7 +668,11 @@ function orderErrorText(error: unknown): string {
   }
 }
 
+const THEOKOT_PHOTO = require('../../assets/snel/theokot.jpg');
+
 const styles = StyleSheet.create({
+  // De kop met de foto loopt tot tegen de randen, buiten de marge van de inhoud.
+  bleed: { marginHorizontal: -(SPACING.xl - 4), marginTop: -(SPACING.xl - 4) },
   root: { flex: 1, backgroundColor: COLORS.paper },
   content: { padding: SPACING.xl - 4, gap: SPACING.md, paddingBottom: SPACING.xxl },
   flex: { flex: 1 },

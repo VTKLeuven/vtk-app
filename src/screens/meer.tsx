@@ -124,7 +124,9 @@ export default function MeerScreen() {
           onPress={() => router.push('/zoeken')}
           style={({ pressed }) => [styles.search, pressed && styles.pressedDark]}
         >
-          <Search color={COLORS.muted} size={16} />
+          <View style={styles.searchIcon}>
+            <Search color={COLORS.ink} size={15} />
+          </View>
           <Text style={styles.searchText}>Zoeken op vtk.be</Text>
         </Pressable>
       </PageHead>
@@ -229,13 +231,16 @@ function TabTile({
                 : 'Lees meer'}
           </Text>
         </View>
-        {external ? (
-          <ExternalLink color={COLORS.muted} size={17} />
-        ) : expandable ? (
-          <ChevronDown color={COLORS.muted} size={18} style={expanded ? styles.chevronOpen : undefined} />
-        ) : (
-          <ChevronRight color={COLORS.muted} size={18} />
-        )}
+        {/* Een geel rondje met de pijl: het accent van de tegel. */}
+        <View style={[styles.go, expanded && styles.goOpen]}>
+          {external ? (
+            <ExternalLink color={COLORS.ink} size={15} />
+          ) : expandable ? (
+            <ChevronDown color={expanded ? COLORS.yellow : COLORS.ink} size={17} style={expanded ? styles.chevronOpen : undefined} />
+          ) : (
+            <ChevronRight color={COLORS.ink} size={17} />
+          )}
+        </View>
       </Pressable>
 
       {expandable && expanded ? (
@@ -317,6 +322,15 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   searchText: { ...TYPE.small, fontSize: 14, color: COLORS.muted },
+  searchIcon: {
+    width: 30,
+    height: 30,
+    marginLeft: -SPACING.sm,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.yellow,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   columns: { flexDirection: 'row', gap: SPACING.xl },
 
@@ -347,6 +361,15 @@ const styles = StyleSheet.create({
   tileText: { flex: 1, gap: 2, paddingVertical: SPACING.sm },
   tileLabel: { fontFamily: FONTS.semibold, fontSize: 16, lineHeight: 21, color: COLORS.ink },
   chevronOpen: { transform: [{ rotate: '180deg' }] },
+  go: {
+    width: 32,
+    height: 32,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.yellow,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  goOpen: { backgroundColor: COLORS.ink },
   children: { borderTopWidth: 1, borderTopColor: COLORS.line },
   child: {
     flexDirection: 'row',

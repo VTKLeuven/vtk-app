@@ -36,12 +36,15 @@ import { getPref, setPref } from '../../storage';
 import { COLORS, FONTS, PLANNING, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { Empty, ErrorState, Loading, StaleNotice } from '../ui';
 import { DetailSheet, ExportSheet, selectionOf, SettingsSheet, SetupForm, Sheet, type Selection } from './PlanningSheets';
+import { CARD_SHADOW } from '../HomeSection';
 
 const GUTTER = 44;
 const HOUR = 52;
 const DAY_HEIGHT = 24 * HOUR;
 const VISIBLE_DAYS = 3;
 const CHIP_ROW = 20;
+/** De marge links en rechts van de witte kaart rond het raster. */
+const GRID_MARGIN = 12;
 const SHOW_HIDDEN_KEY = 'planning-verborgen';
 
 const BLOCK_STYLE = {
@@ -213,7 +216,8 @@ function Grid({
   toolbarRight: React.ReactNode;
 }) {
   const { width } = useWindowDimensions();
-  const column = (width - GUTTER) / VISIBLE_DAYS;
+  // Het raster staat in een witte kaart met een marge links en rechts.
+  const column = (width - GRID_MARGIN * 2 - GUTTER) / VISIBLE_DAYS;
   const todayIndex = Math.max(0, days.indexOf(planningToday));
   const [first, setFirst] = useState(todayIndex);
   const [now, setNow] = useState(nowInLeuven);
@@ -270,6 +274,7 @@ function Grid({
         {toolbarRight}
       </View>
 
+      <View style={styles.grid}>
       {/* De dagkoppen schuiven mee met het raster eronder, op de native thread. */}
       <View style={styles.headRow}>
         <View style={{ width: GUTTER }} />
@@ -345,6 +350,7 @@ function Grid({
           </View>
         </View>
       </ScrollView>
+      </View>
     </View>
   );
 }
@@ -517,44 +523,54 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    paddingHorizontal: SPACING.md,
+    paddingLeft: SPACING.xl - 4,
+    paddingRight: SPACING.lg,
     paddingTop: SPACING.sm,
-    paddingBottom: SPACING.xs,
+    paddingBottom: SPACING.md,
   },
   toolbarLabel: { flex: 1 },
-  month: { fontFamily: FONTS.semibold, fontSize: 16, color: COLORS.ink },
+  month: { fontFamily: FONTS.bold, fontSize: 18, letterSpacing: -0.4, color: COLORS.ink },
   week: { ...TYPE.small, color: COLORS.muted, fontVariant: ['tabular-nums'] },
   todayButton: {
-    paddingHorizontal: 13,
-    paddingVertical: 7,
+    height: 44,
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.pill,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
     backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
   },
-  todayLabel: { ...TYPE.small, fontFamily: FONTS.medium, color: COLORS.ink },
+  todayLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink },
   iconButton: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     borderRadius: RADIUS.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.line2,
     backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
   },
 
+  // Het raster als één witte kaart, zoals op het voorstel; onderaan loopt hij onder de tabbalk door.
+  grid: {
+    flex: 1,
+    marginHorizontal: GRID_MARGIN,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    backgroundColor: COLORS.surface,
+    overflow: 'hidden',
+  },
   headRow: {
     flexDirection: 'row',
+    paddingTop: SPACING.sm,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.line2,
-    backgroundColor: COLORS.paper,
+    borderBottomColor: COLORS.line,
+    backgroundColor: COLORS.surface,
   },
   headClip: { flex: 1, overflow: 'hidden' },
-  dayHead: { paddingHorizontal: 3, paddingBottom: 6, gap: 4, borderLeftWidth: 1, borderLeftColor: COLORS.line },
+  dayHead: { paddingHorizontal: 3, paddingBottom: 8, gap: 4 },
   dayLabel: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingTop: 2 },
   dayName: { ...TYPE.small, fontFamily: FONTS.medium, color: COLORS.body },
-  dayNumber: { minWidth: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  dayNumber: { minWidth: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   dayNumberToday: { backgroundColor: COLORS.yellow },
   dayNumberText: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink, fontVariant: ['tabular-nums'] },
   dayNumberTextToday: { color: COLORS.ink },
@@ -583,19 +599,20 @@ const styles = StyleSheet.create({
   columns: { flex: 1 },
   hourLine: { position: 'absolute', left: 0, right: 0, height: 1, backgroundColor: COLORS.line },
   column: { height: DAY_HEIGHT, borderLeftWidth: 1, borderLeftColor: COLORS.line },
-  weekend: { backgroundColor: 'rgba(14, 26, 54, 0.025)' },
+  weekend: { backgroundColor: 'rgba(14, 26, 54, 0.03)' },
 
+  // Getinte blokken zonder rand, zoals op het voorstel; de kleur zegt de soort.
   block: {
     position: 'absolute',
     overflow: 'hidden',
-    borderRadius: 7,
-    borderWidth: 1,
-    paddingHorizontal: 5,
-    paddingVertical: 3,
+    borderRadius: 10,
+    borderWidth: 0,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
   },
   blockVtk: { borderLeftWidth: 4, borderLeftColor: COLORS.yellow },
   blockMandatory: { borderLeftWidth: 3, borderLeftColor: PLANNING.danger },
-  blockHidden: { borderStyle: 'dashed', opacity: 0.5 },
+  blockHidden: { borderWidth: 1, borderStyle: 'dashed', opacity: 0.5 },
   blockTop: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   blockTime: { fontFamily: FONTS.semibold, fontSize: 10.5, fontVariant: ['tabular-nums'] },
   blockTitle: { fontFamily: FONTS.semibold, fontSize: 12, lineHeight: 15, color: COLORS.ink },

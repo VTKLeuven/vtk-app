@@ -1,6 +1,5 @@
 import { Image } from 'expo-image';
 import { useFocusEffect } from 'expo-router';
-import { setStatusBarStyle } from 'expo-status-bar';
 import { MapPin } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -22,6 +21,7 @@ import { formatDay, formatTime } from '../format';
 import { leadMoment } from '../moments';
 import { addDays } from '../planning/grid';
 import { COLORS, FONTS, RADIUS, SPACING } from '../theme/tokens';
+import { useStatusBar } from './PageHead';
 import { PatternBand } from './PatternBand';
 
 /** Zo lang staat één evenement in beeld voor het volgende komt. */
@@ -78,14 +78,11 @@ export function HomeHero({
   const current = count === 0 ? 0 : Math.min(index, count - 1);
 
   // Over een foto is een donkere statusbalk onleesbaar; de rest van de app is licht.
+  useStatusBar('light');
   useFocusEffect(
     useCallback(() => {
       setFocused(true);
-      setStatusBarStyle('light');
-      return () => {
-        setFocused(false);
-        setStatusBarStyle('dark');
-      };
+      return () => setFocused(false);
     }, []),
   );
 
@@ -235,7 +232,9 @@ function Slide({
         <Text style={styles.when} numberOfLines={1}>
           {when}
         </Text>
-        <Text style={styles.title} numberOfLines={2}>
+        {/* Op één regel, en kleiner als het moet: met twee regels werd de kop zo hoog
+            als de langste titel, en stond er onder een korte een gat. */}
+        <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
           {event.title}
         </Text>
         {event.location ? (

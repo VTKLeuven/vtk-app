@@ -109,13 +109,15 @@ export function Button({
 }: {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'ghost';
+  /** `accent` is de gele knop, voor de ene hoofdactie op een donker vlak. */
+  variant?: 'primary' | 'ghost' | 'accent';
   disabled?: boolean;
   busy?: boolean;
   onDark?: boolean;
 }) {
   const inactive = disabled || busy;
-  const primary = variant === 'primary';
+  const accent = variant === 'accent';
+  const primary = variant === 'primary' || accent;
 
   return (
     <Pressable
@@ -125,23 +127,31 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        primary ? (onDark ? styles.buttonPrimaryOnDark : styles.buttonPrimary) : styles.buttonGhost,
+        accent
+          ? styles.buttonAccent
+          : primary
+            ? onDark
+              ? styles.buttonPrimaryOnDark
+              : styles.buttonPrimary
+            : styles.buttonGhost,
         onDark && !primary && styles.buttonGhostOnDark,
         pressed && styles.buttonPressed,
         inactive && styles.buttonDisabled,
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={primary && !onDark ? COLORS.paper : COLORS.ink} size="small" />
+        <ActivityIndicator color={primary && !onDark && !accent ? COLORS.paper : COLORS.ink} size="small" />
       ) : (
         <Text
           style={[
             styles.buttonLabel,
-            primary
-              ? onDark
-                ? styles.buttonLabelOnDarkPrimary
-                : styles.buttonLabelPrimary
-              : styles.buttonLabelGhost,
+            accent
+              ? styles.buttonLabelAccent
+              : primary
+                ? onDark
+                  ? styles.buttonLabelOnDarkPrimary
+                  : styles.buttonLabelPrimary
+                : styles.buttonLabelGhost,
             onDark && !primary && styles.buttonLabelOnDarkGhost,
           ]}
         >
@@ -375,6 +385,8 @@ const styles = StyleSheet.create({
   },
   buttonPrimary: { backgroundColor: COLORS.ink, borderColor: COLORS.ink },
   buttonPrimaryOnDark: { backgroundColor: COLORS.surface, borderColor: COLORS.surface },
+  buttonAccent: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
+  buttonLabelAccent: { color: COLORS.ink, fontFamily: FONTS.bold },
   buttonGhost: { backgroundColor: COLORS.surface, borderColor: COLORS.controlBorder },
   buttonGhostOnDark: { borderColor: 'rgba(255,255,255,0.28)' },
   buttonPressed: { opacity: 0.85 },
@@ -416,7 +428,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: COLORS.ink,
   },
-  registerLine: { borderLeftWidth: 1, borderLeftColor: COLORS.line2, paddingLeft: 14 },
+  // De lijn in de marge is geel: het accent van een register.
+  registerLine: { borderLeftWidth: 2, borderLeftColor: COLORS.yellow, paddingLeft: 14 },
   registerRow: {
     flexDirection: 'row',
     alignItems: 'baseline',

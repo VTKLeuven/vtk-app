@@ -1,8 +1,7 @@
-import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 
 import * as WebBrowser from 'expo-web-browser';
-import { CalendarCheck, CalendarPlus, Smartphone, Star } from 'lucide-react-native';
+import { CalendarCheck, CalendarPlus, Info, Smartphone, Star } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -10,7 +9,8 @@ import { baseUrl } from '../../api/client';
 import { fetchCalendarEvent, setEventInterest } from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
 import { Prose } from '../../components/Prose';
-import { PageHead } from '../../components/PageHead';
+import { DatePin } from '../../components/DatePin';
+import { HeadButton, PageHead, PhotoHead } from '../../components/PageHead';
 import { Button, CardList, ErrorState, Loading, SectionHeading } from '../../components/ui';
 import { addEventToDeviceCalendar, addResultMessage } from '../../deviceCalendar';
 import { formatDayShort, formatEventWhen, formatTimeRange } from '../../format';
@@ -18,6 +18,7 @@ import { markdownToPlainText } from '../../markdown';
 import { leadMoment } from '../../moments';
 import { usePlanning } from '../../planning/usePlanning';
 import { useApp } from '../../state/app';
+import { getPref, setPref } from '../../storage';
 import { useTabRouter } from '../../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW } from '../../components/HomeSection';
@@ -62,12 +63,18 @@ import { CARD_SHADOW } from '../../components/HomeSection';
 /** Zoveel dagen van een reeks staan er meteen; zeven past een loopweek, zoals op de site. */
 const MOMENTS_VISIBLE = 7;
 
+/** Voorkeur: de uitleg bij "in je agenda" en "in je planning" is gelezen. */
+const SAVE_EXPLAINED = 'evenement:uitleg-bewaren';
+
 export default function EventScreen() {
   const router = useTabRouter();
   const { locale, viewer, bootstrap } = useApp();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [addingToCalendar, setAddingToCalendar] = useState(false);
   const [allDays, setAllDays] = useState(false);
+  // De uitleg bij "in je agenda" en "in je planning" staat er tot je hem wegtikt;
+  // daarna zijn het twee knoppen, met een (i) om hem terug te zien.
+  const [explain, setExplain] = useState(() => getPref(SAVE_EXPLAINED) !== '1');
   const planning = usePlanning(locale);
 
   const resource = useResource(
@@ -136,15 +143,17 @@ export default function EventScreen() {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <View style={styles.overscroll} />
-      <PageHead title={event.title} subtitle={event.groupName} />
-
       {event.imageUrl ? (
-        // De affiche als plaat zonder waas, zoals op de eventpagina van de site:
-        // er staat geen tekst op, dus er hoeft niets over.
-        <View style={styles.plate}>
-          <Image source={{ uri: event.imageUrl }} style={styles.photo} contentFit="cover" transition={150} />
-        </View>
-      ) : null}
+        // De affiche over de volle breedte, met de gele datumpin op de rand.
+        <PhotoHead
+          image={{ uri: event.imageUrl }}
+          title={event.title}
+          subtitle={event.groupName}
+          pin={<DatePin iso={leadMoment(event)?.start ?? event.start} locale={locale} shadow />}
+        />
+      ) : (
+        <PageHead title={event.title} subtitle={event.groupName} />
+      )}
 
       <View style={styles.body}>
         <CardList>
@@ -258,34 +267,85 @@ export default function EventScreen() {
           />
         ) : null}
 
-        {/* Twee verschillende plaatsen, dus twee regels met elk een zin uitleg.
-            Als twee knoppen naast elkaar ("Zet in agenda", "Zet in mijn
-            planning") was niet te zien wat het verschil was. */}
-        <CardList>
-          <SaveRow
-            icon={Smartphone}
-            label="In de agenda van je telefoon"
-            hint="Eén afspraak in Apple of Google Agenda, met een herinnering. Daarna staat ze los van de app."
-            action="Toevoegen"
-            busy={addingToCalendar}
-            onPress={() => void addToCalendar()}
-          />
-          {plannable ? (
+        {/* Twee verschillende plaatsen. De eerste keer met een zin uitleg per plaats,
+            want als twee knoppen zonder meer was het verschil niet te zien; wie het
+            gelezen heeft, krijgt daarna enkel de twee knoppen en een (i). */}
+        {explain ? (
+          <CardList>
             <SaveRow
-              icon={inPlanning ? CalendarCheck : CalendarPlus}
-              label={inPlanning ? 'Staat in je planning' : 'In je planning, naast je lessen'}
-              hint={
-                inPlanning
-                  ? 'Onder Kalender > Planning en in de agenda die je planning exporteert.'
-                  : 'Komt onder Kalender > Planning tussen je lessen, en in de agenda die je planning exporteert.'
-              }
-              action={inPlanning ? 'Weghalen' : 'Toevoegen'}
-              active={inPlanning}
-              busy={planning.busy}
-              onPress={togglePlanning}
+              icon={Smartphone}
+              label="In de agenda van je telefoon"
+              hint="Eén afspraak in Apple of Google Agenda, met een herinnering. Daarna staat ze los van de app."
+              action="Toevoegen"
+              busy={addingToCalendar}
+              onPress={() => void addToCalendar()}
             />
-          ) : null}
-        </CardList>
+            {plannable ? (
+              <SaveRow
+                icon={inPlanning ? CalendarCheck : CalendarPlus}
+                label={inPlanning ? 'Staat in je planning' : 'In je planning, naast je lessen'}
+                hint={
+                  inPlanning
+                    ? 'Onder Kalender > Planning en in de agenda die je planning exporteert.'
+                    : 'Komt onder Kalender > Planning tussen je lessen, en in de agenda die je planning exporteert.'
+                }
+                action={inPlanning ? 'Weghalen' : 'Toevoegen'}
+                active={inPlanning}
+                busy={planning.busy}
+                onPress={togglePlanning}
+              />
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setPref(SAVE_EXPLAINED, '1');
+                setExplain(false);
+              }}
+              hitSlop={6}
+              style={({ pressed }) => [styles.gotIt, pressed && styles.actionPressed]}
+            >
+              <Text style={styles.gotItLabel}>Begrepen, niet meer uitleggen</Text>
+            </Pressable>
+          </CardList>
+        ) : (
+          <View style={styles.saveButtons}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="In de agenda van je telefoon zetten"
+              accessibilityState={{ busy: addingToCalendar }}
+              disabled={addingToCalendar}
+              onPress={() => void addToCalendar()}
+              style={({ pressed }) => [styles.saveButton, (pressed || addingToCalendar) && styles.actionPressed]}
+            >
+              <Smartphone color={COLORS.ink} size={18} />
+              <Text style={styles.saveButtonLabel} numberOfLines={1}>
+                In je agenda
+              </Text>
+            </Pressable>
+            {plannable ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={inPlanning ? 'Uit je planning halen' : 'In je planning zetten, naast je lessen'}
+                accessibilityState={{ selected: inPlanning, busy: planning.busy }}
+                disabled={planning.busy}
+                onPress={togglePlanning}
+                style={({ pressed }) => [
+                  styles.saveButton,
+                  inPlanning && styles.saveButtonActive,
+                  (pressed || planning.busy) && styles.actionPressed,
+                ]}
+              >
+                {inPlanning ? <CalendarCheck color={COLORS.ink} size={18} /> : <CalendarPlus color={COLORS.ink} size={18} />}
+                <Text style={styles.saveButtonLabel} numberOfLines={1}>
+                  {inPlanning ? 'In je planning' : 'In planning'}
+                </Text>
+              </Pressable>
+            ) : null}
+            <HeadButton accessibilityLabel="Wat is het verschil?" onPress={() => setExplain(true)}>
+              <Info color={COLORS.ink} size={19} />
+            </HeadButton>
+          </View>
+        )}
 
         {event.description ? (
           <View style={styles.about}>
@@ -391,15 +451,6 @@ const styles = StyleSheet.create({
     height: 1000,
     backgroundColor: COLORS.paper,
   },
-  plate: {
-    marginHorizontal: SPACING.xl - 4,
-    marginTop: SPACING.xl - 4,
-    aspectRatio: 16 / 9,
-    borderRadius: 18,
-    overflow: 'hidden',
-    backgroundColor: COLORS.paper2,
-  },
-  photo: { ...StyleSheet.absoluteFill },
   body: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.lg, gap: SPACING.md },
 
 
@@ -458,6 +509,23 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
   },
   saveText: { flex: 1, gap: 2 },
+  gotIt: { alignSelf: 'flex-start', paddingVertical: SPACING.md },
+  gotItLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.navy, textDecorationLine: 'underline' },
+  saveButtons: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  saveButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    minHeight: 48,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
+  },
+  saveButtonActive: { backgroundColor: COLORS.yellow },
+  saveButtonLabel: { flexShrink: 1, fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink },
   saveLabel: { fontFamily: FONTS.semibold, fontSize: 15, lineHeight: 20, color: COLORS.ink },
   saveHint: { ...TYPE.small, color: COLORS.muted },
   saveAction: {

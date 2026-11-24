@@ -1,3 +1,4 @@
+import { Clock, MapPin } from 'lucide-react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import * as WebBrowser from 'expo-web-browser';
@@ -8,16 +9,16 @@ import { ApiError, baseUrl } from '../../api/client';
 import type { AppTicketEventDetail, AppTicketType } from '../../api/contract';
 import { fetchOrderStatus, fetchTicketEvent, startTicketCheckout } from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
-import { PageHead } from '../../components/PageHead';
+import { DatePin } from '../../components/DatePin';
+import { PageHead, PhotoHead } from '../../components/PageHead';
 import { QuestionField, type AnswerValue } from '../../components/QuestionField';
 import { Prose } from '../../components/Prose';
 import { Stepper } from '../../components/Stepper';
-import { Button, Card, Empty, ErrorState, Loading } from '../../components/ui';
+import { Button, Card, Empty, ErrorState, Loading, SectionHeading } from '../../components/ui';
 import { formatEventWhen, formatEuro } from '../../format';
 import { useApp } from '../../state/app';
 import { useTabRouter } from '../../navigation';
 import { COLORS, SPACING, TYPE } from '../../theme/tokens';
-import { CARD_SHADOW } from '../../components/HomeSection';
 
 /**
  * Tickets kopen.
@@ -188,21 +189,35 @@ function Shop({
 
   return (
     <>
-      <PageHead title={event.title} subtitle={event.ownerGroupName} />
+      {event.imageUrl ? null : <PageHead title={event.title} subtitle={event.ownerGroupName} />}
       <ScrollView contentContainerStyle={styles.content} style={styles.root} keyboardDismissMode="on-drag">
-        <Card>
-          <Text style={styles.body}>
-            {formatEventWhen(event.startsAt, event.endsAt, false, locale)}
-          </Text>
-          {event.location ? <Text style={styles.hint}>{event.location}</Text> : null}
-        </Card>
-
-        {event.description ? (
-          <Card>
-            <Prose>{event.description}</Prose>
-          </Card>
+        {event.imageUrl ? (
+          // De banner van /tickets over de volle breedte, met de gele datumpin.
+          <View style={styles.bleed}>
+            <PhotoHead
+              image={{ uri: event.imageUrl }}
+              title={event.title}
+              subtitle={event.ownerGroupName}
+              pin={<DatePin iso={event.startsAt} locale={locale} shadow />}
+            />
+          </View>
         ) : null}
 
+        <View style={styles.facts}>
+          <View style={styles.fact}>
+            <Clock color={COLORS.muted} size={16} />
+            <Text style={styles.factText}>{formatEventWhen(event.startsAt, event.endsAt, false, locale)}</Text>
+          </View>
+          {event.location ? (
+            <View style={styles.fact}>
+              <MapPin color={COLORS.muted} size={16} />
+              <Text style={styles.factText}>{event.location}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* Eerst de tickets en dan de uitleg: wie hier komt, wil kopen. */}
+        {event.ticketTypes.length > 0 ? <SectionHeading>Tickets</SectionHeading> : null}
         {event.honoraryOneTicket ? (
           <Card featured>
             <Text style={styles.body}>
@@ -255,6 +270,15 @@ function Shop({
             </Card>
           );
         })}
+
+        {event.description ? (
+          <>
+            <SectionHeading>Over dit event</SectionHeading>
+            <Card>
+              <Prose>{event.description}</Prose>
+            </Card>
+          </>
+        ) : null}
 
         {seats.length > 0 ? (
           <>
@@ -395,6 +419,11 @@ function checkoutErrorText(error: unknown): string {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
   content: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxl },
+  // De kop met de foto loopt tot tegen de randen, buiten de marge van de inhoud.
+  bleed: { marginHorizontal: -SPACING.lg, marginTop: -SPACING.lg },
+  facts: { gap: SPACING.sm, paddingHorizontal: SPACING.xs },
+  fact: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  factText: { ...TYPE.body, color: COLORS.body, flexShrink: 1 },
   section: { ...TYPE.sectionTitle, color: COLORS.ink, marginTop: SPACING.sm },
   title: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },
@@ -407,11 +436,12 @@ const styles = StyleSheet.create({
   input: {
     ...TYPE.body,
     color: COLORS.ink,
-    borderRadius: 20,
+    borderRadius: 12,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.surface,
-    ...CARD_SHADOW,
+    borderWidth: 1,
+    borderColor: COLORS.controlBorder,
   },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between' },
 });

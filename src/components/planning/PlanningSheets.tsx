@@ -725,9 +725,10 @@ const styles = StyleSheet.create({
     ...TYPE.body,
     color: COLORS.ink,
     backgroundColor: COLORS.surface,
-    borderRadius: 20,
+    borderRadius: 12,
     paddingHorizontal: SPACING.md,
     paddingVertical: 11,
-    ...CARD_SHADOW,
+    borderWidth: 1,
+    borderColor: COLORS.controlBorder,
   },
 });

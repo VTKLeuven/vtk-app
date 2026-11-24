@@ -1,11 +1,13 @@
-import { useRouter } from 'expo-router';
+import { Image, type ImageSource } from 'expo-image';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { setStatusBarStyle } from 'expo-status-bar';
 import { ChevronLeft } from 'lucide-react-native';
+import { useCallback } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from './HomeSection';
-import { PatternBand } from './PatternBand';
 
 export type HeadTab<T extends string> = {
   value: T;
@@ -40,10 +42,6 @@ export type HeadTab<T extends string> = {
  *
  * Wat in `right` of `children` staat, staat op papier: geen `onDark`-kleuren meer.
  * Voor een ronde knop rechts is er `HeadButton`.
- *
- * **`navy`** tekent nog de oude kop (navy, patroon, gele lijn). Enkel voor de
- * transportplanning, die bewust de telefoonweergave van logistiek.vtk.be volgt
- * en daarom in het oude ontwerp blijft.
  */
 /**
  * Vanaf deze lengte is de titel een naam en geen kop: een vak ("Elektrische
@@ -61,7 +59,6 @@ export function PageHead<T extends string = string>({
   backLabel = 'Terug',
   tabs,
   compact = false,
-  navy = false,
   children,
 }: {
   title: string;
@@ -76,37 +73,23 @@ export function PageHead<T extends string = string>({
   tabs?: { options: HeadTab<T>[]; value: T; onChange: (next: T) => void; scroll?: boolean };
   /** Een lagere kop; zie hierboven. */
   compact?: boolean;
-  /** De oude navy kop; enkel voor de transportplanning, zie hierboven. */
-  navy?: boolean;
   /** Extra inhoud onderaan de kop, op papier. */
   children?: React.ReactNode;
 }) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const showBack = back && router.canGoBack();
+  useStatusBar('dark');
 
   return (
     <View
       style={[
         styles.head,
         compact && styles.headCompact,
-        navy && dark.head,
         { paddingTop: insets.top + (compact ? SPACING.xs : SPACING.sm) },
       ]}
     >
-      {navy ? <PatternBand offset={[-240, -120]} /> : null}
-      {showBack && navy ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={backLabel}
-          onPress={() => router.back()}
-          hitSlop={12}
-          style={({ pressed }) => [dark.back, pressed && styles.pressed]}
-        >
-          <ChevronLeft color={COLORS.onDarkMuted} size={18} />
-          <Text style={dark.backLabel}>{backLabel}</Text>
-        </Pressable>
-      ) : showBack ? (
+      {showBack ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={backLabel}
@@ -127,19 +110,18 @@ export function PageHead<T extends string = string>({
 
       <View style={[styles.row, compact && styles.rowCompact]}>
         <View style={styles.text}>
-          {kicker && !compact ? <Text style={[styles.kicker, navy && dark.muted]}>{kicker}</Text> : null}
+          {kicker && !compact ? <Text style={styles.kicker}>{kicker}</Text> : null}
           <Text
             accessibilityRole="header"
             style={[
               styles.title,
               !compact && title.length > LONG_TITLE && styles.titleLong,
               compact && styles.titleCompact,
-              navy && dark.title,
             ]}
           >
             {title}
           </Text>
-          {subtitle && !compact ? <Text style={[styles.subtitle, navy && dark.muted]}>{subtitle}</Text> : null}
+          {subtitle && !compact ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
         </View>
         {right ? <View style={[styles.right, compact && styles.rightCompact]}>{right}</View> : null}
       </View>
@@ -176,6 +158,85 @@ export function PageHead<T extends string = string>({
       ) : null}
 
       {children}
+    </View>
+  );
+}
+
+/**
+ * De statusbalk volgt de kop van het scherm dat in beeld is: donker op papier,
+ * licht op een foto of op navy. Elk scherm zet hem zelf wanneer het in beeld komt,
+ * zodat terugkeren naar een scherm met een foto hem weer licht maakt.
+ */
+export function useStatusBar(style: 'light' | 'dark') {
+  useFocusEffect(
+    useCallback(() => {
+      setStatusBarStyle(style);
+    }, [style]),
+  );
+}
+
+/**
+ * Een kop met een foto over de volle breedte, zoals op Home: de foto bovenaan,
+ * de terugknop erop, en de titel op papier dat met ronde hoeken over de foto
+ * schuift. Voor een scherm dat een eigen beeld heeft: een evenement met zijn
+ * affiche, een ticket, de broodjes met het Theokot. Zonder beeld hoort het
+ * gewone `PageHead`.
+ */
+export function PhotoHead({
+  image,
+  title,
+  kicker,
+  subtitle,
+  pin,
+  back = true,
+  backLabel = 'Terug',
+  height = 260,
+  children,
+}: {
+  image: ImageSource | number;
+  title: string;
+  kicker?: string | null;
+  subtitle?: string | null;
+  /** Iets dat op de rand van foto en papier hangt, zoals een `DatePin`. */
+  pin?: React.ReactNode;
+  back?: boolean;
+  backLabel?: string;
+  height?: number;
+  children?: React.ReactNode;
+}) {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const showBack = back && router.canGoBack();
+  useStatusBar('light');
+
+  return (
+    <View>
+      <View style={[photo.frame, { height: height + insets.top }]}>
+        <Image source={image} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
+        {showBack ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={backLabel}
+            onPress={() => router.back()}
+            hitSlop={8}
+            style={({ pressed }) => [photo.back, { top: insets.top + SPACING.sm }, pressed && styles.pressed]}
+          >
+            <ChevronLeft color={COLORS.ink} size={20} />
+          </Pressable>
+        ) : null}
+      </View>
+      <View style={photo.sheet}>
+        {pin ? <View style={photo.pin}>{pin}</View> : null}
+        {kicker ? <Text style={[styles.kicker, pin ? photo.besidePin : null]}>{kicker}</Text> : null}
+        <Text
+          accessibilityRole="header"
+          style={[styles.title, title.length > LONG_TITLE && styles.titleLong, !kicker && pin ? photo.besidePin : null]}
+        >
+          {title}
+        </Text>
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        {children}
+      </View>
     </View>
   );
 }
@@ -320,26 +381,29 @@ const styles = StyleSheet.create({
   },
 });
 
-/** De oude navy kop, enkel nog voor `navy` (de transportplanning). */
-const dark = StyleSheet.create({
-  head: {
-    backgroundColor: COLORS.navy,
-    paddingBottom: SPACING.xl,
-    overflow: 'hidden',
-    borderBottomWidth: 5,
-    borderBottomColor: COLORS.yellow,
-  },
+const photo = StyleSheet.create({
+  frame: { backgroundColor: COLORS.navy, overflow: 'hidden' },
   back: {
-    flexDirection: 'row',
+    position: 'absolute',
+    left: SPACING.lg,
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.pill,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
-    gap: 2,
-    alignSelf: 'flex-start',
-    marginLeft: -SPACING.xs,
-    marginBottom: SPACING.md,
-    paddingVertical: SPACING.xs,
-    paddingRight: SPACING.sm,
+    justifyContent: 'center',
   },
-  backLabel: { ...TYPE.small, color: COLORS.onDarkMuted },
-  title: { color: COLORS.onDark },
-  muted: { color: COLORS.onDarkMuted },
+  sheet: {
+    marginTop: -30,
+    paddingTop: SPACING.xl - 2,
+    paddingHorizontal: SPACING.xl - 4,
+    paddingBottom: SPACING.md,
+    gap: 6,
+    backgroundColor: COLORS.paper,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+  },
+  pin: { position: 'absolute', right: SPACING.xl - 4, top: -30 },
+  // Naast de pin blijft er plaats vrij, zodat de tekst er niet onder loopt.
+  besidePin: { paddingRight: 72 },
 });

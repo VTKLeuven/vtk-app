@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView, type WebViewNavigation } from 'react-native-webview';
 
 import { COLORS, FONTS, SPACING } from '../theme/tokens';
-import { HeadButton } from './PageHead';
+import { HeadButton, useStatusBar } from './PageHead';
 
 const IN_WEBVIEW_SCHEMES = new Set(['http:', 'https:', 'about:', 'data:', 'blob:']);
 
@@ -140,6 +140,7 @@ export function WebFlow({
   onDone: () => void;
 }) {
   const router = useRouter();
+  useStatusBar('dark');
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
 

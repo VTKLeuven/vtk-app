@@ -1,16 +1,16 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Image } from 'expo-image';
-import { ChevronRight, ExternalLink, LockKeyhole } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, ChevronUp, ExternalLink, LockKeyhole, Search, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { ApiError } from '../api/client';
-import type { AppAdminBoDue, AppAdminTile } from '../api/contract';
+import type { AppAdminBoDue, AppAdminLink, AppAdminSection, AppAdminTile } from '../api/contract';
 import { fetchAdminDashboard, openDoor } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
-import { PageHead } from '../components/PageHead';
-import { ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice } from '../components/ui';
+import { HeadButton, PageHead } from '../components/PageHead';
+import { ErrorState, Loading, StaleNotice } from '../components/ui';
 import { useTabRouter } from '../navigation';
 import { useApp } from '../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
@@ -37,6 +37,11 @@ import { CARD_SHADOW } from '../components/HomeSection';
  * iedereen", geel voor je post, grijs voor wat van jou is) met de tegels onder
  * elkaar, de chip, de naam en de host. Op een telefoon is het raster van de site
  * (`minmax(180px, 1fr)`) één kolom breed, en dus hier ook.
+ *
+ * **De onderdelen staan in een keuzelijst bovenaan**, zoals op /admin op een
+ * telefoon: "Overzicht" met een pijltje, en een zoekknop ernaast. Open is het de
+ * zijbalk van /admin als kaart, per groep in te klappen; zoeken filtert alle
+ * onderdelen op naam. Tot november 2026 stond dezelfde lijst onder de tegels.
  */
 export default function BeheerScreen() {
   const router = useTabRouter();
@@ -47,9 +52,60 @@ export default function BeheerScreen() {
     message: null,
     ok: false,
   });
+  const [menu, setMenu] = useState(false);
+  const [query, setQuery] = useState<string | null>(null);
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
+
+  const sections = resource.data?.sections ?? [];
+  const nav =
+    sections.length > 0 ? (
+      <View style={styles.nav}>
+        {query === null ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Overzicht, de onderdelen van de admin"
+            accessibilityState={{ expanded: menu }}
+            onPress={() => setMenu(!menu)}
+            style={({ pressed }) => [styles.navSelect, pressed && styles.pressed]}
+          >
+            <Text style={styles.navSelectLabel}>Overzicht</Text>
+            {menu ? <ChevronUp size={18} color={COLORS.ink} /> : <ChevronDown size={18} color={COLORS.ink} />}
+          </Pressable>
+        ) : (
+          <View style={styles.navSelect}>
+            <Search size={16} color={COLORS.muted} />
+            <TextInput
+              autoFocus
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Zoek een onderdeel"
+              placeholderTextColor={COLORS.muted}
+              accessibilityLabel="Zoek een onderdeel van de admin"
+              style={styles.navInput}
+              returnKeyType="search"
+            />
+          </View>
+        )}
+        <HeadButton
+          accessibilityLabel={query === null ? 'Zoeken in de admin' : 'Zoeken sluiten'}
+          onPress={() => {
+            setQuery(query === null ? '' : null);
+            setMenu(false);
+          }}
+        >
+          {query === null ? <Search size={19} color={COLORS.ink} /> : <X size={19} color={COLORS.ink} />}
+        </HeadButton>
+      </View>
+    ) : null;
 
   const head = (
-    <PageHead title="Dashboard" subtitle={viewer ? `Welkom, ${viewer.name.split(' ')[0]}.` : 'De admin van vtk.be'} />
+    <PageHead
+      kicker="Admin"
+      title="Dashboard"
+      subtitle={viewer ? `Welkom, ${viewer.name.split(' ')[0]}.` : 'De admin van vtk.be'}
+    >
+      {nav}
+    </PageHead>
   );
 
   if (resource.loading && !resource.data) {
@@ -97,6 +153,27 @@ export default function BeheerScreen() {
         refreshControl={<RefreshControl refreshing={resource.refreshing} onRefresh={() => void resource.refresh()} />}
       >
         {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
+
+        {query !== null ? (
+          <SearchResults sections={data.sections} query={query} onOpen={openLink} />
+        ) : menu ? (
+          <NavMenu
+            sections={data.sections}
+            open={openGroups}
+            onToggle={(key) =>
+              setOpenGroups((current) => {
+                const next = new Set(current);
+                if (next.has(key)) next.delete(key);
+                else next.add(key);
+                return next;
+              })
+            }
+            onOpen={(link) => {
+              setMenu(false);
+              openLink(link);
+            }}
+          />
+        ) : null}
 
         {data.canOpenDoor ? (
           <View style={styles.door}>
@@ -164,24 +241,6 @@ export default function BeheerScreen() {
           ))}
         </View>
 
-        {data.sections.length > 0 ? (
-          <View style={styles.block}>
-            <SectionHeading>Onderdelen</SectionHeading>
-            {data.sections.map((section) => (
-              <MarginRegister
-                key={section.key}
-                title={section.label}
-                style={styles.group}
-                links={section.links.map((link) => ({
-                  label: link.label,
-                  external: link.external,
-                  onPress: () => openLink(link),
-                }))}
-              />
-            ))}
-          </View>
-        ) : null}
-
         <Pressable
           accessibilityRole="link"
           onPress={() => router.push({ pathname: '/web', params: { url: data.adminUrl, title: 'Beheer' } })}
@@ -192,6 +251,117 @@ export default function BeheerScreen() {
         </Pressable>
       </ScrollView>
     </>
+  );
+}
+
+/**
+ * De zijbalk van /admin als kaart: per groep een regel die openklapt, een los
+ * onderdeel (`label: null`) meteen als link.
+ */
+function NavMenu({
+  sections,
+  open,
+  onToggle,
+  onOpen,
+}: {
+  sections: AppAdminSection[];
+  open: Set<string>;
+  onToggle: (key: string) => void;
+  onOpen: (link: AppAdminLink) => void;
+}) {
+  return (
+    <View style={styles.menu}>
+      <Text style={styles.menuKicker}>ALLES</Text>
+      {sections.map((section) => {
+        if (!section.label) {
+          return section.links.map((link) => <NavLink key={link.key} link={link} onOpen={onOpen} />);
+        }
+        const expanded = open.has(section.key);
+        return (
+          <View key={section.key}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded }}
+              onPress={() => onToggle(section.key)}
+              style={({ pressed }) => [styles.menuGroup, pressed && styles.pressed]}
+            >
+              <Text style={[styles.menuGroupLabel, expanded && styles.menuGroupOpen]}>{section.label}</Text>
+              {expanded ? <ChevronUp size={18} color={COLORS.ink} /> : <ChevronDown size={18} color={COLORS.muted} />}
+            </Pressable>
+            {expanded ? (
+              <View style={styles.menuChildren}>
+                {section.links.map((link) => (
+                  <NavLink key={link.key} link={link} onOpen={onOpen} />
+                ))}
+              </View>
+            ) : null}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function NavLink({ link, onOpen }: { link: AppAdminLink; onOpen: (link: AppAdminLink) => void }) {
+  return (
+    <Pressable
+      accessibilityRole={link.external ? 'link' : 'button'}
+      accessibilityLabel={link.external ? `${link.label}, opent een browser` : link.label}
+      onPress={() => onOpen(link)}
+      style={({ pressed }) => [styles.menuLink, pressed && styles.menuLinkPressed]}
+    >
+      <Text style={styles.menuLinkLabel} numberOfLines={1}>
+        {link.label}
+      </Text>
+      {link.external ? <ExternalLink size={14} color={COLORS.muted} /> : null}
+    </Pressable>
+  );
+}
+
+/** Zoeken over alle onderdelen, op naam en op de naam van de groep. */
+function SearchResults({
+  sections,
+  query,
+  onOpen,
+}: {
+  sections: AppAdminSection[];
+  query: string;
+  onOpen: (link: AppAdminLink) => void;
+}) {
+  const needle = query.trim().toLowerCase();
+  const hits = sections.flatMap((section) =>
+    section.links
+      .filter(
+        (link) =>
+          needle === '' ||
+          link.label.toLowerCase().includes(needle) ||
+          (section.label ?? '').toLowerCase().includes(needle),
+      )
+      .map((link) => ({ link, group: section.label })),
+  );
+  return (
+    <View style={styles.menu}>
+      {hits.length === 0 ? (
+        <Text style={styles.hint}>{`Geen onderdeel gevonden voor “${query.trim()}”.`}</Text>
+      ) : (
+        hits.map(({ link, group }) => (
+          <Pressable
+            key={link.key}
+            accessibilityRole={link.external ? 'link' : 'button'}
+            onPress={() => onOpen(link)}
+            style={({ pressed }) => [styles.menuLink, pressed && styles.menuLinkPressed]}
+          >
+            <View style={styles.flex}>
+              <Text style={styles.menuLinkLabel} numberOfLines={1}>
+                {link.label}
+              </Text>
+              {group ? <Text style={styles.hint}>{group}</Text> : null}
+            </View>
+            {link.external ? <ExternalLink size={14} color={COLORS.muted} /> : null}
+          </Pressable>
+        ))
+      )}
+    </View>
   );
 }
 
@@ -359,6 +529,63 @@ const styles = StyleSheet.create({
   hint: { ...TYPE.small, color: COLORS.muted },
   error: { color: COLORS.dangerInk },
   ok: { color: COLORS.okInk, fontFamily: FONTS.semibold },
+
+  nav: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.lg },
+  navSelect: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: SPACING.sm,
+    height: 48,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
+  },
+  navSelectLabel: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink },
+  navInput: { flex: 1, ...TYPE.body, color: COLORS.ink, paddingVertical: 0 },
+  menu: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 22,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    ...CARD_SHADOW,
+  },
+  menuKicker: {
+    fontFamily: FONTS.semibold,
+    fontSize: 11,
+    letterSpacing: 1.4,
+    color: COLORS.muted,
+    paddingHorizontal: SPACING.sm,
+    paddingBottom: SPACING.xs,
+  },
+  menuGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 48,
+    paddingHorizontal: SPACING.sm,
+  },
+  menuGroupLabel: { fontFamily: FONTS.medium, fontSize: 16, color: COLORS.body },
+  menuGroupOpen: { fontFamily: FONTS.semibold, color: COLORS.ink },
+  menuChildren: {
+    marginLeft: SPACING.md,
+    paddingLeft: SPACING.sm,
+    borderLeftWidth: 2,
+    borderLeftColor: COLORS.yellow,
+    marginBottom: SPACING.xs,
+  },
+  menuLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    minHeight: 44,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.pill,
+  },
+  menuLinkPressed: { backgroundColor: COLORS.paper2 },
+  menuLinkLabel: { flexShrink: 1, fontFamily: FONTS.medium, fontSize: 15, color: COLORS.ink },
 
   door: {
     flexDirection: 'row',
