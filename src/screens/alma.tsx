@@ -1,8 +1,18 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useState } from 'react';
-import { Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Linking,
+  PanResponder,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type ScrollViewInstance,
+} from 'react-native';
 
 import type { AppAlma, AppAlmaDish, AppAlmaRestaurant } from '../api/contract';
 import { fetchAlma } from '../api/endpoints';
@@ -16,6 +26,11 @@ import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 type Slug = AppAlmaRestaurant['slug'];
 
 const SLUGS: Slug[] = ['alma-3', 'alma-quadrivium', 'de-moete', 'esat2'];
+
+/** Zoveel dagen staan er in de rij om te kiezen; Alma zet soms tot twee maanden online. */
+const SHOWN_DAYS = 10;
+/** Zo ver moet je opzij vegen voor een andere dag. */
+const SWIPE_PX = 60;
 
 /** Zoveel gerechten toont een lange sectie (drank, broodjes) voor "Toon alle". */
 const FOLD = 5;
@@ -58,6 +73,37 @@ export default function AlmaScreen() {
   const data = resource.data ?? previous;
   const switching = !resource.data && resource.loading && previous !== null;
   const restaurant = data?.restaurants.find((candidate) => candidate.slug === slug) ?? null;
+
+  // Opzij vegen over het menu gaat naar de vorige of volgende dag met een menu,
+  // binnen de dagen die de rij erboven toont.
+  const shownDates = (data?.dates ?? []).slice(0, SHOWN_DAYS);
+  const selected = date ?? data?.date ?? null;
+  const goDay = (delta: number) => {
+    if (!selected || shownDates.length === 0) return;
+    const at = shownDates.indexOf(selected);
+    const next =
+      at >= 0
+        ? shownDates[at + delta]
+        : delta > 0
+          ? shownDates.find((candidate) => candidate > selected)
+          : [...shownDates].reverse().find((candidate) => candidate < selected);
+    if (next) setDate(next);
+  };
+  const goDayRef = useRef(goDay);
+  useEffect(() => {
+    goDayRef.current = goDay;
+  });
+  const [swipe] = useState(() =>
+      PanResponder.create({
+        // Enkel een duidelijk horizontale veeg; al de rest is gewoon scrollen.
+        onMoveShouldSetPanResponderCapture: (_, gesture) =>
+          Math.abs(gesture.dx) > 14 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.6,
+        onPanResponderRelease: (_, gesture) => {
+          if (Math.abs(gesture.dx) > SWIPE_PX) goDayRef.current(gesture.dx < 0 ? 1 : -1);
+        },
+        onPanResponderTerminationRequest: () => true,
+      }),
+  );
 
   const head = (
     <PageHead
@@ -111,13 +157,19 @@ export default function AlmaScreen() {
 
         <Days dates={data.dates} selected={date ?? data.date} onSelect={setDate} />
 
-        {switching ? (
-          <Loading />
-        ) : (
-          <Menu restaurant={restaurant} date={data.date} key={`${restaurant.slug}:${data.date}`} />
-        )}
+        <View
+          {...swipe.panHandlers}
+          style={styles.swipeArea}
+          accessibilityHint="Veeg opzij voor de vorige of volgende dag"
+        >
+          {switching ? (
+            <Loading />
+          ) : (
+            <Menu restaurant={restaurant} date={data.date} key={`${restaurant.slug}:${data.date}`} />
+          )}
 
-        <Hours restaurant={restaurant} />
+          <Hours restaurant={restaurant} />
+        </View>
 
         <MarginRegister
           title="Meer"
@@ -186,15 +238,25 @@ function dayLabel(date: string): string {
 
 function Days({ dates, selected, onSelect }: { dates: string[]; selected: string; onSelect: (date: string) => void }) {
   // Twee weken vooruit is genoeg; Alma zet soms tot twee maanden online.
-  const shown = dates.slice(0, 10);
+  const shown = dates.slice(0, SHOWN_DAYS);
+  const strip = useRef<ScrollViewInstance>(null);
+  const offsets = useRef<Record<string, number>>({});
+  // Na een veeg over het menu: de gekozen dag in beeld houden.
+  useEffect(() => {
+    const x = offsets.current[selected];
+    if (x !== undefined) strip.current?.scrollTo({ x: Math.max(0, x - SPACING.xl), animated: true });
+  }, [selected]);
   if (shown.length === 0) return null;
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.days}>
+    <ScrollView ref={strip} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.days}>
       {shown.map((date) => {
         const active = date === selected;
         return (
           <Pressable
             key={date}
+            onLayout={(event) => {
+              offsets.current[date] = event.nativeEvent.layout.x;
+            }}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
             onPress={() => onSelect(date)}
@@ -274,7 +336,7 @@ function Dish({ dish }: { dish: AppAlmaDish }) {
     <View style={styles.dish} accessible accessibilityLabel={[dish.name, price, diet, meta].filter(Boolean).join(', ')}>
       <View style={styles.thumb}>
         {dish.imageUrl ? (
-          <Image
+          <Image cachePolicy="memory-disk"
             source={{ uri: dish.imageUrl }}
             style={StyleSheet.absoluteFill}
             contentFit="contain"
@@ -358,6 +420,7 @@ function Hours({ restaurant }: { restaurant: AppAlmaRestaurant }) {
 }
 
 const styles = StyleSheet.create({
+  swipeArea: { gap: SPACING.xl },
   root: { flex: 1, backgroundColor: COLORS.paper },
   content: { paddingBottom: SPACING.xxl * 2 },
   status: {

@@ -218,7 +218,7 @@ function Slide({
     >
       <View style={styles.photo}>
         {event.imageUrl ? (
-          <Image source={{ uri: event.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+          <Image cachePolicy="memory-disk" source={{ uri: event.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
         ) : (
           <PatternBand />
         )}

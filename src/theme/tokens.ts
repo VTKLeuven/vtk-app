@@ -93,16 +93,20 @@ export const DARK_GLASS = {
  *
  * Een VTK-evenement krijgt geen eigen tint maar de gele rail, zoals een
  * uitgelichte kaart op de site; een verplichte les de rode rail van Burgieclan.
+ *
+ * De vulkleuren staan een tikje donkerder dan bij Burgieclan: in de app ligt het
+ * raster op een witte kaart, en daar vielen de lichtste tinten bijna weg. De
+ * randen en de tekst zijn die van Burgieclan.
  */
 export const PLANNING = {
   // Hoorcolleges hemelsblauw, practica en oefenzittingen teal, de rest lavendel.
-  lectureBg: '#e8f2fd',
+  lectureBg: '#dbeafb',
   lectureBorder: '#a9cdf3',
   lectureText: '#0b4f8c',
-  practiceBg: '#e2f5ef',
+  practiceBg: '#d3efe5',
   practiceBorder: '#94d6c2',
   practiceText: '#0b5c4c',
-  otherBg: '#f0effc',
+  otherBg: '#e6e3fa',
   otherBorder: '#c9c4f3',
   otherText: '#463c9f',
   /** De rail van een verplichte les en de nu-lijn, `--color-danger` bij Burgieclan. */

@@ -212,7 +212,14 @@ export function PhotoHead({
   return (
     <View>
       <View style={[photo.frame, { height: height + insets.top }]}>
-        <Image source={image} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
+        {/* Een foto uit de app zelf staat er meteen; enkel een foto van het net vloeit in. */}
+        <Image
+          source={image}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          transition={typeof image === 'number' ? 0 : 150}
+          cachePolicy="memory-disk"
+        />
         {showBack ? (
           <Pressable
             accessibilityRole="button"

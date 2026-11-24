@@ -65,7 +65,7 @@ export function PhotoMosaic({
       onPress={() => onOpen(index)}
       style={({ pressed }) => pressed && styles.pressed}
     >
-      <Image
+      <Image cachePolicy="memory-disk"
         source={{ uri: large ? photo.url : photo.thumbUrl }}
         style={{ width: size, height: size, backgroundColor: COLORS.paper2 }}
         contentFit="cover"

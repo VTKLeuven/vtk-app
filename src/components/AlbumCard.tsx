@@ -130,7 +130,7 @@ function Cover({
   style: StyleProp<ImageStyle>;
 }) {
   return (
-    <Image
+    <Image cachePolicy="memory-disk"
       source={uri ? { uri } : null}
       // Geen foto: het lichtblauwe vlak van de site, met een rand zodat het
       // niet wegvalt tegen het papier.

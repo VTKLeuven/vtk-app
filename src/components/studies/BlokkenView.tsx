@@ -512,7 +512,7 @@ function Seat({ member }: { member: AppStudyMemberState }) {
 function Avatar({ member, live }: { member: AppStudyMemberState; live: boolean }) {
   if (member.avatarUrl) {
     return (
-      <Image
+      <Image cachePolicy="memory-disk"
         source={{ uri: member.avatarUrl }}
         style={[styles.avatar, live && styles.avatarLive]}
         contentFit="cover"

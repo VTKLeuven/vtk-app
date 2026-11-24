@@ -17,7 +17,7 @@ import { CARD_SHADOW } from '../components/HomeSection';
  * cudi: per dag de vrije momenten, met hoeveel plaatsen er nog zijn.
  *
  * De regels zijn die van cudi (`lib/student-timeslots.ts` daar): niet voorbij,
- * niet volzet, één slot per dag als de cursusdienst dat vraagt, en vrijgeven tot
+ * niet volzet, één slot per dag als de cursusdienst dat vraagt, en verwijderen tot
  * een aantal uur voor de start. Dit scherm schakelt enkel knoppen uit; weigert
  * cudi toch, dan zegt een melding waarom.
  */
@@ -80,19 +80,19 @@ export default function CudiTijdslotenScreen() {
   };
 
   const release = (registrationId: string, label: string) => {
-    Alert.alert('Tijdslot vrijgeven?', label, [
-      { text: 'Behouden', style: 'cancel' },
+    Alert.alert('Tijdslot verwijderen?', label, [
+      { text: 'Houden', style: 'cancel' },
       {
-        text: 'Vrijgeven',
+        text: 'Verwijderen',
         style: 'destructive',
         onPress: async () => {
           setBusy(registrationId);
           try {
             const result = await releaseCudiTimeslot(locale, registrationId);
             if (result.ok) setState(result);
-            else Alert.alert('Niet vrijgegeven', timeslotError(result.code, result.message));
+            else Alert.alert('Niet verwijderd', timeslotError(result.code, result.message));
           } catch (error) {
-            Alert.alert('Niet vrijgegeven', messageFor(error instanceof Error ? error : null));
+            Alert.alert('Niet verwijderd', messageFor(error instanceof Error ? error : null));
           } finally {
             setBusy(null);
           }
@@ -133,7 +133,7 @@ export default function CudiTijdslotenScreen() {
                 {mine.cancelable ? (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`${slotLabel(mine.start, mine.end)} vrijgeven`}
+                    accessibilityLabel={`${slotLabel(mine.start, mine.end)} verwijderen`}
                     disabled={busy !== null}
                     onPress={() => release(mine.registrationId, slotLabel(mine.start, mine.end))}
                     style={({ pressed }) => [styles.release, pressed && styles.pressed]}
@@ -141,7 +141,7 @@ export default function CudiTijdslotenScreen() {
                     {busy === mine.registrationId ? (
                       <ActivityIndicator size="small" color={COLORS.navy} />
                     ) : (
-                      <Text style={styles.releaseLabel}>Vrijgeven</Text>
+                      <Text style={styles.releaseLabel}>Verwijderen</Text>
                     )}
                   </Pressable>
                 ) : (
@@ -225,7 +225,7 @@ function timeslotError(code: string, message: string): string {
     case 'FULL':
       return 'Dit tijdslot is intussen volzet. Kies een ander.';
     case 'SAME_DAY':
-      return 'Je hebt al een tijdslot op deze dag. Geef dat eerst vrij.';
+      return 'Je hebt al een tijdslot op deze dag. Verwijder dat eerst.';
     case 'PASSED':
       return 'Dit tijdslot is al voorbij.';
     case 'NOT_FOUND':

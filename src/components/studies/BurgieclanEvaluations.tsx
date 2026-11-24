@@ -1,12 +1,13 @@
 import * as WebBrowser from 'expo-web-browser';
-import { Star } from 'lucide-react-native';
+import { ChevronDown, Star } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { AppBurgieclanEvaluations, AppBurgieclanEvaluationSection, AppLocale } from '../../api/contract';
 import { formatShortDate } from '../../format';
-import { COLORS, FONTS, SPACING, TYPE } from '../../theme/tokens';
-import { CardList, Empty, MarginRegister, SectionHeading } from '../ui';
+import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
+import { CARD_SHADOW } from '../HomeSection';
+import { Empty, MarginRegister } from '../ui';
 
 /** Zoveel opmerkingen per rubriek staan er meteen; de rest achter "Alle opmerkingen". */
 const FIRST_COMMENTS = 3;
@@ -14,6 +15,7 @@ const FIRST_COMMENTS = 3;
 /**
  * De vakevaluatie van Burgieclan: per rubriek de sterren (de recente jaren en
  * alle jaren samen, zoals op de vakpagina daar) en de opmerkingen van studenten.
+ * Elke rubriek is een kaart die je eerst openklikt, zoals op Burgieclan.
  *
  * Een gemiddelde verschijnt pas boven het minimum aantal scores; Burgieclan
  * beslist dat en stuurt anders `null`. Dan staat er hoeveel scores er al zijn,
@@ -63,6 +65,11 @@ export function EvaluationsView({
   );
 }
 
+/**
+ * Eén rubriek als kaart die je openklikt, zoals op Burgieclan: dicht staan de naam,
+ * de sterren van de recente jaren en hoeveel opmerkingen er zijn; open de uitleg,
+ * de sterren van alle jaren en de opmerkingen.
+ */
 function Section({
   section,
   recentLabel,
@@ -72,32 +79,58 @@ function Section({
   recentLabel: string;
   locale: AppLocale;
 }) {
+  const [open, setOpen] = useState(false);
   const [all, setAll] = useState(false);
   const comments = [...section.comments].sort((a, b) => b.score - a.score || b.createdAt.localeCompare(a.createdAt));
   const shown = all ? comments : comments.slice(0, FIRST_COMMENTS);
+  const description = section.description ? plainText(section.description) : '';
+  const summary = [
+    section.rated && section.recent.average !== null
+      ? `${section.recent.average.toFixed(1).replace('.', ',')} op 5`
+      : null,
+    comments.length > 0 ? `${comments.length} ${comments.length === 1 ? 'opmerking' : 'opmerkingen'}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
-    <View style={styles.section}>
-      <SectionHeading>{section.name}</SectionHeading>
-      {section.description ? <Text style={styles.hint}>{section.description}</Text> : null}
-
-      {section.rated ? (
-        <View style={styles.scores}>
-          <Score label={recentLabel} value={section.recent} />
-          <Score label="Alle jaren" value={section.allTime} />
-          {section.lowLabel || section.highLabel ? (
-            <Text style={styles.scale}>
-              1 = {section.lowLabel ?? 'laag'}, 5 = {section.highLabel ?? 'hoog'}
-            </Text>
-          ) : null}
+    <View style={styles.card}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={[section.name, summary].filter(Boolean).join(', ')}
+        onPress={() => setOpen((value) => !value)}
+        style={({ pressed }) => [styles.head, pressed && styles.pressed]}
+      >
+        <View style={styles.headText}>
+          <Text style={styles.name}>{section.name}</Text>
+          {summary ? <Text style={styles.hint}>{summary}</Text> : null}
         </View>
-      ) : null}
+        {section.rated && section.recent.average !== null ? <MiniStars average={section.recent.average} /> : null}
+        <View style={[styles.chevron, open && styles.chevronOpen]}>
+          <ChevronDown size={17} color={open ? COLORS.yellow : COLORS.ink} />
+        </View>
+      </Pressable>
 
-      {comments.length > 0 ? (
-        <CardList>
+      {open ? (
+        <View style={styles.body}>
+          {description ? <Text style={styles.description}>{description}</Text> : null}
+
+          {section.rated ? (
+            <View style={styles.scores}>
+              <Score label={recentLabel} value={section.recent} />
+              <Score label="Alle jaren" value={section.allTime} />
+              {section.lowLabel || section.highLabel ? (
+                <Text style={styles.scale}>
+                  1 = {section.lowLabel ?? 'laag'}, 5 = {section.highLabel ?? 'hoog'}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+
           {shown.map((comment) => (
             <View key={comment.id} style={styles.comment}>
-              <Text style={styles.commentText}>{comment.content}</Text>
+              <Text style={styles.commentText}>{plainText(comment.content)}</Text>
               <Text style={styles.meta}>
                 {[comment.year ?? formatShortDate(comment.createdAt, locale, true), comment.author ?? 'Anoniem']
                   .filter(Boolean)
@@ -106,23 +139,62 @@ function Section({
               </Text>
             </View>
           ))}
-        </CardList>
-      ) : null}
-      {comments.length > FIRST_COMMENTS ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ expanded: all }}
-          onPress={() => setAll((value) => !value)}
-          hitSlop={12}
-          style={({ pressed }) => pressed && styles.pressed}
-        >
-          <Text style={styles.more}>
-            {all ? 'Minder tonen' : `Alle ${comments.length} opmerkingen`}
-          </Text>
-        </Pressable>
+
+          {comments.length > FIRST_COMMENTS ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: all }}
+              onPress={() => setAll((value) => !value)}
+              hitSlop={12}
+              style={({ pressed }) => [styles.moreRow, pressed && styles.pressed]}
+            >
+              <Text style={styles.more}>{all ? 'Minder tonen' : `Alle ${comments.length} opmerkingen`}</Text>
+            </Pressable>
+          ) : null}
+        </View>
       ) : null}
     </View>
   );
+}
+
+/** Vijf kleine sterren in de kop van een dichte rubriek. */
+function MiniStars({ average }: { average: number }) {
+  return (
+    <View style={styles.miniStars} importantForAccessibility="no-hide-descendants">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          size={12}
+          color={COLORS.yellowDeep}
+          fill={average >= n - 0.25 ? COLORS.yellowDeep : 'transparent'}
+        />
+      ))}
+    </View>
+  );
+}
+
+/**
+ * Burgieclan bewaart beschrijvingen en opmerkingen als HTML (`<div>`, `<br>`,
+ * `&amp;`). Hier wordt dat gewone tekst: een blok of een regeleinde wordt een
+ * nieuwe regel, de rest van de tags valt weg, en de gewone entiteiten worden weer
+ * tekens.
+ */
+function plainText(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(div|p|li|h[1-6])>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '• ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&#(\d+);/g, (_, code: string) => String.fromCharCode(Number(code)))
+    .replace(/&amp;/gi, '&')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 function Score({ label, value }: { label: string; value: { average: number | null; count: number } }) {
@@ -160,8 +232,31 @@ function Score({ label, value }: { label: string; value: { average: number | nul
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
-  content: { padding: SPACING.xl - 4, gap: SPACING.xl, paddingBottom: SPACING.xxl },
-  section: { gap: SPACING.md },
+  content: { padding: SPACING.xl - 4, gap: SPACING.md, paddingBottom: SPACING.xxl },
+  card: { backgroundColor: COLORS.surface, borderRadius: 20, ...CARD_SHADOW },
+  head: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: 64, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md },
+  headText: { flex: 1, gap: 2 },
+  name: { fontFamily: FONTS.bold, fontSize: 16, lineHeight: 21, color: COLORS.ink },
+  miniStars: { flexDirection: 'row', gap: 1 },
+  chevron: {
+    width: 32,
+    height: 32,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.paper2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chevronOpen: { backgroundColor: COLORS.ink, transform: [{ rotate: '180deg' }] },
+  body: {
+    gap: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.lg,
+    paddingTop: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.line,
+  },
+  description: { ...TYPE.small, color: COLORS.body },
+  moreRow: { alignSelf: 'flex-start' },
   pressed: { opacity: 0.6 },
   hint: { ...TYPE.small, color: COLORS.muted },
   meta: { ...TYPE.small, color: COLORS.muted },
@@ -178,7 +273,7 @@ const styles = StyleSheet.create({
   },
   scale: { ...TYPE.small, fontSize: 12, color: COLORS.muted },
 
-  comment: { gap: 4, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.line2 },
+  comment: { gap: 4, paddingTop: SPACING.md, borderTopWidth: 1, borderTopColor: COLORS.line },
   commentText: { ...TYPE.body, color: COLORS.ink },
   more: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.navy },
 });

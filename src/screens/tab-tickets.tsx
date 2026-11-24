@@ -162,7 +162,7 @@ function SalesList({
         >
           <View style={styles.shot}>
             {event.imageUrl ? (
-              <Image source={{ uri: event.imageUrl }} style={styles.photo} contentFit="cover" transition={120} />
+              <Image cachePolicy="memory-disk" source={{ uri: event.imageUrl }} style={styles.photo} contentFit="cover" transition={120} />
             ) : null}
             <View style={styles.pin}>
               <DatePin iso={event.startsAt} locale={locale} shadow />
@@ -331,7 +331,7 @@ function Order({
     <View style={[styles.ticket, past && styles.orderPast]}>
       {order.event.imageUrl ? (
         <View style={styles.shot}>
-          <Image source={{ uri: order.event.imageUrl }} style={styles.photo} contentFit="cover" transition={120} />
+          <Image cachePolicy="memory-disk" source={{ uri: order.event.imageUrl }} style={styles.photo} contentFit="cover" transition={120} />
           <View style={styles.pin}>
             <DatePin iso={order.event.startsAt} locale={locale} month={false} shadow />
           </View>

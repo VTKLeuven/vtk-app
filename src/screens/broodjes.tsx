@@ -51,7 +51,7 @@ export default function BroodjesScreen() {
   const resource = useResource('theokot', () => fetchTheokot(locale), locale);
 
   // De foto van het Theokot-team bovenaan, zoals een evenement zijn affiche heeft.
-  const head = () => <PhotoHead image={THEOKOT_PHOTO} title="Broodjes" kicker="Bij het Theokot" height={220} />;
+  const head = () => <PhotoHead image={THEOKOT_PHOTO} title="Broodjes" height={220} />;
 
   if (!viewer) {
     return (
@@ -172,7 +172,12 @@ function Ordering({
       ) : null}
 
       {sessions.length > 1 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.days}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.daysScroll}
+          contentContainerStyle={styles.days}
+        >
           {sessions.map((item) => {
             const active = item.id === session?.id;
             return (
@@ -211,7 +216,6 @@ function Ordering({
 
   return (
     <SessionView
-      key={session.id}
       session={session}
       header={header}
       refreshing={refreshing}
@@ -280,6 +284,15 @@ function SessionView({
   // Een bestaande reservatie aanpassen: dezelfde stappers, met je eigen broodjes
   // al ingevuld en als vrije voorraad meegeteld (`updateOrder` op de server).
   const [editing, setEditing] = useState(false);
+  // Een andere dag gekozen: de keuzes van de vorige dag weg. Hier en niet met een
+  // `key` op dit scherm, want die bouwde ook de kop met de foto en de scrollstrook
+  // opnieuw op, en dan flitste de foto bij elke dagwissel en sprong je naar boven.
+  const [shownSession, setShownSession] = useState(session.id);
+  if (shownSession !== session.id) {
+    setShownSession(session.id);
+    setQuantities({});
+    setEditing(false);
+  }
   const order = session.order;
   const own = useMemo(() => {
     const map: Record<string, number> = {};
@@ -490,7 +503,7 @@ function SessionView({
             {special ? (
               <View style={styles.special}>
                 {special.imageUrl ? (
-                  <Image source={{ uri: special.imageUrl }} style={styles.specialPhoto} contentFit="cover" />
+                  <Image cachePolicy="memory-disk" source={{ uri: special.imageUrl }} style={styles.specialPhoto} contentFit="cover" />
                 ) : null}
                 <View style={styles.specialBody}>
                   <Text style={styles.tag}>BROODJE VAN DE WEEK</Text>
@@ -524,7 +537,7 @@ function SessionView({
                     {/* Het Theokot werkt zonder foto's; een leeg vakje ervoor las als een
                         afbeelding die niet laadde. Zet iemand er toch een, dan staat ze er. */}
                     {item.imageUrl ? (
-                      <Image source={{ uri: item.imageUrl }} style={styles.thumb} contentFit="cover" />
+                      <Image cachePolicy="memory-disk" source={{ uri: item.imageUrl }} style={styles.thumb} contentFit="cover" />
                     ) : null}
                     <View style={styles.flex}>
                       <Text style={styles.itemName}>{item.name}</Text>
@@ -690,7 +703,11 @@ const styles = StyleSheet.create({
   rowIcon: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   link: { color: COLORS.navy, textDecorationLine: 'underline' },
 
-  days: { gap: SPACING.sm, paddingRight: SPACING.lg },
+  // De dagen lopen tot tegen de rand van het scherm, met lucht boven en onder:
+  // anders knipte de rand van de scrollstrook de schaduw van de vakjes af, en dat
+  // las als een grijze band met een harde lijn erachter.
+  daysScroll: { flexGrow: 0, marginHorizontal: -(SPACING.xl - 4), marginVertical: -SPACING.md },
+  days: { gap: SPACING.sm, paddingHorizontal: SPACING.xl - 4, paddingVertical: SPACING.md },
   // Een stipje onder de dag waarop je al iets besteld hebt.
   dayDot: {
     alignSelf: 'center',

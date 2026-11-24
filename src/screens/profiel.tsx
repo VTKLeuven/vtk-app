@@ -84,7 +84,7 @@ export default function ProfielScreen() {
         <Card>
           <View style={styles.person}>
             {viewer.avatarUrl ? (
-              <Image source={{ uri: viewer.avatarUrl }} style={styles.avatar} contentFit="cover" />
+              <Image cachePolicy="memory-disk" source={{ uri: viewer.avatarUrl }} style={styles.avatar} contentFit="cover" />
             ) : (
               <View style={[styles.avatar, styles.avatarEmpty]}>
                 <Text style={styles.initials}>{initialsOf(viewer.name)}</Text>

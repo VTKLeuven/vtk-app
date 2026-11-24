@@ -40,7 +40,7 @@ export default function PaginaScreen() {
       <PageHead title={page.title} subtitle={page.excerpt} kicker={page.category?.label} />
       <ScrollView contentContainerStyle={styles.content} style={styles.root}>
         {page.imageUrl ? (
-          <Image source={{ uri: page.imageUrl }} style={styles.photo} contentFit="cover" />
+          <Image cachePolicy="memory-disk" source={{ uri: page.imageUrl }} style={styles.photo} contentFit="cover" />
         ) : null}
 
         <View style={styles.prose}>

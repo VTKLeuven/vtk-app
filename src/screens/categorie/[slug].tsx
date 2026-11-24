@@ -64,7 +64,7 @@ export default function CategorieScreen() {
               style={({ pressed }) => [styles.row, pressed && styles.pressed]}
             >
               {item.page.imageUrl ? (
-                <Image source={{ uri: item.page.imageUrl }} style={styles.photo} contentFit="cover" />
+                <Image cachePolicy="memory-disk" source={{ uri: item.page.imageUrl }} style={styles.photo} contentFit="cover" />
               ) : (
                 <View style={[styles.photo, styles.photoEmpty]} />
               )}

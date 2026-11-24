@@ -265,7 +265,7 @@ function EventRow({
     >
       <View style={styles.eventThumb}>
         {event.imageUrl ? (
-          <Image source={{ uri: event.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} />
+          <Image cachePolicy="memory-disk" source={{ uri: event.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} />
         ) : null}
       </View>
       <View style={styles.eventText}>
@@ -327,7 +327,7 @@ function Shortcuts({
           onPress={() => (item.external ? onExternal(item.to) : onOpen(item.to))}
           style={({ pressed }) => [styles.aanbod, pressed && styles.aanbodPressed]}
         >
-          <Image source={item.photo} style={styles.aanbodPhoto} contentFit="cover" />
+          <Image cachePolicy="memory-disk" source={item.photo} style={styles.aanbodPhoto} contentFit="cover" />
           <View style={styles.aanbodBody}>
             <View style={styles.aanbodTitle}>
               <Text style={styles.aanbodLabel} numberOfLines={1}>

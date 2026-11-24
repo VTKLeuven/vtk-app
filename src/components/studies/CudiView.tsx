@@ -800,7 +800,7 @@ function ArticleRow({
     <View style={styles.item}>
       <View style={styles.itemTop}>
         {article.coverUrl ? (
-          <Image source={{ uri: article.coverUrl }} style={styles.cover} contentFit="cover" />
+          <Image cachePolicy="memory-disk" source={{ uri: article.coverUrl }} style={styles.cover} contentFit="cover" />
         ) : null}
         <View style={styles.flex}>
           <Text style={styles.name} numberOfLines={3}>

@@ -79,7 +79,7 @@ function Row({
     >
       <View style={styles.photo}>
         {photo ? (
-          <Image source={{ uri: photo }} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} />
+          <Image cachePolicy="memory-disk" source={{ uri: photo }} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} />
         ) : (
           <Soup color={COLORS.muted} size={22} />
         )}

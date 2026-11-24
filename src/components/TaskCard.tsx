@@ -70,7 +70,7 @@ export function TaskCard({ task }: { task: AppTodayTask }) {
       style={({ pressed }) => [styles.card, photo && styles.cardPhoto, pressed && styles.pressed]}
     >
       {photo ? (
-        <Image source={THEOKOT_PHOTO} style={styles.photo} contentFit="cover" contentPosition={{ top: '60%', left: '50%' }} />
+        <Image cachePolicy="memory-disk" source={THEOKOT_PHOTO} style={styles.photo} contentFit="cover" contentPosition={{ top: '60%', left: '50%' }} />
       ) : (
         <View style={[styles.icon, task.highlight && styles.iconHighlight]}>
           <Icon color={COLORS.ink} size={20} />

@@ -53,7 +53,7 @@ export function Prose({ children }: { children: string }) {
         if (!src) return null;
         const uri = /^https?:\/\//i.test(src) ? src : `${baseUrl()}${src}`;
         return (
-          <Image
+          <Image cachePolicy="memory-disk"
             key={node.key}
             source={{ uri }}
             // Een vaste hoogte, want de echte verhouding kennen we hier niet en

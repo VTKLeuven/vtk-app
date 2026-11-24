@@ -72,7 +72,7 @@ export default function WerkgroepenScreen() {
         {data.groups.map((group) => (
           <Card key={group.slug}>
             {group.imageUrl ? (
-              <Image source={{ uri: group.imageUrl }} style={styles.photo} contentFit="cover" />
+              <Image cachePolicy="memory-disk" source={{ uri: group.imageUrl }} style={styles.photo} contentFit="cover" />
             ) : null}
             <Text style={styles.groupName}>{group.name}</Text>
             {group.description ? <Prose>{group.description}</Prose> : null}
@@ -83,7 +83,7 @@ export default function WerkgroepenScreen() {
                 {group.people.map((person, index) => (
                   <View key={`${person.name}-${index}`} style={styles.person}>
                     {person.avatarUrl ? (
-                      <Image source={{ uri: person.avatarUrl }} style={styles.avatar} contentFit="cover" />
+                      <Image cachePolicy="memory-disk" source={{ uri: person.avatarUrl }} style={styles.avatar} contentFit="cover" />
                     ) : (
                       <View style={[styles.avatar, styles.avatarEmpty]} />
                     )}

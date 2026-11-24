@@ -101,7 +101,7 @@ export default function MeerScreen() {
           style={({ pressed }) => [styles.me, pressed && styles.pressedDark]}
         >
           {viewer?.avatarUrl ? (
-            <Image source={{ uri: viewer.avatarUrl }} style={styles.avatar} contentFit="cover" />
+            <Image cachePolicy="memory-disk" source={{ uri: viewer.avatarUrl }} style={styles.avatar} contentFit="cover" />
           ) : (
             <View style={[styles.avatar, styles.avatarEmpty]}>
               <Text style={styles.initials}>{viewer ? initialsOf(viewer.name) : '?'}</Text>
@@ -154,7 +154,11 @@ export default function MeerScreen() {
               tab={tab}
               expanded={open === tab.id}
               onToggle={() => setOpen(open === tab.id ? null : tab.id)}
-              onNative={(route) => router.push(route as never)}
+              onNative={(route) => {
+                // `/studies?tab=cudi`: de query als parameter, anders komt het vraagteken in het pad.
+                const [pathname, query] = route.split('?');
+                router.push(query ? { pathname, params: Object.fromEntries(new URLSearchParams(query)) } : pathname);
+              }}
               onCategory={() => router.push(`/categorie/${tab.slug}`)}
               onPage={(slug) => router.push(`/pagina/${slug}`)}
               onWeb={openOnWeb}
@@ -192,8 +196,10 @@ function TabTile({
   onPage: (slug: string) => void;
   onWeb: (href: string) => void;
 }) {
-  const tabNative = tab.externalUrl ? null : nativeRouteFor(`/${tab.slug}`);
-  const external = Boolean(tab.externalUrl);
+  // Een onderdeel met een eigen adres (Shiften naar `/shift`, Cursusdienst naar
+  // cudi.vtk.be) opent het scherm in de app als dat er is, en pas anders de browser.
+  const tabNative = nativeRouteFor(tab.externalUrl ?? `/${tab.slug}`) ?? nativeRouteFor(`/${tab.slug}`);
+  const external = Boolean(tab.externalUrl) && !tabNative;
   const expandable = !external && !tabNative && tab.children.length > 0;
 
   const openTab = () => {
@@ -213,7 +219,7 @@ function TabTile({
         style={({ pressed }) => [styles.tileHead, pressed && styles.pressed]}
       >
         {tab.imageUrl ? (
-          <Image source={{ uri: tab.imageUrl }} style={styles.tilePhoto} contentFit="cover" />
+          <Image cachePolicy="memory-disk" source={{ uri: tab.imageUrl }} style={styles.tilePhoto} contentFit="cover" />
         ) : (
           <View style={[styles.tilePhoto, styles.striped]}>
             {Array.from({ length: 8 }, (_, index) => (
@@ -246,7 +252,8 @@ function TabTile({
       {expandable && expanded ? (
         <View style={styles.children}>
           {tab.children.map((child) => {
-            const native = child.external ? null : nativeRouteFor(child.href);
+            // Ook een externe link kan een scherm in de app hebben (de winkel op cudi).
+            const native = nativeRouteFor(child.href);
             const page = child.external ? null : pageSlugFor(child.href, tab.slug);
 
             return (

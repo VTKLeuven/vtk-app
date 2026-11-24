@@ -36,11 +36,24 @@ const NATIVE_ROUTES: Record<string, string> = {
 };
 
 /**
+ * Adressen op cudi.vtk.be met een eigen scherm: de winkel is Studies ›
+ * Cursusdienst. Tweedehands, printen en subsidies blijven bewust op cudi.
+ */
+const CUDI_ROUTES: Record<string, string> = {
+  '': '/studies?tab=cudi',
+  '/vtk': '/studies?tab=cudi',
+  '/vtk/shop': '/studies?tab=cudi',
+};
+
+/**
  * De app-route voor een pad op de site, of `null` wanneer er geen eigen scherm
- * is. Een volledige URL naar een andere site geeft altijd `null`: die hoort in
- * een browser, hoe het pad er ook uitziet.
+ * is. Een volledige URL naar een andere site geeft `null`: die hoort in een
+ * browser, hoe het pad er ook uitziet. Behalve de winkel van cudi, die in de app
+ * zelf zit.
  */
 export function nativeRouteFor(href: string): string | null {
+  const cudi = /^https?:\/\/cudi\.vtk\.be(\/[^?#]*)?/i.exec(href);
+  if (cudi) return CUDI_ROUTES[(cudi[1] ?? '').replace(/\/+$/, '')] ?? null;
   if (/^https?:\/\//i.test(href)) return null;
   const path = href.split('?')[0].split('#')[0].replace(/\/+$/, '');
   return NATIVE_ROUTES[path] ?? null;

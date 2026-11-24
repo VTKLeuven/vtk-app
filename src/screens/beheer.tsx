@@ -376,7 +376,7 @@ function Tile({ tile, onPress }: { tile: AppAdminTile; onPress: () => void }) {
     >
       <View style={[styles.chip, { backgroundColor: tile.chip.background }]}>
         {tile.imageUrl ? (
-          <Image source={{ uri: tile.imageUrl }} style={styles.chipImage} contentFit="contain" />
+          <Image cachePolicy="memory-disk" source={{ uri: tile.imageUrl }} style={styles.chipImage} contentFit="contain" />
         ) : (
           <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
             <Path

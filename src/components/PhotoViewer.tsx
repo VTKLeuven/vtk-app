@@ -303,7 +303,7 @@ function ZoomablePhoto({
           breed een pagina is. */}
       <Animated.View style={[{ width, height }, styles.page]}>
         <Animated.View style={[{ width, height }, animated]}>
-          <Image
+          <Image cachePolicy="memory-disk"
             source={{ uri: photo.url }}
             // De thumbnail staat al in de cache van het raster; die toont meteen,
             // tot de grote versie binnen is.

@@ -61,7 +61,7 @@ export function EventTile({
     >
       <View style={[styles.shot, { aspectRatio: compact ? 2.3 : 16 / 9 }]}>
         {event.imageUrl ? (
-          <Image source={{ uri: event.imageUrl }} style={styles.photo} contentFit="cover" transition={120} />
+          <Image cachePolicy="memory-disk" source={{ uri: event.imageUrl }} style={styles.photo} contentFit="cover" transition={120} />
         ) : null}
         <View style={styles.pin}>
           <DatePin iso={start} locale={locale} shadow />

@@ -601,18 +601,19 @@ const styles = StyleSheet.create({
   column: { height: DAY_HEIGHT, borderLeftWidth: 1, borderLeftColor: COLORS.line },
   weekend: { backgroundColor: 'rgba(14, 26, 54, 0.03)' },
 
-  // Getinte blokken zonder rand, zoals op het voorstel; de kleur zegt de soort.
+  // Getinte blokken met een rand van 1 px in de kleur van de soort, zodat een les
+  // ook op de witte kaart duidelijk afsteekt; de kleur zegt de soort.
   block: {
     position: 'absolute',
     overflow: 'hidden',
     borderRadius: 10,
-    borderWidth: 0,
+    borderWidth: 1,
     paddingHorizontal: 6,
     paddingVertical: 4,
   },
   blockVtk: { borderLeftWidth: 4, borderLeftColor: COLORS.yellow },
   blockMandatory: { borderLeftWidth: 3, borderLeftColor: PLANNING.danger },
-  blockHidden: { borderWidth: 1, borderStyle: 'dashed', opacity: 0.5 },
+  blockHidden: { borderStyle: 'dashed', opacity: 0.5 },
   blockTop: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   blockTime: { fontFamily: FONTS.semibold, fontSize: 10.5, fontVariant: ['tabular-nums'] },
   blockTitle: { fontFamily: FONTS.semibold, fontSize: 12, lineHeight: 15, color: COLORS.ink },

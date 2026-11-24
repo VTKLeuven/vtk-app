@@ -1,7 +1,10 @@
 import * as WebBrowser from 'expo-web-browser';
-import { Bike, ChevronLeft, ChevronRight, Truck, X } from 'lucide-react-native';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Bike, Minus, Plus, Truck, X } from 'lucide-react-native';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
+  Animated,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -14,7 +17,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, Line, Pattern, Rect } from 'react-native-svg';
 
-import type { AppLocale, AppTransportTrip, AppTransportVehicle } from '../api/contract';
+import type { AppLocale, AppTransportTrip, AppTransportVehicle, AppTransportWeek } from '../api/contract';
 import { fetchTransportWeek } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { PageHead } from '../components/PageHead';
@@ -39,6 +42,8 @@ const MIN_HOUR_PX = 18;
 const GRID_MARGIN = 12;
 /** De strook rechts naast de blokken, zodat ze niet tegen de rand plakken. */
 const BLOCK_GUTTER = 6;
+/** Zo ver kan je inzoomen: vier keer de uurhoogte waarop de hele dag past, zes uur in beeld. */
+const MAX_ZOOM = 4;
 
 type Placed = { trip: AppTransportTrip; from: number; to: number; lane: number; lanes: number };
 
@@ -71,16 +76,20 @@ export default function VervoerScreen() {
   const { locale } = useApp();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const [week, setWeek] = useState<string | undefined>(undefined);
   const [open, setOpen] = useState<AppTransportTrip | null>(null);
   const [paneHeight, setPaneHeight] = useState(0);
+  const [zoom, setZoom] = useState(1);
   const [, setTick] = useState(0);
-  const scroll = useRef<ScrollViewInstance>(null);
-  const resource = useResource(
-    `vervoer-${week ?? 'nu'}`,
-    () => fetchTransportWeek(locale, week),
-    `${locale}:${week ?? 'nu'}`,
-  );
+  // De weken die al binnen zijn, per maandag. De huidige komt via `useResource`
+  // (met de leescache); de rest wordt erbij gehaald wanneer je ernaartoe veegt.
+  const [weeks, setWeeks] = useState<Record<string, AppTransportWeek>>({});
+  const loading = useRef(new Set<string>());
+  const [firstVisible, setFirstVisible] = useState<string | null>(null);
+  const horizontal = useRef<ScrollViewInstance>(null);
+  const vertical = useRef<ScrollViewInstance>(null);
+  const verticalY = useRef(0);
+  const [scrollX] = useState(() => new Animated.Value(0));
+  const resource = useResource('vervoer-nu', () => fetchTransportWeek(locale), locale);
 
   // De nu-lijn schuift mee met de klok.
   useEffect(() => {
@@ -88,88 +97,120 @@ export default function VervoerScreen() {
     return () => clearInterval(id);
   }, []);
 
-  const data = resource.data;
-  const days = useMemo(() => (data ? Array.from({ length: 7 }, (_, i) => shiftKey(data.weekStart, i)) : []), [data]);
-  const placed = useMemo(
-    () => new Map(days.map((key) => [key, data ? placeForDay(data.trips, key) : []])),
-    [data, days],
+  const current = resource.data;
+  const all = useMemo(
+    () => (current ? { ...weeks, [current.weekStart]: current } : weeks),
+    [current, weeks],
   );
-  const vehicles = useMemo(() => new Map((data?.vehicles ?? []).map((v) => [v.id, v])), [data]);
+  const weekKeys = useMemo(() => Object.keys(all).sort(), [all]);
+  const days = useMemo(
+    () => weekKeys.flatMap((start) => Array.from({ length: 7 }, (_, i) => shiftKey(start, i))),
+    [weekKeys],
+  );
+  const placed = useMemo(() => {
+    const map = new Map<string, Placed[]>();
+    for (const start of weekKeys) {
+      for (let i = 0; i < 7; i++) {
+        const key = shiftKey(start, i);
+        map.set(key, placeForDay(all[start].trips, key));
+      }
+    }
+    return map;
+  }, [all, weekKeys]);
+  const vehicles = useMemo(() => new Map((current?.vehicles ?? []).map((v) => [v.id, v])), [current]);
+
+  const load = useCallback(
+    (start: string) => {
+      if (all[start] || loading.current.has(start)) return;
+      loading.current.add(start);
+      fetchTransportWeek(locale, start)
+        .then((week) => setWeeks((known) => ({ ...known, [week.weekStart]: week })))
+        .catch(() => undefined)
+        .finally(() => loading.current.delete(start));
+    },
+    [all, locale],
+  );
+
+  // Rond de huidige week meteen de week ervoor en erna, zodat vegen niet wacht.
+  useEffect(() => {
+    if (!current) return;
+    load(shiftKey(current.weekStart, -7));
+    load(shiftKey(current.weekStart, 7));
+  }, [current, load]);
 
   const today = todayKey();
-  const todayIndex = days.indexOf(today);
   // Drie dagen in beeld, zoals op een telefoon op logistiek.vtk.be.
   const column = (width - GRID_MARGIN * 2 - GUTTER) / VISIBLE_DAYS;
-  // Zoom 1: de hele dag past in het raster, zoals daar (`fitHourPx`).
-  const hourPx = Math.max(MIN_HOUR_PX, (paneHeight - HEAD_HEIGHT) / HOURS);
+  // Zoom 1: de hele dag past in het raster, zoals daar (`fitHourPx`); inzoomen maakt een uur hoger.
+  const fitHour = Math.max(MIN_HOUR_PX, (paneHeight - HEAD_HEIGHT) / HOURS);
+  const hourPx = fitHour * zoom;
 
-  // Bij een nieuwe week naar vandaag als die erin zit, anders naar maandag.
-  const firstShown = Math.max(0, Math.min(todayIndex, 7 - VISIBLE_DAYS));
-  useEffect(() => {
-    if (!data) return;
-    const id = requestAnimationFrame(() => scroll.current?.scrollTo({ x: firstShown * column, animated: false }));
-    return () => cancelAnimationFrame(id);
-  }, [data, firstShown, column]);
+  // Waar de agenda staat: de eerste dag in beeld. Komt er een week vóór bij, dan
+  // schuift alles zeven kolommen op; hier springt de agenda dan mee terug, zodat
+  // je blijft kijken naar wat je zag.
+  const anchor = firstVisible ?? (days.includes(today) ? today : (current?.weekStart ?? null));
+  const anchorIndex = anchor ? Math.max(0, days.indexOf(anchor)) : 0;
+  useLayoutEffect(() => {
+    if (paneHeight === 0 || days.length === 0) return;
+    horizontal.current?.scrollTo({ x: anchorIndex * column, animated: false });
+  }, [anchorIndex, column, days.length, paneHeight]);
 
-  const goWeek = (delta: number) => {
-    if (!data) return;
-    setOpen(null);
-    setWeek(shiftKey(data.weekStart, delta * 7));
+  const settle = (x: number) => {
+    const index = Math.max(0, Math.min(days.length - 1, Math.round(x / column)));
+    const key = days[index];
+    if (!key) return;
+    setFirstVisible(key);
+    // Dicht bij de rand van wat er is: de week ernaast erbij halen.
+    if (index < 7) load(shiftKey(weekKeys[0], -7));
+    if (index + VISIBLE_DAYS > days.length - 7) load(shiftKey(weekKeys[weekKeys.length - 1], 7));
   };
 
-  const thisWeek = data ? todayIndex >= 0 : true;
+  // Inzoomen houdt het midden van wat je ziet op zijn plek.
+  const zoomTo = useCallback(
+    (next: number) => {
+      const clamped = Math.min(MAX_ZOOM, Math.max(1, next));
+      setZoom((old) => {
+        if (old === clamped) return old;
+        const middle = paneHeight / 2;
+        const y = ((verticalY.current + middle) * clamped) / old - middle;
+        requestAnimationFrame(() => vertical.current?.scrollTo({ y: Math.max(0, y), animated: false }));
+        return clamped;
+      });
+    },
+    [paneHeight],
+  );
+  const pinchStart = useRef(1);
+  const pinch = Gesture.Pinch()
+    .runOnJS(true)
+    .onStart(() => {
+      pinchStart.current = zoom;
+    })
+    .onUpdate((event) => zoomTo(pinchStart.current * event.scale));
+
+  // De week bovenaan volgt wat er in beeld staat.
+  const shownWeekStart = anchor ? weekKeys.filter((start) => start <= anchor).pop() : undefined;
+  const shownWeek = (shownWeekStart && all[shownWeekStart]) || current;
+
   const head = (
     <PageHead
-      title={data?.weekNumber ? `Week ${data.weekNumber}` : 'Transport'}
-      subtitle={data ? weekLabel(data.weekStart, locale) : 'De ritten van Logistiek'}
-    >
-      <View style={styles.weekNav}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Vorige week"
-          onPress={() => goWeek(-1)}
-          style={({ pressed }) => [styles.navPill, pressed && styles.pressed]}
-        >
-          <ChevronLeft size={17} color={COLORS.ink} />
-          <Text style={styles.navLabel}>Vorige</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Deze week"
-          accessibilityState={{ selected: thisWeek }}
-          onPress={() => {
-            setOpen(null);
-            setWeek(undefined);
-          }}
-          style={({ pressed }) => [styles.navPill, thisWeek && styles.navPillActive, pressed && styles.pressed]}
-        >
-          <Text style={[styles.navLabel, thisWeek && styles.navLabelActive]}>Deze week</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Volgende week"
-          onPress={() => goWeek(1)}
-          style={({ pressed }) => [styles.navPill, pressed && styles.pressed]}
-        >
-          <Text style={styles.navLabel}>Volgende</Text>
-          <ChevronRight size={17} color={COLORS.ink} />
-        </Pressable>
-      </View>
-      {data ? (
-        <Pressable
-          accessibilityRole="link"
-          accessibilityLabel="Een rit aanvragen, opent logistiek.vtk.be"
-          onPress={() => void WebBrowser.openBrowserAsync(data.logistiekUrl)}
-          hitSlop={8}
-          style={({ pressed }) => [styles.request, pressed && styles.pressed]}
-        >
-          <Text style={styles.requestLabel}>Rit aanvragen ↗</Text>
-        </Pressable>
-      ) : null}
-    </PageHead>
+      title={shownWeek?.weekNumber ? `Week ${shownWeek.weekNumber}` : 'Transport'}
+      subtitle={shownWeek ? weekLabel(shownWeek.weekStart, locale) : 'De ritten van Logistiek'}
+      right={
+        current ? (
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel="Een rit aanvragen, opent logistiek.vtk.be"
+            onPress={() => void WebBrowser.openBrowserAsync(current.logistiekUrl)}
+            style={({ pressed }) => [styles.request, pressed && styles.pressed]}
+          >
+            <Text style={styles.requestLabel}>Rit aanvragen ↗</Text>
+          </Pressable>
+        ) : undefined
+      }
+    />
   );
 
-  if (resource.loading && !data) {
+  if (resource.loading && !current) {
     return (
       <>
         {head}
@@ -177,7 +218,7 @@ export default function VervoerScreen() {
       </>
     );
   }
-  if (!data) {
+  if (!current) {
     return (
       <>
         {head}
@@ -186,7 +227,7 @@ export default function VervoerScreen() {
     );
   }
 
-  const nowMinutes = todayIndex >= 0 ? minutesOfDay(new Date().toISOString()) : null;
+  const nowMinutes = days.includes(today) ? minutesOfDay(new Date().toISOString()) : null;
   const ready = paneHeight > 0;
 
   return (
@@ -198,97 +239,154 @@ export default function VervoerScreen() {
         </View>
       ) : null}
 
-      <View style={styles.pane} onLayout={(event) => setPaneHeight(event.nativeEvent.layout.height)}>
-        {ready ? (
-          <View style={styles.paneRow}>
-            {/* De urenkolom staat vast; de dagen schuiven ernaast. */}
-            <View style={{ width: GUTTER }} importantForAccessibility="no-hide-descendants">
-              <View style={{ height: HEAD_HEIGHT }} />
-              <View style={{ height: HOURS * hourPx }}>
-                {Array.from({ length: HOURS - 1 }, (_, i) => i + 1).map((hour) => (
-                  <Text
-                    key={hour}
-                    style={[styles.hour, { top: hour * hourPx - 7 }]}
-                    accessibilityElementsHidden
+      <GestureDetector gesture={pinch}>
+        <View style={styles.pane} onLayout={(event) => setPaneHeight(event.nativeEvent.layout.height)}>
+          {ready ? (
+            <>
+              {/* De dagkoppen schuiven mee met de dagen eronder, op de native thread. */}
+              <View style={[styles.headRow, { height: HEAD_HEIGHT }]}>
+                <View style={{ width: GUTTER }} />
+                <View style={styles.headClip}>
+                  <Animated.View
+                    style={{
+                      flexDirection: 'row',
+                      width: column * days.length,
+                      transform: [{ translateX: Animated.multiply(scrollX, -1) }],
+                    }}
                   >
-                    {String(hour).padStart(2, '0')}:00
-                  </Text>
-                ))}
-                {nowMinutes !== null ? (
-                  <View style={[styles.nowPill, { top: (nowMinutes / 60) * hourPx - 8 }]}>
-                    <Text style={styles.nowPillText}>{formatTime(new Date().toISOString(), locale)}</Text>
-                  </View>
-                ) : null}
-              </View>
-            </View>
-
-            <ScrollView
-              ref={scroll}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              snapToInterval={column}
-              decelerationRate="fast"
-              contentOffset={{ x: firstShown * column, y: 0 }}
-            >
-              {days.map((key, at) => {
-                const blocks = placed.get(key) ?? [];
-                const isToday = key === today;
-                const weekend = at >= 5;
-                return (
-                  <View key={key} style={{ width: column }}>
-                    <View
-                      style={[styles.dayHead, { height: HEAD_HEIGHT }]}
-                      accessibilityLabel={`${dayName(key, locale)}, ${tripCount(blocks.length)}`}
-                    >
-                      <View style={styles.dayHeadRow}>
-                        <Text style={styles.dayHeadName}>{weekday(key, locale).toUpperCase()}</Text>
-                        <View style={[styles.dayHeadNum, isToday && styles.dayHeadNumToday]}>
-                          <Text style={[styles.dayHeadNumText, isToday && styles.dayHeadNumTextToday]}>
-                            {Number(key.slice(8))}
-                          </Text>
+                    {days.map((key) => {
+                      const count = placed.get(key)?.length ?? 0;
+                      const isToday = key === today;
+                      return (
+                        <View
+                          key={key}
+                          style={[styles.dayHead, { width: column, height: HEAD_HEIGHT }]}
+                          accessibilityLabel={`${dayName(key, locale)}, ${tripCount(count)}`}
+                        >
+                          <View style={styles.dayHeadRow}>
+                            <Text style={styles.dayHeadName}>{weekday(key, locale).toUpperCase()}</Text>
+                            <View style={[styles.dayHeadNum, isToday && styles.dayHeadNumToday]}>
+                              <Text style={[styles.dayHeadNumText, isToday && styles.dayHeadNumTextToday]}>
+                                {Number(key.slice(8))}
+                              </Text>
+                            </View>
+                            {!isToday ? <Text style={styles.dayHeadMuted}>{monthShort(key, locale)}</Text> : null}
+                          </View>
+                          <Text style={styles.dayHeadMuted}>{tripCount(count)}</Text>
                         </View>
-                        {!isToday ? <Text style={styles.dayHeadMuted}>{monthShort(key, locale)}</Text> : null}
-                      </View>
-                      <Text style={styles.dayHeadMuted}>{tripCount(blocks.length)}</Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.dayBody,
-                        { height: HOURS * hourPx },
-                        isToday && styles.dayToday,
-                        weekend && !isToday && styles.dayWeekend,
-                      ]}
-                    >
-                      {Array.from({ length: HOURS - 1 }, (_, i) => i + 1).map((hour) => (
-                        <View key={hour} style={[styles.line, { top: hour * hourPx }]} />
-                      ))}
-                      {blocks.map((block) => (
-                        <TripBlock
-                          key={block.trip.id}
-                          block={block}
-                          hourPx={hourPx}
-                          vehicle={vehicles.get(block.trip.vehicleId) ?? null}
-                          dayKey={key}
-                          locale={locale}
-                          onPress={() => setOpen(block.trip)}
-                        />
-                      ))}
-                      {isToday && nowMinutes !== null ? (
-                        <View style={[styles.now, { top: (nowMinutes / 60) * hourPx }]} />
-                      ) : null}
-                    </View>
-                  </View>
-                );
-              })}
-            </ScrollView>
-          </View>
-        ) : null}
-      </View>
+                      );
+                    })}
+                  </Animated.View>
+                </View>
+              </View>
 
-      {data.vehicles.length > 0 ? (
+              <ScrollView
+                ref={vertical}
+                scrollEnabled={zoom > 1}
+                showsVerticalScrollIndicator={zoom > 1}
+                scrollEventThrottle={16}
+                onScroll={(event) => {
+                  verticalY.current = event.nativeEvent.contentOffset.y;
+                }}
+              >
+                <View style={styles.paneRow}>
+                  {/* De urenkolom staat vast; de dagen schuiven ernaast. */}
+                  <View style={{ width: GUTTER, height: HOURS * hourPx }} importantForAccessibility="no-hide-descendants">
+                    {Array.from({ length: HOURS - 1 }, (_, i) => i + 1).map((hour) => (
+                      <Text key={hour} style={[styles.hour, { top: hour * hourPx - 7 }]} accessibilityElementsHidden>
+                        {String(hour).padStart(2, '0')}:00
+                      </Text>
+                    ))}
+                    {nowMinutes !== null ? (
+                      <View style={[styles.nowPill, { top: (nowMinutes / 60) * hourPx - 8 }]}>
+                        <Text style={styles.nowPillText}>{formatTime(new Date().toISOString(), locale)}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+
+                  <Animated.ScrollView
+                    ref={horizontal}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    snapToInterval={column}
+                    decelerationRate="fast"
+                    scrollEventThrottle={16}
+                    onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
+                      useNativeDriver: true,
+                    })}
+                    onMomentumScrollEnd={(event) => settle(event.nativeEvent.contentOffset.x)}
+                    onScrollEndDrag={(event) => settle(event.nativeEvent.contentOffset.x)}
+                  >
+                    {days.map((key, at) => {
+                      const blocks = placed.get(key) ?? [];
+                      const isToday = key === today;
+                      const weekend = at % 7 >= 5;
+                      return (
+                        <View
+                          key={key}
+                          style={[
+                            styles.dayBody,
+                            { width: column, height: HOURS * hourPx },
+                            isToday && styles.dayToday,
+                            weekend && !isToday && styles.dayWeekend,
+                          ]}
+                        >
+                          {Array.from({ length: HOURS - 1 }, (_, i) => i + 1).map((hour) => (
+                            <View key={hour} style={[styles.line, { top: hour * hourPx }]} />
+                          ))}
+                          {blocks.map((block) => (
+                            <TripBlock
+                              key={block.trip.id}
+                              block={block}
+                              hourPx={hourPx}
+                              vehicle={vehicles.get(block.trip.vehicleId) ?? null}
+                              dayKey={key}
+                              locale={locale}
+                              onPress={() => setOpen(block.trip)}
+                            />
+                          ))}
+                          {isToday && nowMinutes !== null ? (
+                            <View style={[styles.now, { top: (nowMinutes / 60) * hourPx }]} />
+                          ) : null}
+                        </View>
+                      );
+                    })}
+                  </Animated.ScrollView>
+                </View>
+              </ScrollView>
+
+              {/* Zoomen ook zonder twee vingers, zoals bij een kaart. */}
+              <View style={styles.zoom}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Inzoomen, minder uren in beeld"
+                  accessibilityState={{ disabled: zoom >= MAX_ZOOM }}
+                  disabled={zoom >= MAX_ZOOM}
+                  onPress={() => zoomTo(zoom * 1.5)}
+                  style={({ pressed }) => [styles.zoomButton, (pressed || zoom >= MAX_ZOOM) && styles.pressed]}
+                >
+                  <Plus size={18} color={COLORS.ink} />
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Uitzoomen, meer uren in beeld"
+                  accessibilityState={{ disabled: zoom <= 1 }}
+                  disabled={zoom <= 1}
+                  onPress={() => zoomTo(zoom / 1.5)}
+                  style={({ pressed }) => [styles.zoomButton, (pressed || zoom <= 1) && styles.pressed]}
+                >
+                  <Minus size={18} color={COLORS.ink} />
+                </Pressable>
+              </View>
+            </>
+          ) : null}
+        </View>
+      </GestureDetector>
+
+      {current.vehicles.length > 0 ? (
         <View style={[styles.footer, { paddingBottom: SPACING.sm + insets.bottom }]}>
           <View style={styles.legend}>
-            {data.vehicles.map((vehicle) => (
+            {current.vehicles.map((vehicle) => (
               <View key={vehicle.id} style={styles.legendItem}>
                 {vehicle.pattern ? (
                   <View style={styles.swatch}>
@@ -498,7 +596,7 @@ function TripSheet({
                 <View key={label} style={styles.detail}>
                   <Text style={styles.detailLabel}>{label}</Text>
                   <Text style={[styles.detailValue, label === 'Chauffeur' && awaitsDriver && styles.noDriver]}>
-                    {value}
+                    <Linked text={value} />
                   </Text>
                 </View>
               ))}
@@ -507,6 +605,37 @@ function TripSheet({
         ) : null}
       </View>
     </Modal>
+  );
+}
+
+/**
+ * Een waarde met links erin (een Google Sheet bij "Mee te nemen", een kaart bij
+ * "Naar"): de links worden aantikbaar. Een link naar Google Maps opent de kaart-app,
+ * de rest de browser in de app.
+ */
+function Linked({ text }: { text: string }) {
+  const parts = text.split(/(https?:\/\/[^\s]+)/g);
+  return (
+    <>
+      {parts.map((part, index) =>
+        /^https?:\/\//.test(part) ? (
+          <Text
+            key={index}
+            accessibilityRole="link"
+            style={styles.link}
+            onPress={() =>
+              /(maps\.app\.goo\.gl|google\.[a-z.]+\/maps|maps\.google\.)/i.test(part)
+                ? void Linking.openURL(part)
+                : void WebBrowser.openBrowserAsync(part)
+            }
+          >
+            {part}
+          </Text>
+        ) : (
+          part
+        ),
+      )}
+    </>
   );
 }
 
@@ -652,22 +781,31 @@ const styles = StyleSheet.create({
   hint: { ...TYPE.small, fontSize: 11.5, color: COLORS.muted },
   stale: { paddingHorizontal: SPACING.md, paddingTop: SPACING.sm },
 
-  weekNav: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.md },
-  navPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  // "Rit aanvragen" rechts van de week, als pil zoals de knoppen in de kop.
+  request: {
     height: 44,
+    justifyContent: 'center',
     paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.pill,
     backgroundColor: COLORS.surface,
     ...CARD_SHADOW,
   },
-  navPillActive: { backgroundColor: COLORS.ink },
-  navLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink },
-  navLabelActive: { color: COLORS.paper },
-  request: { alignSelf: 'flex-start', marginTop: SPACING.md, borderBottomWidth: 2, borderBottomColor: COLORS.yellow },
-  requestLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink, paddingBottom: 2 },
+  requestLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink },
+  headRow: { flexDirection: 'row', backgroundColor: COLORS.surface, zIndex: 2 },
+  headClip: { flex: 1, overflow: 'hidden' },
+  zoom: { position: 'absolute', right: SPACING.sm, bottom: SPACING.sm, gap: SPACING.sm, zIndex: 4 },
+  zoomButton: {
+    width: 40,
+    height: 40,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.line2,
+    ...CARD_SHADOW,
+  },
+  link: { color: COLORS.navy, textDecorationLine: 'underline' },
 
   // Het raster als witte kaart; onderaan loopt hij tot tegen de legende.
   pane: {

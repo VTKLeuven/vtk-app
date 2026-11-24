@@ -92,7 +92,7 @@ export default function PraesidiumScreen() {
               {group.people.map((person, index) => (
                 <View key={`${person.name}-${index}`} style={styles.person}>
                   {person.avatarUrl ? (
-                    <Image source={{ uri: person.avatarUrl }} style={styles.avatar} contentFit="cover" />
+                    <Image cachePolicy="memory-disk" source={{ uri: person.avatarUrl }} style={styles.avatar} contentFit="cover" />
                   ) : (
                     <View style={[styles.avatar, styles.avatarEmpty]} />
                   )}
