@@ -112,7 +112,24 @@ export const PLANNING = {
   /** De rail van een verplichte les en de nu-lijn, `--color-danger` bij Burgieclan. */
   danger: '#dc2626',
   dangerText: '#b91c1c',
+  // Afgevinkt: de volle kleur van de soort (`--color-plan-*-fill`), in het
+  // semesteroverzicht en de voortgangsbalk per vak.
+  lectureFill: '#2477c9',
+  practiceFill: '#129278',
+  otherFill: '#6b5fd6',
+  // "In te halen": voorbij en niet afgevinkt (`--color-plan-catchup-*`).
+  catchupBg: '#fdf0f6',
+  catchupBorder: '#f5bdd5',
+  catchupText: '#a3245a',
+  catchupFill: '#d6407a',
 } as const;
+
+/**
+ * De kleur van een vak in de blokkalender, in de volgorde waarin de vakken er
+ * staan (`--color-course-1` tot `8` bij Burgieclan). Een vak heeft daar en hier
+ * dezelfde kleur.
+ */
+export const COURSE_COLORS = ['#2477c9', '#129278', '#6b5fd6', '#b98900', '#0e8fb3', '#3e9a45', '#33478f', '#9b4fb0'] as const;
 
 export const SPACING = {
   xs: 4,

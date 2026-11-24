@@ -17,16 +17,22 @@ export function useTabParam<T extends string>(
   value: string | undefined,
   allowed: readonly T[],
   onChange: (next: T) => void,
+  /**
+   * Een volgnummer uit het adres (`?tab=agenda&n=...`), voor een knop die
+   * hetzelfde tabblad opnieuw moet kunnen openen nadat je zelf wisselde.
+   */
+  nonce?: string,
 ): void {
-  const applied = useRef(value);
+  const applied = useRef(`${value}|${nonce ?? ''}`);
   const latest = useRef({ allowed, onChange });
   latest.current = { allowed, onChange };
 
   useEffect(() => {
-    if (value === applied.current) return;
-    applied.current = value;
+    const key = `${value}|${nonce ?? ''}`;
+    if (key === applied.current) return;
+    applied.current = key;
 
     const { allowed: options, onChange: apply } = latest.current;
     if (value && (options as readonly string[]).includes(value)) apply(value as T);
-  }, [value]);
+  }, [value, nonce]);
 }

@@ -17,6 +17,8 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withDecay,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -148,6 +150,9 @@ function Pager({
         getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
         onMomentumScrollEnd={onMomentumEnd}
         onLayout={onLayout}
+        // Zonder dit tekent de lijst haar items niet opnieuw wanneer de actieve
+        // foto verandert, en blijft een weggebladerde foto ingezoomd.
+        extraData={index}
         // Enkel de buren inladen. Een album van zeventienhonderd foto's mag niet
         // zeventienhonderd keer `expo-image` monteren om er één te tonen.
         // Bewust geen `removeClippedSubviews`: in een modal liet dat een pagina
@@ -161,7 +166,6 @@ function Pager({
             width={width}
             height={height}
             active={position === index}
-            zoomed={zoomed && position === index}
             onZoomChange={setZoomed}
           />
         )}
@@ -190,24 +194,35 @@ function Pager({
 /**
  * Eén foto, met knijpen, slepen en dubbeltikken.
  *
- * Zodra de foto niet meer op ware grootte staat, meldt ze dat naar boven zodat de
- * pager stopt met bladeren. Bij het wegbladeren springt ze terug: niemand
- * verwacht dat de volgende foto al ingezoomd begint.
+ * **Hoe het zoomen werkt (sinds november 2026).** Daarvoor kon je in de praktijk
+ * maar één stand kiezen en ingezoomd niet schuiven: het knijpen wachtte tot de
+ * dubbeltik mislukte, en of slepen mocht, hing aan een prop die de `FlatList`
+ * nooit opnieuw doorgaf (een item tekent pas opnieuw bij `extraData`). Nu:
+ *
+ * - **Knijpen is traploos** en zoomt rond het punt tussen je vingers; met twee
+ *   vingers schuif je tegelijk. Voorbij de grenzen geeft het wat mee en veert het
+ *   daarna terug.
+ * - **Slepen beslist zelf** of het meedoet (`manualActivation`): ingezoomd neemt
+ *   het de veeg, op ware grootte laat het hem aan de lijst om te bladeren. Geen
+ *   React-state ertussen, dus geen render die te laat komt.
+ * - **Loslaten bolt uit** (`withDecay`) en stopt aan de rand van de foto zelf, niet
+ *   aan de zwarte balken eromheen. De maten van de foto komen uit `onLoad`.
+ * - **Dubbeltikken** zoomt in op de plek waar je tikt, en nog eens tikken zoomt uit.
+ *
+ * Zodra de foto ingezoomd is, meldt ze dat naar boven zodat de pager stopt met
+ * bladeren. Bij het wegbladeren springt ze terug.
  */
 function ZoomablePhoto({
   photo,
   width,
   height,
   active,
-  zoomed,
   onZoomChange,
 }: {
   photo: AppPhoto;
   width: number;
   height: number;
   active: boolean;
-  /** Staat deze foto ingezoomd; dan pas mag slepen meedoen. */
-  zoomed: boolean;
   onZoomChange: (zoomed: boolean) => void;
 }) {
   const scale = useSharedValue(1);
@@ -216,6 +231,12 @@ function ZoomablePhoto({
   const y = useSharedValue(0);
   const savedX = useSharedValue(0);
   const savedY = useSharedValue(0);
+  // Het punt onder de vingers bij het begin van het knijpen, t.o.v. het midden.
+  const originX = useSharedValue(0);
+  const originY = useSharedValue(0);
+  // De verhouding van de foto (breedte / hoogte); tot ze geladen is die van het scherm.
+  const aspect = useSharedValue(width / height);
+
   const reset = useCallback(() => {
     scale.value = withTiming(1);
     savedScale.value = 1;
@@ -227,70 +248,137 @@ function ZoomablePhoto({
 
   // Blader je weg, dan gaat deze foto terug naar ware grootte.
   useEffect(() => {
-    if (!active) {
-      reset();
-      onZoomChange(false);
-    }
-  }, [active, reset, onZoomChange]);
+    if (!active) reset();
+  }, [active, reset]);
+
+  /** Hoe ver de foto bij deze schaal mag schuiven voor er een rand in beeld komt. */
+  const bounds = (s: number) => {
+    'worklet';
+    const shownWidth = Math.min(width, height * aspect.value);
+    const shownHeight = Math.min(height, width / aspect.value);
+    return {
+      x: Math.max(0, (shownWidth * s - width) / 2),
+      y: Math.max(0, (shownHeight * s - height) / 2),
+    };
+  };
+
+  /** Voorbij de rand geeft het nog wat mee, maar steeds minder. */
+  const rubber = (value: number, limit: number) => {
+    'worklet';
+    if (value > limit) return limit + (value - limit) / 3;
+    if (value < -limit) return -limit + (value + limit) / 3;
+    return value;
+  };
+
+  const clamp = (value: number, limit: number) => {
+    'worklet';
+    return Math.min(limit, Math.max(-limit, value));
+  };
+
+  /** Na het loslaten: schaal en positie terug binnen de grenzen, met een veer. */
+  const settle = () => {
+    'worklet';
+    const target = Math.min(Math.max(scale.value, 1), MAX_SCALE);
+    const limits = bounds(target);
+    const nextX = target === 1 ? 0 : clamp(x.value, limits.x);
+    const nextY = target === 1 ? 0 : clamp(y.value, limits.y);
+    scale.value = withSpring(target, SPRING);
+    x.value = withSpring(nextX, SPRING);
+    y.value = withSpring(nextY, SPRING);
+    savedScale.value = target;
+    savedX.value = nextX;
+    savedY.value = nextY;
+    runOnJS(onZoomChange)(target > 1.01);
+  };
 
   const pinch = Gesture.Pinch()
+    .onStart((event) => {
+      originX.value = event.focalX - width / 2;
+      originY.value = event.focalY - height / 2;
+      savedScale.value = scale.value;
+      savedX.value = x.value;
+      savedY.value = y.value;
+      runOnJS(onZoomChange)(true);
+    })
     .onUpdate((event) => {
-      scale.value = Math.min(Math.max(savedScale.value * event.scale, 0.5), MAX_SCALE);
+      const raw = savedScale.value * event.scale;
+      // Traploos, met wat meegeven onder 1 en boven het maximum.
+      const next = raw < 1 ? 1 - (1 - raw) / 2 : raw > MAX_SCALE ? MAX_SCALE + (raw - MAX_SCALE) / 4 : raw;
+      const ratio = next / savedScale.value;
+      // Het punt onder de vingers blijft onder de vingers, en schuift mee met hun midden.
+      const focusX = event.focalX - width / 2;
+      const focusY = event.focalY - height / 2;
+      scale.value = next;
+      x.value = focusX - (originX.value - savedX.value) * ratio;
+      y.value = focusY - (originY.value - savedY.value) * ratio;
     })
     .onEnd(() => {
-      if (scale.value < 1) {
-        scale.value = withTiming(1);
-        savedScale.value = 1;
-        x.value = withTiming(0);
-        y.value = withTiming(0);
-        savedX.value = 0;
-        savedY.value = 0;
-        runOnJS(onZoomChange)(false);
-      } else {
-        savedScale.value = scale.value;
-        runOnJS(onZoomChange)(scale.value > 1);
-      }
+      settle();
     });
 
   /**
-   * Slepen staat **enkel aan wanneer de foto ingezoomd is**. Een actieve
-   * `Pan` neemt elke horizontale veeg over, ook als hij daarna niets doet, en
-   * dan kwam de lijst eronder nooit aan bod: je kon niet naar de volgende foto
-   * vegen. Op ware grootte is vegen bladeren, ingezoomd is het rondkijken.
+   * Slepen met één vinger, **enkel wanneer de foto ingezoomd is**. Op ware
+   * grootte weigert het meteen, zodat de lijst eronder de veeg krijgt en je kan
+   * bladeren. Ingezoomd neemt het de veeg.
    */
   const pan = Gesture.Pan()
-    .enabled(zoomed)
-    .averageTouches(true)
-    .onUpdate((event) => {
-      // Slepen heeft enkel zin wanneer er meer foto is dan er past.
-      if (savedScale.value <= 1) return;
-      x.value = savedX.value + event.translationX;
-      y.value = savedY.value + event.translationY;
+    .manualActivation(true)
+    .maxPointers(1)
+    .onTouchesMove((_event, manager) => {
+      if (savedScale.value > 1.01) manager.activate();
+      else manager.fail();
     })
-    .onEnd(() => {
+    .onStart(() => {
+      savedX.value = x.value;
+      savedY.value = y.value;
+    })
+    .onUpdate((event) => {
+      const limits = bounds(scale.value);
+      x.value = rubber(savedX.value + event.translationX, limits.x);
+      y.value = rubber(savedY.value + event.translationY, limits.y);
+    })
+    .onEnd((event) => {
+      const limits = bounds(scale.value);
+      // Buiten de rand: terugveren. Erbinnen: uitbollen tot de rand.
+      if (Math.abs(x.value) > limits.x) x.value = withSpring(clamp(x.value, limits.x), SPRING);
+      else x.value = withDecay({ velocity: event.velocityX, clamp: [-limits.x, limits.x] });
+      if (Math.abs(y.value) > limits.y) y.value = withSpring(clamp(y.value, limits.y), SPRING);
+      else y.value = withDecay({ velocity: event.velocityY, clamp: [-limits.y, limits.y] });
+    })
+    .onFinalize(() => {
       savedX.value = x.value;
       savedY.value = y.value;
     });
 
   const doubleTap = Gesture.Tap()
     .numberOfTaps(2)
-    .onEnd(() => {
-      if (savedScale.value > 1) {
+    .maxDuration(250)
+    .onEnd((event) => {
+      if (savedScale.value > 1.01) {
         scale.value = withTiming(1);
-        savedScale.value = 1;
         x.value = withTiming(0);
         y.value = withTiming(0);
+        savedScale.value = 1;
         savedX.value = 0;
         savedY.value = 0;
         runOnJS(onZoomChange)(false);
-      } else {
-        scale.value = withTiming(TAP_SCALE);
-        savedScale.value = TAP_SCALE;
-        runOnJS(onZoomChange)(true);
+        return;
       }
+      // Inzoomen op de plek waar je tikte, binnen de randen van de foto.
+      const limits = bounds(TAP_SCALE);
+      const nextX = clamp(-(event.x - width / 2) * (TAP_SCALE - 1), limits.x);
+      const nextY = clamp(-(event.y - height / 2) * (TAP_SCALE - 1), limits.y);
+      scale.value = withTiming(TAP_SCALE);
+      x.value = withTiming(nextX);
+      y.value = withTiming(nextY);
+      savedScale.value = TAP_SCALE;
+      savedX.value = nextX;
+      savedY.value = nextY;
+      runOnJS(onZoomChange)(true);
     });
 
-  const gesture = Gesture.Exclusive(doubleTap, Gesture.Simultaneous(pinch, pan));
+  // Alles tegelijk: knijpen hoeft niet te wachten tot de dubbeltik mislukt.
+  const gesture = Gesture.Simultaneous(pinch, pan, doubleTap);
 
   const animated = useAnimatedStyle(() => ({
     transform: [{ translateX: x.value }, { translateY: y.value }, { scale: scale.value }],
@@ -314,12 +402,19 @@ function ZoomablePhoto({
             transition={150}
             recyclingKey={photo.id}
             accessibilityLabel={photo.filename}
+            onLoad={(event) => {
+              const { width: w, height: h } = event.source;
+              if (w > 0 && h > 0) aspect.value = w / h;
+            }}
           />
         </Animated.View>
       </Animated.View>
     </GestureDetector>
   );
 }
+
+/** Een veer zonder doorschieten: de foto mag terugkomen, niet natrillen. */
+const SPRING = { damping: 26, stiffness: 260, mass: 0.9 } as const;
 
 const styles = StyleSheet.create({
   root: { flex: 1 },

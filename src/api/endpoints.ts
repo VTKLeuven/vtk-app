@@ -158,6 +158,8 @@ export function startTicketCheckout(input: {
   buyerEmail: string;
   locale: AppLocale;
   termsAccepted: true;
+  /** Voor de ticketstatistieken; de site zet het ook zelf voor elke aanvraag uit de app. */
+  source?: 'app';
   items: {
     ticketTypeId: string;
     attendeeName: string;
@@ -165,7 +167,7 @@ export function startTicketCheckout(input: {
     answers: Record<string, string | boolean | string[]>;
   }[];
 }): Promise<{ orderId: string; orderNumber: string; checkoutUrl: string }> {
-  return apiFetch('/api/tickets/checkout', { method: 'POST', body: input });
+  return apiFetch('/api/tickets/checkout', { method: 'POST', body: { source: 'app', ...input } });
 }
 
 /** De stand van een bestelling, om na het betalen te weten of ze doorging. */

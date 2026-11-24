@@ -13,7 +13,8 @@ import { PageHead } from '../components/PageHead';
 import { UpcomingLessonsList, useUpcomingLessons } from '../components/planning/UpcomingLessons';
 import { Prose } from '../components/Prose';
 import { ServiceList } from '../components/ServiceList';
-import { TaskCard } from '../components/TaskCard';
+import { KURT_URL } from '../components/planning/BlokView';
+import { LinkCard, TaskCard } from '../components/TaskCard';
 import { Button, Card, ErrorState, Loading, StaleNotice } from '../components/ui';
 import { formatVouchers } from '../format';
 import { useApp } from '../state/app';
@@ -37,9 +38,10 @@ const MAX_EVENTS = 6;
  * - Theokot, cudi en 't ElixIr als één witte balk (`ServiceList`);
  * - je volgende drie lessen in één kaart (`UpcomingLessonsList`), voor wie een
  *   lessenrooster koppelde;
+ * - "Voor jou" als witte kaarten (`TaskCard`), de broodjes met een foto, en
+ *   altijd een kaart naar KURT voor een bibplaats;
  * - de vier Alma's op campus Arenberg (`AlmaToday`): open of niet en wat er
  *   warm op het menu staat;
- * - "Voor jou" als witte kaarten (`TaskCard`), de broodjes met een foto;
  * - de aankomende evenementen nog eens als lijst, en "Snel naar".
  *
  * Dit is het enige scherm dat niet met de navy `PageHead` opent, en dat is een
@@ -156,18 +158,23 @@ export default function HomeScreen() {
           onOpen={() => router.push({ pathname: '/kalender', params: { tab: 'planning' } })}
         />
 
+        {/* Wat op jou wacht, tussen je lessen en de Alma's: na "wat heb ik nu"
+            komt "wat moet ik nog doen". Onderaan altijd KURT, voor een bibplaats. */}
+        <HomeSection title="Voor jou">
+          <View style={styles.stack}>
+            {today.tasks.map((task, index) => (
+              <TaskCard key={`${task.kind}-${task.at ?? index}`} task={task} />
+            ))}
+            <LinkCard
+              title="Een bibplaats nodig?"
+              detail="Reserveer een plaats in een bib van KU Leuven via KURT."
+              onPress={() => void WebBrowser.openBrowserAsync(KURT_URL)}
+            />
+          </View>
+        </HomeSection>
+
         {/* De Alma's op campus: open of niet, en wat er warm op het menu staat. */}
         <AlmaToday />
-
-        {today.tasks.length > 0 ? (
-          <HomeSection title="Voor jou">
-            <View style={styles.stack}>
-              {today.tasks.map((task, index) => (
-                <TaskCard key={`${task.kind}-${task.at ?? index}`} task={task} />
-              ))}
-            </View>
-          </HomeSection>
-        ) : null}
 
         {today.announcement ? (
           <View style={styles.block}>
@@ -192,8 +199,9 @@ export default function HomeScreen() {
             title="Aankomende evenementen"
             link={{
               label: 'Kalender',
-              accessibilityLabel: 'Naar de kalender',
-              onPress: () => router.push('/kalender'),
+              accessibilityLabel: 'Naar de evenementen in de kalender',
+              // Het tabblad Evenementen, en niet de planning waarop Kalender opent.
+              onPress: () => router.push({ pathname: '/kalender', params: { tab: 'agenda', n: String(Date.now()) } }),
             }}
           >
             <View style={styles.eventList}>
@@ -300,7 +308,7 @@ const SHORTCUTS: {
   external?: boolean;
 }[] = [
   { key: 'broodjes', label: 'Broodjes', to: '/broodjes', photo: require('../../assets/snel/theokot.jpg') },
-  { key: 'shiften', label: 'Shiften', to: '/shiften', photo: require('../../assets/snel/onderwijs.jpg') },
+  { key: 'shiften', label: 'Shiften', to: '/shiften', photo: require('../../assets/snel/shiften.jpg') },
   { key: 'media', label: "Foto's", to: '/media', photo: require('../../assets/snel/sport.jpg') },
   {
     key: 'cursusdienst',

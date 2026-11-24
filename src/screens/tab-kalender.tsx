@@ -19,6 +19,7 @@ import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { useTabParam } from '../useTabParam';
+import { useTrackView } from '../usage';
 import { groupByWeek } from '../weeks';
 import { CARD_SHADOW } from '../components/HomeSection';
 
@@ -77,14 +78,14 @@ export default function KalenderScreen() {
   // Enkel wanneer de server met Burgieclan gekoppeld is; zie `abilities.planning`.
   const planningAvailable = viewer !== null && bootstrap?.abilities?.planning === true;
 
-  const params = useLocalSearchParams<{ tab?: string }>();
+  const params = useLocalSearchParams<{ tab?: string; n?: string }>();
   // `null` zolang er niets gekozen is: dan Planning wanneer die er is, anders
   // Agenda. Zo komt wie net inlogde (en de bootstrap pas daarna binnenkrijgt)
   // ook op de planning uit.
   const [chosen, setChosen] = useState<Tab | null>(() =>
     params.tab === 'planning' || params.tab === 'agenda' || params.tab === 'mijn' ? params.tab : null,
   );
-  useTabParam<Tab>(params.tab, ['planning', 'agenda', 'mijn'], setChosen);
+  useTabParam<Tab>(params.tab, ['planning', 'agenda', 'mijn'], setChosen, params.n);
   const fallback: Tab = planningAvailable ? 'planning' : 'agenda';
   // De planning en "Mijn lijst" vragen een login; uitgelogd valt dat terug op Evenementen.
   const allowed = (option: Tab | null) =>
@@ -103,6 +104,8 @@ export default function KalenderScreen() {
   const planning = tab === 'planning';
   const mine = tab === 'mijn';
   const month = tab === 'agenda' && view === 'maand';
+  // De planning meldt zelf welke weergave open staat (`PlanningView`).
+  useTrackView(planning ? null : mine ? 'kalender:mijn' : month ? 'kalender:evenementen:maand' : 'kalender:evenementen');
   const range = month ? gridRange(anchor) : null;
 
   const resource = useResource(
@@ -175,7 +178,12 @@ export default function KalenderScreen() {
     return (
       <View style={styles.root}>
         <PageHead title="Kalender" back={false} compact right={bell} tabs={headTabs} />
-        <PlanningView locale={locale} onOpenEvent={(id) => router.push(`/evenement/${id}`)} />
+        <PlanningView
+          locale={locale}
+          onOpenEvent={(id) => router.push(`/evenement/${id}`)}
+          onOpenCourse={(id) => router.push(`/vak/${id}`)}
+          onOpenStudies={() => router.push({ pathname: '/studies', params: { tab: 'blokken' } })}
+        />
       </View>
     );
   }

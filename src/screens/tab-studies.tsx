@@ -7,6 +7,7 @@ import { CudiView } from '../components/studies/CudiView';
 import { STUDIES_TABS, type StudiesTab, type StudiesTabs } from '../components/studies/tabs';
 import { useApp } from '../state/app';
 import { useTabParam } from '../useTabParam';
+import { useTrackView } from '../usage';
 
 /**
  * Studies: alles rond je vakken, in drie tabbladen in de kop.
@@ -35,6 +36,7 @@ export default function StudiesScreen() {
     (STUDIES_TABS as readonly string[]).includes(params.tab ?? '') ? (params.tab as StudiesTab) : 'blokken',
   );
   useTabParam<StudiesTab>(params.tab, STUDIES_TABS, setTab);
+  useTrackView(`studies:${tab}`);
 
   const abilities = bootstrap?.abilities;
   const tabs: StudiesTabs = {

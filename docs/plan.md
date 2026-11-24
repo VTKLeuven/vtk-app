@@ -757,3 +757,34 @@ de app):
 - **Home**: Cursusdienst opent het tabblad Cudi en geen browser meer.
 - **De scanner** heeft de navy kop en het lichte ontwerp van de rest van de app;
   enkel het camerabeeld en de feedback na een scan zijn nog een gekleurd vlak.
+
+## November 2026: laatste ronde voor de stores
+
+Acht punten voor de release naar Apple en Google (site en app):
+
+- **Planner**: naast de week ook **Per vak**, **Semester** en **Blok**, zoals de
+  planner op Burgieclan. Geen tweede rij pillen: de titel in de werkbalk ("Week"
+  met een pijltje) is de keuze, en opent een blad met de vier weergaven
+  (`ViewPicker.tsx`). Per vak klapt open met de lessen om af te vinken, Semester
+  is het raster dat opzij schuift, Blok is de maandkalender met examens, taken
+  en vrije dagen, met een kaart naar KURT (bibplaatsen) en naar Samen blokken.
+  De blokkalender komt van Burgieclan via de site (`AppPlanning.block` en de
+  blokoperaties); zonder lessenrooster werkt Blok ook. In de week zet **lang
+  drukken** een nieuw blok neer zoals in Agenda op iOS: schuiven zonder los te
+  laten verplaatst het per kwartier, loslaten opent het blad (`ItemSheet.tsx`)
+  met de dag en de uren ingevuld. Het wordt een verplichte sessie of een
+  deadline bij een vak, want dat is wat Burgieclan bewaart.
+- **Gebruik meten** (`src/usage.ts`, `docs/app-gebruik.md` op de site): een
+  willekeurige installatie-id, sessies, schermen per dag en tikken op een
+  pushbericht. Elke aanvraag draagt `X-VTK-Client` en `X-VTK-Install`, zodat de
+  site een bestelling uit de app herkent. De cijfers staan onder Admin › Website
+  › App.
+- **Home**: "Voor jou" staat tussen je lessen en de Alma's, met altijd een kaart
+  naar KURT. "Kalender" bij de evenementen opent het tabblad Evenementen.
+- **Cursusdienst**: elke bestelling heeft een band in de kleur van haar stand,
+  pillen per cursus en het totaal; bovenaan drie tegels.
+- **Shiften** heeft een eigen foto op Home.
+- **Zoeken** opent pagina's, albums en menu-items in de app; enkel een andere
+  site gaat nog naar de browser.
+- **Foto's**: traploos zoomen rond je vingers, ingezoomd slepen met uitbollen tot
+  de rand, en dubbeltikken op een plek.

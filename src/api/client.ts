@@ -1,3 +1,7 @@
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+
+import { installId } from '../installId';
 import { clearCache, clearPref, getPref, setPref } from '../storage';
 import { APP_ERROR, type AppErrorBody } from './contract';
 
@@ -147,6 +151,18 @@ export class NetworkError extends Error {
   }
 }
 
+/**
+ * Wie er belt: de site herkent er een bestelling of inschrijving uit de app aan
+ * (`TicketOrder.source`, `AppAction`), voor de cijfers onder Admin › Website ›
+ * App. Geen login en geen geheim; enkel statistiek.
+ */
+function APP_HEADERS(): Record<string, string> {
+  return {
+    'X-VTK-Client': `app/${Constants.expoConfig?.version ?? '?'} (${Platform.OS})`,
+    'X-VTK-Install': installId(),
+  };
+}
+
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
@@ -175,6 +191,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
       method: options.method ?? 'GET',
       headers: {
         Accept: 'application/json',
+        ...APP_HEADERS(),
         ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
       },
       body: options.body === undefined ? undefined : JSON.stringify(options.body),

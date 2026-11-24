@@ -59,7 +59,9 @@ export const TAB_ROUTES = {
     'alma',
   ],
   kalender: ['evenement/[id]', 'ticket/[slug]',
-    'ticket-bestellen/[slug]', 'mijn-tickets', 'meldingen'],
+    'ticket-bestellen/[slug]', 'mijn-tickets', 'meldingen',
+    // Een vak in de planner (Per vak) opent zijn pagina op Burgieclan.
+    'vak/[id]'],
   studies: [
     'studiegroep/[id]',
     'studiegroep/nieuw',

@@ -86,6 +86,23 @@ export function usePlanning(locale: AppLocale): PlanningHandle {
           ...data,
           items: data.items.map((i) => (i.id === operation.id ? { ...i, done: operation.value } : i)),
         };
+      } else if (data?.block && operation.op === 'taskDone') {
+        optimistic = {
+          ...data,
+          block: {
+            ...data.block,
+            tasks: data.block.tasks.map((t) => (t.id === operation.id ? { ...t, done: operation.value } : t)),
+          },
+        };
+      } else if (data?.block && operation.op === 'freeDay') {
+        const { date, value } = operation;
+        optimistic = {
+          ...data,
+          block: {
+            ...data.block,
+            freeDays: value ? [...new Set([...data.block.freeDays, date])] : data.block.freeDays.filter((d) => d !== date),
+          },
+        };
       }
       return apply(() => planningOperation(locale, operation), optimistic);
     },

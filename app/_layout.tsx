@@ -14,7 +14,8 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { AppProvider } from '../src/state/app';
+import { AppProvider, useApp } from '../src/state/app';
+import { trackEvent, UsageTracker } from '../src/usage';
 import { COLORS, SCANNER } from '../src/theme/tokens';
 
 void SplashScreen.preventAutoHideAsync();
@@ -56,6 +57,7 @@ export default function RootLayout() {
    */
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      trackEvent('push_open');
       const path = response.notification.request.content.data?.path;
       if (typeof path === 'string' && path.startsWith('/')) {
         // Met het tabscherm eronder, zodat terug niet uit de tab valt.
@@ -77,6 +79,7 @@ export default function RootLayout() {
           {/* De schermkop is licht, dus de statusbalk staat donker. Home zet hem
               licht zolang de foto bovenaan in beeld is (`HomeHero`). */}
           <StatusBar style="dark" />
+          <Usage />
           <Stack
             screenOptions={{
               headerShown: false,
@@ -109,4 +112,10 @@ export default function RootLayout() {
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
+}
+
+/** Telt schermen en sessies voor Admin › Website › App; zie `src/usage.ts`. */
+function Usage() {
+  const { locale } = useApp();
+  return <UsageTracker locale={locale} />;
 }

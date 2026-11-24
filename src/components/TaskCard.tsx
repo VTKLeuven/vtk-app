@@ -1,6 +1,8 @@
 import {
+  BookOpen,
   CalendarCheck,
   ChevronRight,
+  ExternalLink,
   MessageSquareText,
   Music,
   Sandwich,
@@ -98,6 +100,36 @@ export function TaskCard({ task }: { task: AppTodayTask }) {
       ) : !photo ? (
         <ChevronRight color={COLORS.muted} size={18} />
       ) : null}
+    </Pressable>
+  );
+}
+
+/**
+ * Een vaste kaart onder "Voor jou" die naar een andere site wijst, zoals KURT
+ * voor een bibplaats. Dezelfde vorm als een taak, met het pijltje naar buiten:
+ * het is geen scherm van de app en opent dus in de browser.
+ */
+export function LinkCard({ title, detail, onPress }: { title: string; detail: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={`${title}, ${detail}`}
+      accessibilityHint="Opent in de browser"
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+    >
+      <View style={styles.icon}>
+        <BookOpen color={COLORS.ink} size={20} />
+      </View>
+      <View style={styles.text}>
+        <Text style={styles.title} numberOfLines={2}>
+          {title}
+        </Text>
+        <Text style={styles.detail} numberOfLines={2}>
+          {detail}
+        </Text>
+      </View>
+      <ExternalLink color={COLORS.muted} size={17} />
     </Pressable>
   );
 }

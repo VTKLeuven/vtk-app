@@ -4,7 +4,9 @@ import { ExternalLink } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { baseUrl } from '../api/client';
 import { search } from '../api/endpoints';
+import { nativeRouteFor } from '../nativeRoute';
 import type { AppSearchResult } from '../api/contract';
 import { PageHead } from '../components/PageHead';
 import { SearchField } from '../components/SearchField';
@@ -65,19 +67,31 @@ export default function ZoekenScreen() {
     };
   }, [query, locale]);
 
+  /**
+   * Elk resultaat van vtk.be opent in de app: een evenement, een pagina uit het
+   * CMS, een album en een menu-item met een eigen scherm (`nativeRouteFor`) op
+   * hun scherm, en wat geen scherm heeft (een formulier, het contact) als pagina
+   * van vtk.be in de app (`web.tsx`). Enkel een andere site (het
+   * uitleenmateriaal op logistiek.vtk.be, een externe link) gaat naar de
+   * browser. Tot november 2026 opende alles behalve een evenement in de browser.
+   */
   const open = (result: AppSearchResult) => {
-    // Een pagina van deze site kan native; al de rest (een evenement met een
-    // eigen scherm daargelaten) opent op het web, want die schermen bestaan hier
-    // nog niet.
-    if (result.external) {
-      void WebBrowser.openBrowserAsync(result.href);
-      return;
-    }
     if (result.kind === 'event') {
       router.push(`/evenement/${result.id}`);
       return;
     }
-    void WebBrowser.openBrowserAsync(result.href);
+    const route = inAppRoute(result);
+    if (route) {
+      const [pathname, query] = route.split('?');
+      router.push(query ? { pathname, params: Object.fromEntries(new URLSearchParams(query)) } : pathname);
+      return;
+    }
+    const href = absolute(result.href);
+    if (isSite(href)) {
+      router.push({ pathname: '/web', params: { url: href, title: result.title } });
+      return;
+    }
+    void WebBrowser.openBrowserAsync(href);
   };
 
   return (
@@ -116,7 +130,7 @@ export default function ZoekenScreen() {
                 </Text>
               ) : null}
             </View>
-            {item.external ? <ExternalLink color={COLORS.muted} size={16} /> : null}
+            {leavesApp(item) ? <ExternalLink color={COLORS.muted} size={16} /> : null}
           </Pressable>
         )}
         ListEmptyComponent={
@@ -129,6 +143,53 @@ export default function ZoekenScreen() {
       />
     </>
   );
+}
+
+/** Hoort dit adres bij de site waar de app mee praat (of bij vtk.be)? */
+function isSite(href: string): boolean {
+  try {
+    const host = new URL(href).host;
+    return host === new URL(baseUrl()).host || host === 'vtk.be' || host === 'www.vtk.be';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Het scherm in de app voor een zoekresultaat van vtk.be, of `null`.
+ *
+ * Een pagina staat op `/<tab>/<slug>` of `/p/<slug>`, een album op
+ * `/media/<slug>`, beide eventueel met `/en` ervoor. Een menu-item (`link`) is
+ * een vast adres zoals `/piano`; dat vertaalt `nativeRouteFor`, net als in Meer.
+ */
+function inAppRoute(result: AppSearchResult): string | null {
+  const href = absolute(result.href);
+  // Cudi en een andere site: `nativeRouteFor` kent de winkel van cudi, al de rest is extern.
+  if (!isSite(href)) return nativeRouteFor(href);
+  let path: string;
+  try {
+    path = new URL(href).pathname.replace(/^\/en(?=\/|$)/, '').replace(/\/+$/, '');
+  } catch {
+    return null;
+  }
+  const native = nativeRouteFor(path || '/');
+  if (native) return native;
+  const parts = path.split('/').filter(Boolean);
+  if (result.kind === 'album' && parts[0] === 'media' && parts.length === 2) return `/album/${parts[1]}`;
+  if ((result.kind === 'page' || result.kind === 'link') && parts.length === 2 && parts[0] !== 'media') {
+    return `/pagina/${parts[1]}`;
+  }
+  return null;
+}
+
+/** Gaat dit resultaat naar een andere site? Enkel dan het pijltje naar buiten. */
+function leavesApp(result: AppSearchResult): boolean {
+  return result.kind !== 'event' && inAppRoute(result) === null && !isSite(absolute(result.href));
+}
+
+/** Een menu-item komt soms als pad binnen ("/piano"); dat hoort bij de site. */
+function absolute(href: string): string {
+  return href.startsWith('/') ? `${baseUrl()}${href}` : href;
 }
 
 const styles = StyleSheet.create({

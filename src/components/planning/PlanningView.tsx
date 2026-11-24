@@ -1,5 +1,13 @@
 import { useFocusEffect } from 'expo-router';
-import { AlertTriangle, CalendarPlus, Check, Flag, Settings2 } from 'lucide-react-native';
+import { AlertTriangle, CalendarPlus, Check, ChevronLeft, ChevronRight, Flag, GraduationCap, Settings2 } from 'lucide-react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Reanimated, {
+  runOnJS,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useSharedValue,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -21,6 +29,7 @@ import {
   dayNumber,
   dayRange,
   isoWeek,
+  shortDay,
   monthSpan,
   place,
   weekdayOf,
@@ -31,12 +40,25 @@ import {
   type Ref,
 } from '../../planning/grid';
 import { nowInLeuven } from '../../planning/now';
+import { buildSemester, defaultSemester, semesterKeys, semesterName } from '../../planning/overview';
 import { usePlanning } from '../../planning/usePlanning';
 import { getPref, setPref } from '../../storage';
+import { useTrackView } from '../../usage';
 import { COLORS, FONTS, PLANNING, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { Empty, ErrorState, Loading, StaleNotice } from '../ui';
 import { DetailSheet, ExportSheet, selectionOf, SettingsSheet, SetupForm, Sheet, type Selection } from './PlanningSheets';
 import { CARD_SHADOW } from '../HomeSection';
+import { BlokView } from './BlokView';
+import { ItemSheet, type ItemDraft } from './ItemSheet';
+import { CourseList, SemesterGrid, TotalsRow } from './OverviewViews';
+import {
+  PLANNING_MODES,
+  PlanningToolbar,
+  ToolbarButton,
+  ViewSheet,
+  ViewTitle,
+  type PlanningMode,
+} from './ViewPicker';
 
 const GUTTER = 44;
 const HOUR = 52;
@@ -46,6 +68,20 @@ const CHIP_ROW = 20;
 /** De marge links en rechts van de witte kaart rond het raster. */
 const GRID_MARGIN = 12;
 const SHOW_HIDDEN_KEY = 'planning-verborgen';
+/** Hoe lang je drukt voor er een nieuw blok verschijnt, hoe lang dat blok is, en per hoeveel minuten het verschuift. */
+const LONG_PRESS_MS = 350;
+const DRAFT_MINUTES = 60;
+const SNAP = 15;
+/** De weergave die iemand het laatst koos; in de blok wil je niet elke keer opnieuw naar Blok. */
+const MODE_KEY = 'planning-weergave';
+
+function storedMode(): PlanningMode | null {
+  const value = getPref(MODE_KEY);
+  return value && (PLANNING_MODES as readonly string[]).includes(value) ? (value as PlanningMode) : null;
+}
+
+/** "november 2026" wordt "nov 2026", zodat de week erbij past. */
+const shortMonth = (label: string) => label.replace(/^([a-z]{3})[a-z]+ /, '$1 ');
 
 const BLOCK_STYLE = {
   lecture: { backgroundColor: PLANNING.lectureBg, borderColor: PLANNING.lectureBorder, color: PLANNING.lectureText },
@@ -68,9 +104,35 @@ const BLOCK_STYLE = {
  * punten breed, en daarin past geen vaknaam. Drie is wat je vandaag en morgen
  * nodig hebt, en vegen brengt je verder.
  */
-export function PlanningView({ locale, onOpenEvent }: { locale: AppLocale; onOpenEvent: (id: string) => void }) {
+export function PlanningView({
+  locale,
+  onOpenEvent,
+  onOpenCourse,
+  onOpenStudies,
+}: {
+  locale: AppLocale;
+  onOpenEvent: (id: string) => void;
+  /** Een vak uit de catalogus van Burgieclan (`/vak/<id>`). */
+  onOpenCourse: (id: string) => void;
+  /** Studies › Samen blokken, voor de studietimer. */
+  onOpenStudies: () => void;
+}) {
   const handle = usePlanning(locale);
   const { resource, data } = handle;
+  const [chosenMode, setChosenMode] = useState<PlanningMode | null>(storedMode);
+  const [picking, setPicking] = useState(false);
+  // Een nieuw blok dat iemand in de week neerzette door lang te drukken; het blad vult de rest in.
+  const [draft, setDraft] = useState<ItemDraft | null>(null);
+  const [semesterChoice, setSemesterChoice] = useState<string | null>(null);
+  const [openCourse, setOpenCourse] = useState<string | null>(null);
+  // Zonder lessenrooster maar met iets in de blokkalender: dat is wat er te zien is.
+  const hasBlok = data?.block ? data.block.exams.length + data.block.tasks.length > 0 : false;
+  const mode: PlanningMode = chosenMode ?? (data && !data.subscribed && hasBlok ? 'blok' : 'week');
+  const setMode = (next: PlanningMode) => {
+    setPref(MODE_KEY, next);
+    setChosenMode(next);
+  };
+  useTrackView(data ? `kalender:planning${mode === 'week' ? '' : `:${mode}`}` : null);
   const [selection, setSelection] = useState<Selection>(null);
   const [exporting, setExporting] = useState(false);
   const [settings, setSettings] = useState(false);
@@ -89,6 +151,54 @@ export function PlanningView({ locale, onOpenEvent }: { locale: AppLocale; onOpe
 
   const days = useMemo(() => (data ? dayRange(data) : []), [data]);
   const content = useMemo(() => (data ? contentByDay(data, showHidden) : new Map<string, DayContent>()), [data, showHidden]);
+  const keys = useMemo(() => (data ? semesterKeys(data) : []), [data]);
+  const fallbackSemester = data ? defaultSemester(data, keys) : null;
+  const semester = semesterChoice && keys.includes(semesterChoice) ? semesterChoice : fallbackSemester;
+  const overview = useMemo(() => {
+    if (!data || !semester) return null;
+    const now = nowInLeuven();
+    return buildSemester(data, semester, data.today === now.date ? now.minutes : data.now);
+  }, [data, semester]);
+
+  const title = (subtitle: string | null) => (
+    <ViewTitle mode={mode} subtitle={subtitle} onPress={() => setPicking(true)} />
+  );
+  const settingsButton = data?.subscribed ? (
+    <ToolbarButton label="Instellingen van de planning" onPress={() => setSettings(true)}>
+      <Settings2 size={19} color={COLORS.ink} />
+    </ToolbarButton>
+  ) : null;
+  const sheets = data ? (
+    <>
+      <ViewSheet visible={picking} mode={mode} onChange={setMode} onClose={() => setPicking(false)} />
+      {data.subscribed && draft ? (
+        <ItemSheet key={`${draft.date}-${draft.startMin}`} draft={draft} handle={handle} onClose={() => setDraft(null)} />
+      ) : null}
+      <DetailSheet handle={handle} selection={selection} onClose={() => setSelection(null)} onOpenEvent={onOpenEvent} />
+      <ExportSheet visible={exporting} handle={handle} onClose={() => setExporting(false)} />
+      <SettingsSheet
+        visible={settings}
+        handle={handle}
+        showHidden={showHidden}
+        onToggleHidden={() => {
+          setPref(SHOW_HIDDEN_KEY, showHidden ? '0' : '1');
+          setShowHiddenState(!showHidden);
+        }}
+        onChangeLink={() => {
+          setSettings(false);
+          setRelinking(true);
+        }}
+        onClose={() => setSettings(false)}
+      />
+      <Sheet visible={relinking} title="Ander lessenrooster koppelen" onClose={() => setRelinking(false)}>
+        <Text style={styles.setupText}>
+          Met een andere link begint een nieuw rooster: wat je bij lessen aanduidde, gaat weg. Je
+          wekelijkse regels, je deadlines en je VTK-evenementen blijven.
+        </Text>
+        <SetupForm handle={handle} initial={data.icsUrl} onDone={() => setRelinking(false)} />
+      </Sheet>
+    </>
+  ) : null;
 
   if (resource.loading && !data) return <Loading label="Planning ophalen" />;
   if (!data) {
@@ -106,13 +216,41 @@ export function PlanningView({ locale, onOpenEvent }: { locale: AppLocale; onOpe
     );
   }
 
+  const refresh = <RefreshControl refreshing={resource.refreshing} onRefresh={() => void resource.refresh()} />;
+
+  if (mode === 'blok') {
+    return (
+      <View style={styles.root}>
+        <ScrollView style={styles.root} keyboardShouldPersistTaps="handled" refreshControl={refresh}>
+          {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
+          <BlokView
+            handle={handle}
+            onOpenStudies={onOpenStudies}
+            header={<PlanningToolbar left={title('Examens en wat je per dag wil doen')}>{settingsButton}</PlanningToolbar>}
+          />
+        </ScrollView>
+        {sheets}
+      </View>
+    );
+  }
+
   if (!data.subscribed) {
     return (
-      <ScrollView
-        contentContainerStyle={styles.padded}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={resource.refreshing} onRefresh={() => void resource.refresh()} />}
-      >
+      <View style={styles.root}>
+      <ScrollView keyboardShouldPersistTaps="handled" refreshControl={refresh}>
+        <PlanningToolbar left={title(null)} />
+        <View style={styles.padded}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setMode('blok')}
+          style={({ pressed }) => [styles.blokHint, pressed && styles.pressed]}
+        >
+          <GraduationCap size={18} color={COLORS.ink} />
+          <Text style={styles.blokHintText}>
+            Enkel je examens plannen? De blokkalender werkt ook zonder lessenrooster.
+          </Text>
+          <ChevronRight size={18} color={COLORS.muted} />
+        </Pressable>
         <Text style={styles.setupTitle}>Je lessenrooster en VTK in één agenda</Text>
         <Text style={styles.setupText}>
           Koppel je KU Leuven-lessenrooster één keer. Je planning is dezelfde als die op Burgieclan:
@@ -120,7 +258,74 @@ export function PlanningView({ locale, onOpenEvent }: { locale: AppLocale; onOpe
           abonneer je agenda-app op het geheel.
         </Text>
         <SetupForm handle={handle} />
+        </View>
       </ScrollView>
+      {sheets}
+      </View>
+    );
+  }
+
+  if (mode === 'vak' || mode === 'semester') {
+    const index = semester ? keys.indexOf(semester) : -1;
+    const eyebrow = overview
+      ? overview.current
+        ? `${semesterName(overview.key)} · week ${overview.current} van ${overview.totalWeeks}`
+        : `${semesterName(overview.key)} · ${shortDay(overview.firstDate)} - ${shortDay(overview.lastDate)}`
+      : null;
+    return (
+      <View style={styles.root}>
+        <ScrollView style={styles.root} refreshControl={refresh}>
+          {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
+          <PlanningToolbar left={title(eyebrow)}>
+            {keys.length > 1 ? (
+              <>
+                <ToolbarButton label="Vorig semester" disabled={index <= 0} onPress={() => setSemesterChoice(keys[index - 1])}>
+                  <ChevronLeft size={20} color={COLORS.ink} />
+                </ToolbarButton>
+                <ToolbarButton
+                  label="Volgend semester"
+                  disabled={index < 0 || index >= keys.length - 1}
+                  onPress={() => setSemesterChoice(keys[index + 1])}
+                >
+                  <ChevronRight size={20} color={COLORS.ink} />
+                </ToolbarButton>
+              </>
+            ) : null}
+            {settingsButton}
+          </PlanningToolbar>
+          <View style={styles.overview}>
+            {!overview ? (
+              <Empty
+                title="Nog geen lessen"
+                hint="Zodra je lessenrooster lessen bevat, zie je hier per vak wat je afvinkte en wat je nog moet inhalen."
+              />
+            ) : (
+              <>
+                <TotalsRow totals={overview.totals} />
+                {mode === 'vak' ? (
+                  <CourseList
+                    data={overview}
+                    open={openCourse}
+                    onToggle={(key) => setOpenCourse(openCourse === key ? null : key)}
+                    handle={handle}
+                    onSelect={(uid) => setSelection({ kind: 'session', id: uid })}
+                    onOpenCourse={onOpenCourse}
+                  />
+                ) : (
+                  <SemesterGrid
+                    data={overview}
+                    onCourse={(key) => {
+                      setOpenCourse(key);
+                      setMode('vak');
+                    }}
+                  />
+                )}
+              </>
+            )}
+          </View>
+        </ScrollView>
+        {sheets}
+      </View>
     );
   }
 
@@ -145,6 +350,9 @@ export function PlanningView({ locale, onOpenEvent }: { locale: AppLocale; onOpe
         refreshing={resource.refreshing}
         onRefresh={() => void resource.refresh()}
         onSelect={(ref) => setSelection(selectionOf(ref))}
+        renderTitle={(subtitle) => title(subtitle)}
+        draft={draft}
+        onDraft={setDraft}
         toolbarRight={
           <>
             <IconButton label="Exporteren naar je agenda" onPress={() => setExporting(true)}>
@@ -157,29 +365,7 @@ export function PlanningView({ locale, onOpenEvent }: { locale: AppLocale; onOpe
         }
       />
 
-      <DetailSheet handle={handle} selection={selection} onClose={() => setSelection(null)} onOpenEvent={onOpenEvent} />
-      <ExportSheet visible={exporting} handle={handle} onClose={() => setExporting(false)} />
-      <SettingsSheet
-        visible={settings}
-        handle={handle}
-        showHidden={showHidden}
-        onToggleHidden={() => {
-          setPref(SHOW_HIDDEN_KEY, showHidden ? '0' : '1');
-          setShowHiddenState(!showHidden);
-        }}
-        onChangeLink={() => {
-          setSettings(false);
-          setRelinking(true);
-        }}
-        onClose={() => setSettings(false)}
-      />
-      <Sheet visible={relinking} title="Ander lessenrooster koppelen" onClose={() => setRelinking(false)}>
-        <Text style={styles.setupText}>
-          Met een andere link begint een nieuw rooster: wat je bij lessen aanduidde, gaat weg. Je
-          wekelijkse regels, je deadlines en je VTK-evenementen blijven.
-        </Text>
-        <SetupForm handle={handle} initial={data.icsUrl} onDone={() => setRelinking(false)} />
-      </Sheet>
+      {sheets}
     </View>
   );
 }
@@ -205,8 +391,14 @@ function Grid({
   refreshing,
   onRefresh,
   onSelect,
+  renderTitle,
+  draft,
+  onDraft,
   toolbarRight,
 }: {
+  renderTitle: (subtitle: string) => React.ReactNode;
+  draft: ItemDraft | null;
+  onDraft: (draft: ItemDraft) => void;
   planningToday: string;
   days: string[];
   content: Map<string, DayContent>;
@@ -224,6 +416,17 @@ function Grid({
   const [scrollX] = useState(() => new Animated.Value(todayIndex * column));
   const list = useRef<FlatList<string>>(null);
   const vertical = useRef<ScrollViewInstance>(null);
+  // Het blok dat je aan het neerzetten bent: waar het nu staat, in minuten.
+  const draftStart = useSharedValue(0);
+  const [placing, setPlacing] = useState<string | null>(null);
+  const startPlacing = useCallback((date: string) => setPlacing(date), []);
+  const finishPlacing = useCallback(
+    (date: string, startMin: number) => {
+      setPlacing(null);
+      onDraft({ date, startMin, endMin: Math.min(startMin + DRAFT_MINUTES, 24 * 60) });
+    },
+    [onDraft],
+  );
 
   useEffect(() => {
     const id = setInterval(() => setNow(nowInLeuven()), 60_000);
@@ -260,8 +463,7 @@ function Grid({
     <View style={styles.root}>
       <View style={styles.toolbar}>
         <View style={styles.toolbarLabel}>
-          <Text style={styles.month}>{label}</Text>
-          {visible[0] ? <Text style={styles.week}>Week {isoWeek(visible[0])}</Text> : null}
+          {renderTitle(visible[0] ? `${shortMonth(label)} · week ${isoWeek(visible[0])}` : label)}
         </View>
         <Pressable
           accessibilityRole="button"
@@ -303,6 +505,7 @@ function Grid({
 
       <ScrollView
         ref={vertical}
+        scrollEnabled={placing === null}
         style={styles.root}
         contentOffset={{ x: 0, y: initialY }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -326,6 +529,7 @@ function Grid({
               keyExtractor={(date) => date}
               getItemLayout={(_, index) => ({ length: column, offset: column * index, index })}
               initialScrollIndex={todayIndex}
+              scrollEnabled={placing === null}
               snapToInterval={column}
               decelerationRate="fast"
               showsHorizontalScrollIndicator={false}
@@ -336,7 +540,7 @@ function Grid({
               onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: true })}
               onMomentumScrollEnd={(e) => onSettle(e.nativeEvent.contentOffset.x)}
               onScrollEndDrag={(e) => onSettle(e.nativeEvent.contentOffset.x)}
-              extraData={`${now.date}:${now.minutes}:${content.size}`}
+              extraData={`${now.date}:${now.minutes}:${content.size}:${placing ?? ''}:${draft?.date ?? ''}:${draft?.startMin ?? ''}`}
               renderItem={({ item }) => (
                 <DayColumn
                   date={item}
@@ -344,6 +548,11 @@ function Grid({
                   blocks={content.get(item)?.blocks ?? []}
                   nowMinutes={item === now.date ? now.minutes : null}
                   onSelect={onSelect}
+                  draftStart={draftStart}
+                  placing={placing === item}
+                  draft={draft?.date === item ? draft : null}
+                  onPlaceStart={startPlacing}
+                  onPlaceEnd={finishPlacing}
                 />
               )}
             />
@@ -420,16 +629,57 @@ const DayColumn = memo(function DayColumn({
   blocks,
   nowMinutes,
   onSelect,
+  draftStart,
+  placing,
+  draft,
+  onPlaceStart,
+  onPlaceEnd,
 }: {
   date: string;
   width: number;
   blocks: Block[];
   nowMinutes: number | null;
   onSelect: (ref: Ref) => void;
+  draftStart: SharedValue<number>;
+  /** Wordt er op deze dag net een blok neergezet (de vinger is nog niet los)? */
+  placing: boolean;
+  /** Het neergezette blok op deze dag, terwijl het blad openstaat. */
+  draft: ItemDraft | null;
+  onPlaceStart: (date: string) => void;
+  onPlaceEnd: (date: string, startMin: number) => void;
 }) {
   const placed = useMemo(() => place(blocks), [blocks]);
   const weekend = weekdayOf(date) >= 5;
+  const grabStart = useSharedValue(0);
+
+  /**
+   * Lang indrukken zet een blok van een uur neer, met je vinger in het midden;
+   * zonder los te laten schuif je het per kwartier, en loslaten opent het blad om
+   * het in te vullen. Zoals een nieuw evenement in Agenda op iOS.
+   *
+   * Een `Pan` die pas na het lang indrukken begint: een gewone veeg (scrollen,
+   * naar de volgende dagen) beweegt te vroeg en laat hem mislukken, en een tik op
+   * een les blijft een tik.
+   */
+  const gesture = Gesture.Pan()
+    .activateAfterLongPress(LONG_PRESS_MS)
+    .onStart((event) => {
+      const minute = (event.y / HOUR) * 60 - DRAFT_MINUTES / 2;
+      const start = Math.min(Math.max(Math.round(minute / SNAP) * SNAP, 0), 24 * 60 - DRAFT_MINUTES);
+      grabStart.value = start;
+      draftStart.value = start;
+      runOnJS(onPlaceStart)(date);
+    })
+    .onUpdate((event) => {
+      const minute = grabStart.value + (event.translationY / HOUR) * 60;
+      draftStart.value = Math.min(Math.max(Math.round(minute / SNAP) * SNAP, 0), 24 * 60 - DRAFT_MINUTES);
+    })
+    .onEnd(() => {
+      runOnJS(onPlaceEnd)(date, draftStart.value);
+    });
+
   return (
+    <GestureDetector gesture={gesture}>
     <View style={[styles.column, { width }, weekend && styles.weekend]}>
       {placed.map((block) => {
         const top = (block.startMin / 60) * HOUR + 1;
@@ -490,9 +740,54 @@ const DayColumn = memo(function DayColumn({
           <View style={styles.nowDot} />
         </View>
       ) : null}
+      {placing ? (
+        <DraftBlock start={draftStart} />
+      ) : draft ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.draft,
+            { top: (draft.startMin / 60) * HOUR + 1, height: ((draft.endMin - draft.startMin) / 60) * HOUR - 2 },
+          ]}
+        >
+          <Text style={styles.draftTime}>{clock(draft.startMin)}</Text>
+          <Text style={styles.draftTitle}>Nieuw</Text>
+        </View>
+      ) : null}
     </View>
+    </GestureDetector>
   );
 });
+
+/** Het blok onder je vinger terwijl je het neerzet, met het beginuur erin. */
+function DraftBlock({ start }: { start: SharedValue<number> }) {
+  const animated = useAnimatedStyle(() => ({ top: (start.value / 60) * HOUR + 1 }));
+  const [label, setLabel] = useState('');
+  // Het uur in de tekst volgt het blok; enkel bij een nieuw kwartier, dus zelden.
+  useAnimatedReactionLabel(start, setLabel);
+  return (
+    <Reanimated.View pointerEvents="none" style={[styles.draft, styles.draftLifted, { height: (DRAFT_MINUTES / 60) * HOUR - 2 }, animated]}>
+      <Text style={styles.draftTime}>{label}</Text>
+      <Text style={styles.draftTitle}>Nieuw</Text>
+    </Reanimated.View>
+  );
+}
+
+function useAnimatedReactionLabel(start: SharedValue<number>, onChange: (label: string) => void) {
+  useAnimatedReaction(
+    () => start.value,
+    (value, previous) => {
+      if (value !== previous) runOnJS(onChange)(clock(value));
+    },
+  );
+}
+
+const clock = (minutes: number) => {
+  'worklet';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h < 10 ? '0' : ''}${h}:${m < 10 ? '0' : ''}${m}`;
+};
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
@@ -501,6 +796,17 @@ const styles = StyleSheet.create({
   muted: { color: COLORS.muted },
 
   setupTitle: { ...TYPE.heading, color: COLORS.ink },
+  overview: { paddingHorizontal: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxl },
+  blokHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    padding: SPACING.md,
+    borderRadius: 16,
+    backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
+  },
+  blokHintText: { ...TYPE.small, color: COLORS.ink, flex: 1 },
   setupText: { ...TYPE.body, color: COLORS.body },
 
   warning: {
@@ -621,6 +927,28 @@ const styles = StyleSheet.create({
   done: { opacity: 0.55 },
   struck: { textDecorationLine: 'line-through' },
 
+  // Het nieuwe blok: in het geel van een actie, met een stippelrand tot het bewaard is.
+  draft: {
+    position: 'absolute',
+    left: 2,
+    right: 2,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: COLORS.ink,
+    backgroundColor: COLORS.yellow,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  draftLifted: {
+    shadowColor: COLORS.navy,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  draftTime: { fontFamily: FONTS.semibold, fontSize: 10.5, color: COLORS.ink, fontVariant: ['tabular-nums'] },
+  draftTitle: { fontFamily: FONTS.semibold, fontSize: 12, color: COLORS.ink },
   nowLine: { position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: PLANNING.danger },
   nowDot: {
     position: 'absolute',

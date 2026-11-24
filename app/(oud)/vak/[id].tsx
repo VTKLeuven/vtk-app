@@ -4,5 +4,5 @@ import { Redirect, useLocalSearchParams } from 'expo-router';
 
 export default function OudAdres() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return <Redirect href={`/studies/vak/${id}`} withAnchor />;
+  return <Redirect href={`/kalender/vak/${id}`} withAnchor />;
 }

@@ -31,6 +31,7 @@ import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { useTabParam } from '../useTabParam';
+import { useTrackView } from '../usage';
 
 type Tab = 'kopen' | 'mijne';
 
@@ -66,6 +67,7 @@ export default function TicketsScreen() {
     return viewer ? 'mijne' : 'kopen';
   });
   useTabParam<Tab>(params.tab, ['kopen', 'mijne'], setTab);
+  useTrackView(`tickets:${tab}`);
 
   const sales = useResource('tickets', () => fetchTicketEvents(locale), locale);
   const mine = useResource(
