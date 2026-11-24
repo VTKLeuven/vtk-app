@@ -6,7 +6,7 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'r
 import { fetchScanEvents } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { PageHead } from '../components/PageHead';
-import { Button, Empty, ErrorState, Loading } from '../components/ui';
+import { Button, CardList, Empty, ErrorState, Loading } from '../components/ui';
 import { formatDayShort, formatTime } from '../format';
 import { useTabRouter } from '../navigation';
 import { queueSizes } from '../scanner/storage';
@@ -91,7 +91,7 @@ export default function DeurScreen() {
             <Button label="Uitnodiging scannen" onPress={() => router.push('/scannen')} />
           </View>
         ) : (
-          <View style={styles.list}>
+          <CardList inset={0} style={styles.cardList}>
             {events.data.map((event) => {
               const pending = waiting.get(event.id) ?? 0;
               return (
@@ -122,7 +122,7 @@ export default function DeurScreen() {
                 </Pressable>
               );
             })}
-          </View>
+          </CardList>
         )}
       </ScrollView>
     </>
@@ -134,18 +134,17 @@ export default function DeurScreen() {
  * kaart per event.
  */
 const styles = StyleSheet.create({
+  cardList: { marginHorizontal: SPACING.lg },
   root: { flex: 1, backgroundColor: COLORS.paper },
   content: { paddingBottom: SPACING.xxl },
   empty: { padding: SPACING.lg, gap: SPACING.md },
-  list: { borderTopWidth: 1, borderTopColor: COLORS.line },
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
     paddingVertical: SPACING.md + 2,
-    paddingHorizontal: SPACING.xl - 4,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line,
+    paddingHorizontal: SPACING.lg,
   },
   pressed: { backgroundColor: COLORS.paper2 },
   text: { flex: 1, gap: 2 },

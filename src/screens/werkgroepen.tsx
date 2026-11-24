@@ -9,6 +9,7 @@ import { Prose } from '../components/Prose';
 import { Card, Empty, ErrorState, Loading } from '../components/ui';
 import { useApp } from '../state/app';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { CARD_SHADOW } from '../components/HomeSection';
 
 /**
  * De werkgroepen, per werkingsjaar.
@@ -107,11 +108,10 @@ const styles = StyleSheet.create({
   years: { gap: SPACING.sm, paddingBottom: SPACING.sm },
   year: {
     borderRadius: RADIUS.pill,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
     backgroundColor: COLORS.surface,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
+    ...CARD_SHADOW,
   },
   yearActive: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
   yearLabel: { ...TYPE.small, color: COLORS.body },

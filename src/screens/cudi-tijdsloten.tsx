@@ -10,6 +10,7 @@ import { Card, Empty, ErrorState, Loading, StaleNotice } from '../components/ui'
 import { formatDay, formatTime } from '../format';
 import { useApp } from '../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { CARD_SHADOW } from '../components/HomeSection';
 
 /**
  * Een tijdslot kiezen om je cursussen af te halen, zoals *Tijdslot reserveren* op
@@ -274,9 +275,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
+    borderRadius: 20,
+    ...CARD_SHADOW,
   },
   slotMine: { backgroundColor: COLORS.navy, borderColor: COLORS.navy },
   slotOff: { backgroundColor: COLORS.paper2, borderColor: COLORS.line },

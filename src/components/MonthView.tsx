@@ -13,6 +13,7 @@ import {
 } from '../monthGrid';
 import { eventDayKeys } from '../moments';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { CARD_SHADOW } from './HomeSection';
 
 /** Hoogstens zoveel stipjes per dag; daarboven wordt het een vlek. */
 const MAX_DOTS = 3;
@@ -174,11 +175,10 @@ export function MonthView({
 const styles = StyleSheet.create({
   root: {
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    borderRadius: 20,
     padding: SPACING.md,
     gap: SPACING.sm,
+    ...CARD_SHADOW,
   },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   arrow: { padding: SPACING.xs },

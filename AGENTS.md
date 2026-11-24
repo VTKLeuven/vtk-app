@@ -122,21 +122,30 @@ uitzondering: die werkt in Expo Go niet.
 6. **Geen emoji in de UI**; iconen komen uit `lucide-react-native`.
 7. **Nederlands in de interface**, Engelse vakterminologie waar dat natuurlijker
    is. **Geen em-dashes**, ook niet in code, comments of commits.
-8. **Het ontwerp komt van de site.** De tokens in `src/theme/tokens.ts` zijn de
-   enige plek met kleuren; verzin er geen. Geel enkel als accent, geen gradienten
-   en geen kaart in een kaart. De donkere `PageHead` opent elk scherm, precies
-   zoals `.vtk-page-head` dat op de site doet: navy met het technische patroon
-   (`PatternBand`) en een gele onderlijn van 5 px; tabbladen staan als pillen in
-   die kop. Sinds november 2026 leent elk scherm een patroon van de site in plaats
-   van een eigen app-vorm: de eventtegel met de gele datumpin (`EventTile`),
-   koppen met de gele lijn eronder (`SectionHeading`), registers met haarlijnen in
-   plaats van een witte kaart per regel, de agenda per week (`WeekHead`). Zoek bij
-   een nieuw scherm eerst het overeenkomende scherm op de site en neem dat over.
-   Praesidium hield bewust zijn eigen vorm; de muur van gezichten van de site werd
-   op een telefoon niet beter. Ook de scanner aan de deur volgt sinds november
-   2026 het lichte ontwerp met de navy kop (tot dan was hij donker, met het palet
-   van de webscanner); enkel het camerabeeld en de feedback na een scan zijn een
-   gekleurd vlak.
+8. **Het ontwerp is dat van de nieuwe Home (voorstel F1, november 2026).** De
+   tokens in `src/theme/tokens.ts` blijven de enige plek met kleuren (navy, geel,
+   papier van de site); verzin er geen. Geel enkel als accent, geen gradienten en
+   geen kaart in een kaart. Tot november 2026 opende elk scherm met de navy kop
+   van de site (patroon, gele lijn van 5 px); dat is voorbij. Nu:
+   - **`PageHead` is licht**: de titel op papier, een ronde witte terugknop, een
+     actie rechts als `HeadButton` (wit, rond, icoon in inkt), en tabbladen als
+     pillen, zwart voor wat open staat en wit voor de rest. Geen `onDark`-kleuren
+     in `right` of `children`.
+   - **Witte kaarten met een zachte schaduw** (`CARD_SHADOW` uit
+     `src/components/HomeSection.tsx`, radius 20) in plaats van kaarten met een
+     haarlijnrand. Een lijst is één kaart met haarlijnen tussen de rijen
+     (`CardList` in `ui.tsx`), geen register met haarlijnen op papier.
+   - **Koppen van een deel** (`SectionHeading`, `HomeSection`) zijn een klein
+     woord in kapitalen, gedempt, zonder gele lijn.
+   - De statusbalk staat donker; enkel Home zet hem licht zolang de foto bovenaan
+     in beeld is.
+   Home opent niet met `PageHead` maar met de aankomende evenementen als foto die
+   om de zeven seconden doorschuift (`HomeHero`); zonder evenementen valt het
+   terug op `PageHead`. **De transportplanning (`vervoer.tsx`) blijft bewust in
+   het oude ontwerp** (`PageHead navy`), omdat ze de telefoonweergave van
+   logistiek.vtk.be volgt. Praesidium hield zijn eigen vorm. De scanner aan de deur
+   volgt het lichte ontwerp; enkel het camerabeeld en de feedback na een scan zijn
+   een gekleurd vlak.
 9. **Home is vandaag, Meer is waar alles staat.** Home beantwoordt twee vragen:
    wat is er open, en wat wacht er op mij. De CMS-boom, de mensen, de piano en je
    profiel staan onder Meer. Zet een snelkoppeling niet op allebei; anders komt de

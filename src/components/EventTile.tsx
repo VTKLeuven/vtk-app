@@ -7,6 +7,7 @@ import { formatTime } from '../format';
 import { displayStart, momentsSummary } from '../moments';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { DatePin } from './DatePin';
+import { CARD_SHADOW } from './HomeSection';
 
 /**
  * Eén evenement als de tegel van de site (`apps/web/app/design/vtk-eventcard.css`),
@@ -127,10 +128,9 @@ export function EventTile({
 const styles = StyleSheet.create({
   tile: {
     backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    borderRadius: 20,
     overflow: 'hidden',
+    ...CARD_SHADOW,
   },
   pressed: { borderColor: COLORS.line2, opacity: 0.92 },
   shot: { backgroundColor: COLORS.paper2 },

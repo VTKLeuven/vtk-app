@@ -12,7 +12,8 @@ import { formatDay, formatTime } from '../format';
 import { useApp } from '../state/app';
 
 import { useTabRouter } from '../navigation';
-import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { COLORS, SPACING, TYPE } from '../theme/tokens';
+import { CARD_SHADOW } from '../components/HomeSection';
 
 /**
  * De piano in het kasteel reserveren.
@@ -206,13 +207,12 @@ const styles = StyleSheet.create({
   slots: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.sm },
   slot: {
     minWidth: 76,
-    borderRadius: RADIUS.sm,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
+    borderRadius: 20,
     backgroundColor: COLORS.surface,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     alignItems: 'center',
+    ...CARD_SHADOW,
   },
   // Geel voor wat van jou is, papier voor wat bezet is. Kleur is nooit het enige
   // signaal: er staat ook een naam of "jij" onder.

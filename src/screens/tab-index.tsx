@@ -3,37 +3,46 @@ import { Coins, ExternalLink, QrCode } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { fetchToday, setEventInterest } from '../api/endpoints';
+import type { AppCalendarEvent, AppLocale } from '../api/contract';
+import { fetchToday } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
-import { EventTile } from '../components/EventTile';
+import { HomeHero, shortWhen } from '../components/HomeHero';
+import { CARD_SHADOW, HomeSection } from '../components/HomeSection';
 import { PageHead } from '../components/PageHead';
 import { UpcomingLessonsList, useUpcomingLessons } from '../components/planning/UpcomingLessons';
 import { Prose } from '../components/Prose';
 import { ServiceList } from '../components/ServiceList';
 import { TaskCard } from '../components/TaskCard';
-import { Button, Card, ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
+import { Button, Card, ErrorState, Loading, StaleNotice } from '../components/ui';
 import { formatVouchers } from '../format';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 
+/** Zoveel evenementen staan er onder "Aankomende evenementen"; de rest staat in Kalender. */
+const MAX_EVENTS = 6;
+
 /**
- * Home: **vandaag**, in de banden van de homepage.
+ * Home: **vandaag**.
  *
  * Dit scherm beantwoordt de twee vragen waarmee iemand de app opent: *wat is er
- * open* en *wat wacht er op mij*. In die volgorde, allebei boven de vouw. Wie een
- * lessenrooster koppelde, ziet onder "Voor jou" ook zijn volgende drie lessen
- * (`useUpcomingLessons`), vandaag of anders de eerstvolgende dag.
+ * open* en *wat wacht er op mij*, en daarnaast wat VTK vandaag doet.
  *
- * De opbouw volgt de homepage van vtk.be (voorstel A van november 2026): een
- * navy kop met het technische patroon en de gele onderlijn, met de openingsuren
- * erin als "zonder kader"; daarna "Voor jou" als register op papier, de
- * aankomende evenementen als de eventtegels van de site op een lichtblauwe band,
- * en "Snel naar" als de kaarten van "Wat we doen", met een foto en de gele lijn.
+ * De opbouw is voorstel F1 van november 2026, "foto voorop":
  *
- * De kop scrolt mee en staat niet vast: met de openingsuren erin is ze te hoog om
- * het halve scherm te blijven innemen. Een navy vlak boven de inhoud vangt het
- * omlaag trekken op, zodat er geen papieren strook boven de kop verschijnt.
+ * - bovenaan de aankomende evenementen als foto over de volle breedte, die om de
+ *   zeven seconden doorschuiven en die je zelf kan vegen (`HomeHero`), met de groet
+ *   en je knoppen erbovenop;
+ * - Theokot, cudi en 't ElixIr als één witte balk (`ServiceList`);
+ * - je volgende drie lessen in één kaart (`UpcomingLessonsList`), voor wie een
+ *   lessenrooster koppelde;
+ * - "Voor jou" als witte kaarten (`TaskCard`), de broodjes met een foto;
+ * - de aankomende evenementen nog eens als lijst, en "Snel naar".
+ *
+ * Dit is het enige scherm dat niet met de navy `PageHead` opent, en dat is een
+ * keuze: Home is het scherm dat je het vaakst ziet, en daar draagt een foto van
+ * wat er vandaag gebeurt meer dan een patroon. Zonder aankomende evenementen valt
+ * het terug op de gewone kop.
  */
 export default function HomeScreen() {
   const router = useTabRouter();
@@ -49,17 +58,8 @@ export default function HomeScreen() {
   }
 
   const today = resource.data;
-
-  /**
-   * De ster meteen omzetten en pas daarna verversen. Wachten op het rondje zou
-   * betekenen dat een tik op een trage verbinding een seconde lang niets lijkt te
-   * doen, en dan tikt iedereen twee keer.
-   */
-  const toggleInterest = (id: string, next: boolean) => {
-    void setEventInterest(id, next)
-      .catch(() => undefined)
-      .then(() => resource.reload());
-  };
+  const greeting = today.greetingName ? `Dag ${today.greetingName}` : 'VTK Leuven';
+  const events = today.upcomingEvents.slice(0, MAX_EVENTS);
 
   const dayLabel = new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'nl-BE', {
     timeZone: 'Europe/Brussels',
@@ -69,13 +69,43 @@ export default function HomeScreen() {
   }).format(new Date(today.now));
   const kicker = dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1);
 
-  // Staat er niets tussen de kop en de aankomende evenementen, dan sluit die band
-  // meteen aan op de kop. Anders bleef er een witte strook van niets over.
-  const somethingAboveEvents =
-    resource.stale ||
-    today.tasks.length > 0 ||
-    upcoming.lessons.length > 0 ||
-    Boolean(today.announcement);
+  /** De knoppen rechtsboven: halfwit op een foto, wit met een schaduw op papier. */
+  const actions = (onPhoto: boolean) =>
+    viewer ? (
+      <View style={styles.headActions}>
+        {today.canScanTickets || today.canAcceptVouchers ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Een code scannen"
+            onPress={() => router.push('/scannen')}
+            hitSlop={6}
+            style={({ pressed }) => [
+              styles.round,
+              onPhoto ? styles.light : styles.glass,
+              pressed && styles.pressedHead,
+            ]}
+          >
+            <QrCode color={COLORS.ink} size={19} />
+          </Pressable>
+        ) : null}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Bonnetjes, ${formatVouchers(today.vouchers ?? 0, locale)} openstaand`}
+          onPress={() => router.push('/bonnetjes')}
+          hitSlop={6}
+          style={({ pressed }) => [
+            styles.pill,
+            onPhoto ? styles.light : styles.glass,
+            pressed && styles.pressedHead,
+          ]}
+        >
+          <Coins color={COLORS.ink} size={17} />
+          <Text style={styles.pillText}>
+            {formatVouchers(today.vouchers ?? 0, locale)}
+          </Text>
+        </Pressable>
+      </View>
+    ) : undefined;
 
   return (
     <View style={styles.root}>
@@ -95,55 +125,24 @@ export default function HomeScreen() {
         }
       >
         <View style={styles.overscroll} />
-        <PageHead
-          title={today.greetingName ? `Dag ${today.greetingName}` : 'VTK Leuven'}
-          kicker={kicker}
-          back={false}
-          right={
-            viewer ? (
-              <View style={styles.headActions}>
-                {today.canScanTickets || today.canAcceptVouchers ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Een code scannen"
-                    onPress={() => router.push('/scannen')}
-                    hitSlop={10}
-                    style={({ pressed }) => [styles.glassButton, pressed && styles.pressedDark]}
-                  >
-                    <QrCode color={COLORS.yellow} size={18} />
-                  </Pressable>
-                ) : null}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Bonnetjes, ${formatVouchers(today.vouchers ?? 0, locale)} openstaand`}
-                  onPress={() => router.push('/bonnetjes')}
-                  hitSlop={10}
-                  style={({ pressed }) => [styles.glass, pressed && styles.pressedDark]}
-                >
-                  <Coins color={COLORS.yellow} size={15} />
-                  <Text style={styles.glassText}>{formatVouchers(today.vouchers ?? 0, locale)}</Text>
-                </Pressable>
-              </View>
-            ) : undefined
-          }
-        >
-          <View style={styles.hours}>
-            <ServiceList services={today.services} />
-          </View>
-        </PageHead>
+        {events.length > 0 ? (
+          <HomeHero
+            events={events}
+            locale={locale}
+            greeting={greeting}
+            initial={today.greetingName ? today.greetingName.charAt(0).toUpperCase() : null}
+            actions={actions(true)}
+            onOpen={(id) => router.push(`/evenement/${id}`)}
+          />
+        ) : (
+          <PageHead title={greeting} kicker={kicker} back={false} right={actions(false)} />
+        )}
 
         {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
 
-        {today.tasks.length > 0 ? (
-          <View style={styles.section}>
-            <View style={styles.pad}>
-              <SectionHeading>Voor jou</SectionHeading>
-            </View>
-            <View style={styles.register}>
-              {today.tasks.map((task, index) => (
-                <TaskCard key={`${task.kind}-${task.at ?? index}`} task={task} />
-              ))}
-            </View>
+        {today.services.length > 0 ? (
+          <View style={styles.services}>
+            <ServiceList services={today.services} />
           </View>
         ) : null}
 
@@ -154,8 +153,18 @@ export default function HomeScreen() {
           onOpen={() => router.push({ pathname: '/kalender', params: { tab: 'planning' } })}
         />
 
+        {today.tasks.length > 0 ? (
+          <HomeSection title="Voor jou">
+            <View style={styles.stack}>
+              {today.tasks.map((task, index) => (
+                <TaskCard key={`${task.kind}-${task.at ?? index}`} task={task} />
+              ))}
+            </View>
+          </HomeSection>
+        ) : null}
+
         {today.announcement ? (
-          <View style={[styles.section, styles.pad]}>
+          <View style={styles.block}>
             <Card featured>
               <Text style={styles.cardTitle}>{today.announcement.title}</Text>
               <Prose>{today.announcement.body}</Prose>
@@ -172,47 +181,29 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
-        {today.upcomingEvents.length > 0 ? (
-          <View style={[styles.band, !somethingAboveEvents && styles.bandFlush]}>
-            <View style={styles.pad}>
-              <SectionHeading
-                right={
-                  <Pressable
-                    accessibilityRole="link"
-                    accessibilityLabel="Naar de kalender"
-                    onPress={() => router.push('/kalender')}
-                    hitSlop={8}
-                  >
-                    <Text style={styles.link}>Kalender →</Text>
-                  </Pressable>
-                }
-              >
-                Aankomende evenementen
-              </SectionHeading>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.carousel}
-              decelerationRate="fast"
-              snapToInterval={292 + SPACING.md}
-            >
-              {today.upcomingEvents.map((event) => (
-                <EventTile
+        {events.length > 0 ? (
+          <HomeSection
+            title="Aankomende evenementen"
+            link={{
+              label: 'Kalender',
+              accessibilityLabel: 'Naar de kalender',
+              onPress: () => router.push('/kalender'),
+            }}
+          >
+            <View style={styles.eventList}>
+              {events.map((event) => (
+                <EventRow
                   key={event.id}
                   event={event}
                   locale={locale}
-                  width={292}
                   onPress={() => router.push(`/evenement/${event.id}`)}
-                  onToggleInterest={viewer ? (next) => toggleInterest(event.id, next) : undefined}
                 />
               ))}
-            </ScrollView>
-          </View>
+            </View>
+          </HomeSection>
         ) : null}
 
-        <View style={[styles.section, styles.pad]}>
-          <SectionHeading>Snel naar</SectionHeading>
+        <HomeSection title="Snel naar">
           <Shortcuts
             onOpen={(route) => {
               // `/studies?tab=cudi`: de query als parameter, anders komt het vraagteken in het pad.
@@ -221,10 +212,10 @@ export default function HomeScreen() {
             }}
             onExternal={(url) => void WebBrowser.openBrowserAsync(url)}
           />
-        </View>
+        </HomeSection>
 
         {!viewer ? (
-          <View style={[styles.section, styles.pad]}>
+          <View style={styles.block}>
             <Card featured>
               <Text style={styles.cardTitle}>Log in met je VTK-account</Text>
               <Text style={styles.cardBody}>
@@ -237,7 +228,7 @@ export default function HomeScreen() {
         ) : null}
 
         {viewer && !gate && today.tasks.length === 0 ? (
-          <View style={[styles.section, styles.pad]}>
+          <View style={styles.block}>
             <Text style={styles.quiet}>
               Er wacht niets op je. Wat je bestelt of koopt, verschijnt hier vanzelf.
             </Text>
@@ -245,6 +236,44 @@ export default function HomeScreen() {
         ) : null}
       </ScrollView>
     </View>
+  );
+}
+
+/** Een evenement als rij: de affiche klein links, daarnaast wanneer, wat en waar. */
+function EventRow({
+  event,
+  locale,
+  onPress,
+}: {
+  event: AppCalendarEvent;
+  locale: AppLocale;
+  onPress: () => void;
+}) {
+  const when = shortWhen(event, locale);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={[event.title, when, event.location].filter(Boolean).join(', ')}
+      onPress={onPress}
+      style={({ pressed }) => [styles.eventRow, pressed && styles.pressed]}
+    >
+      <View style={styles.eventThumb}>
+        {event.imageUrl ? (
+          <Image source={{ uri: event.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} />
+        ) : null}
+      </View>
+      <View style={styles.eventText}>
+        <Text style={styles.eventWhen}>{when}</Text>
+        <Text style={styles.eventTitle} numberOfLines={1}>
+          {event.title}
+        </Text>
+        {event.location ? (
+          <Text style={styles.eventWhere} numberOfLines={1}>
+            {event.location}
+          </Text>
+        ) : null}
+      </View>
+    </Pressable>
   );
 }
 
@@ -326,56 +355,50 @@ const styles = StyleSheet.create({
   },
 
   headActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  // Op een navy band zijn panelen "dark glass", zoals op de site.
-  glassButton: {
-    width: 36,
-    height: 36,
-    borderRadius: RADIUS.pill,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  glass: {
+  round: { width: 44, height: 44, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    height: 36,
-    paddingHorizontal: SPACING.md,
+    height: 44,
+    paddingHorizontal: 14,
     borderRadius: RADIUS.pill,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
   },
-  glassText: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.onDark },
-  pressedDark: { opacity: 0.6 },
-  hours: { marginTop: SPACING.xl },
+  // Op een foto: wit, zodat het op elke affiche leesbaar blijft.
+  light: { backgroundColor: 'rgba(255,255,255,0.92)' },
+  // Op papier, zonder foto: wit met de schaduw van de kaarten.
+  glass: { backgroundColor: COLORS.surface, ...CARD_SHADOW },
+  pillText: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink },
+  pressedHead: { opacity: 0.6 },
 
-  section: { marginTop: SPACING.xl, gap: SPACING.md },
-  pad: { paddingHorizontal: SPACING.xl - 4 },
-  register: { borderTopWidth: 1, borderTopColor: COLORS.line },
+  services: { marginTop: SPACING.xl - 4, paddingHorizontal: SPACING.lg },
+  stack: { gap: 10 },
+  block: { marginTop: SPACING.xl + 2, paddingHorizontal: SPACING.lg },
+  pressed: { opacity: 0.7 },
 
-  band: {
-    marginTop: SPACING.xl,
+  eventList: { gap: SPACING.md, paddingHorizontal: SPACING.xs },
+  eventRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  eventThumb: {
+    width: 96,
+    height: 60,
+    borderRadius: 12,
+    overflow: 'hidden',
     backgroundColor: COLORS.paper2,
-    paddingVertical: SPACING.xl,
-    gap: SPACING.lg,
   },
-  bandFlush: { marginTop: 0 },
-  link: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.navy },
-  carousel: { gap: SPACING.md, paddingHorizontal: SPACING.xl - 4 },
+  eventText: { flex: 1, gap: 2 },
+  eventWhen: { fontFamily: FONTS.semibold, fontSize: 12, color: COLORS.ink, fontVariant: ['tabular-nums'] },
+  eventTitle: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink },
+  eventWhere: { ...TYPE.small, color: COLORS.muted },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md },
   aanbod: {
     width: '47.8%',
     backgroundColor: COLORS.surface,
     borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.line,
     overflow: 'hidden',
+    ...CARD_SHADOW,
   },
-  aanbodPressed: { borderColor: COLORS.line2, opacity: 0.92 },
+  aanbodPressed: { opacity: 0.85 },
   aanbodPhoto: { width: '100%', aspectRatio: 16 / 9, backgroundColor: COLORS.paper2 },
   aanbodBody: {
     flexDirection: 'row',
@@ -397,5 +420,5 @@ const styles = StyleSheet.create({
 
   cardTitle: { ...TYPE.cardTitle, color: COLORS.ink },
   cardBody: { ...TYPE.body, color: COLORS.body },
-  quiet: { ...TYPE.small, color: COLORS.muted },
+  quiet: { ...TYPE.small, color: COLORS.muted, paddingHorizontal: SPACING.xs },
 });

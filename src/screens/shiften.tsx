@@ -22,6 +22,7 @@ import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { groupByWeek } from '../weeks';
+import { CARD_SHADOW } from '../components/HomeSection';
 
 /**
  * Shiften: de agenda van /shift.
@@ -395,10 +396,9 @@ const styles = StyleSheet.create({
   week: { gap: SPACING.sm },
   day: {
     backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    borderRadius: 20,
     overflow: 'hidden',
+    ...CARD_SHADOW,
   },
   dayHead: {
     flexDirection: 'row',

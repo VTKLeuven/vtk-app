@@ -20,7 +20,7 @@ import {
   updateStudyGroup,
 } from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
-import { PageHead } from '../../components/PageHead';
+import { HeadButton, PageHead } from '../../components/PageHead';
 import { Skyline, relativeBuildings } from '../../components/Skyline';
 import { Button, Card, ErrorState, Loading } from '../../components/ui';
 import { formatSpan } from '../../format';
@@ -146,14 +146,9 @@ export default function StudiegroepScreen() {
         kicker="Blokgroep"
         subtitle={`${group.memberCount} ${group.memberCount === 1 ? 'lid' : 'leden'}`}
         right={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Code delen"
-            onPress={() => void share()}
-            hitSlop={10}
-          >
-            <Share2 color={COLORS.yellow} size={21} />
-          </Pressable>
+          <HeadButton accessibilityLabel="Code delen" onPress={() => void share()}>
+            <Share2 color={COLORS.ink} size={21} />
+          </HeadButton>
         }
       />
 

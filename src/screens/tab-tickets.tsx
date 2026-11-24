@@ -21,10 +21,11 @@ import { baseUrl } from '../api/client';
 import type { AppMyOrder, AppMyTicket } from '../api/contract';
 import { fetchMyTickets, fetchTicketEvents } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
-import { PageHead } from '../components/PageHead';
+import { CARD_SHADOW } from '../components/HomeSection';
+import { HeadButton, PageHead } from '../components/PageHead';
 import { DatePin } from '../components/DatePin';
 import { VtkQr } from '../components/VtkQr';
-import { Button, Card, Empty, ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
+import { Button, Card, Empty, ErrorState, Loading, StaleNotice } from '../components/ui';
 import { formatDay, formatEuro } from '../format';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
@@ -94,14 +95,9 @@ export default function TicketsScreen() {
         }}
         right={
           bootstrap?.abilities?.scanTickets ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Tickets scannen"
-              onPress={() => router.push('/deur')}
-              hitSlop={10}
-            >
-              <ScanLine color={COLORS.yellow} size={22} />
-            </Pressable>
+            <HeadButton accessibilityLabel="Tickets scannen" onPress={() => router.push('/deur')}>
+              <ScanLine color={COLORS.ink} size={22} />
+            </HeadButton>
           ) : undefined
         }
       />
@@ -328,7 +324,9 @@ function Order({
 }) {
   return (
     <View style={[styles.order, past && styles.orderPast]}>
-      <SectionHeading>{order.event.title}</SectionHeading>
+      <Text accessibilityRole="header" style={styles.orderTitle}>
+        {order.event.title}
+      </Text>
       <Text style={styles.hint}>{formatDay(order.event.startsAt, locale)}</Text>
       {order.event.location ? <Text style={styles.hint}>{order.event.location}</Text> : null}
       <Text style={styles.hint}>Bestelling {order.orderNumber}</Text>
@@ -490,16 +488,19 @@ const styles = StyleSheet.create({
   // de prijs en de knop onderaan. Lager dan 16:9, zodat er meer onder elkaar past.
   ticket: {
     backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    overflow: 'hidden',
+    borderRadius: 22,
+    ...CARD_SHADOW,
   },
   pressed: { opacity: 0.92 },
-  shot: { aspectRatio: 2.4, backgroundColor: COLORS.paper2 },
-  photo: { ...StyleSheet.absoluteFill },
+  shot: {
+    aspectRatio: 2.4,
+    backgroundColor: COLORS.paper2,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+  },
+  photo: { ...StyleSheet.absoluteFill, borderTopLeftRadius: 22, borderTopRightRadius: 22 },
   pin: { position: 'absolute', right: SPACING.lg, bottom: -24 },
-  ticketBody: { paddingHorizontal: SPACING.lg, paddingTop: 8, paddingBottom: SPACING.md, gap: 4 },
+  ticketBody: { paddingHorizontal: SPACING.lg, paddingTop: 10, paddingBottom: SPACING.lg, gap: 4 },
   org: { fontFamily: FONTS.medium, fontSize: 12.5, color: COLORS.muted, paddingRight: 70 },
   titleWrap: {
     alignSelf: 'flex-start',
@@ -513,9 +514,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: SPACING.sm,
-    paddingTop: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.line,
   },
   priceCol: { flex: 1 },
   priceHint: { ...TYPE.small, fontSize: 12, color: COLORS.muted },
@@ -524,11 +522,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.ink,
     borderRadius: RADIUS.pill,
     paddingHorizontal: 18,
-    paddingVertical: 9,
+    minHeight: 40,
+    justifyContent: 'center',
   },
   ctaLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.paper },
 
   order: { gap: SPACING.sm },
+  orderTitle: { fontFamily: FONTS.bold, fontSize: 22, lineHeight: 27, letterSpacing: -0.6, color: COLORS.ink },
   orderPast: { opacity: 0.7 },
   cardTitle: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },

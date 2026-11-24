@@ -2,11 +2,11 @@ import * as WebBrowser from 'expo-web-browser';
 import { useLocalSearchParams } from 'expo-router';
 import { RotateCw } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { WebView, type WebViewNavigation } from 'react-native-webview';
 
 import { baseUrl } from '../api/client';
-import { PageHead } from '../components/PageHead';
+import { HeadButton, PageHead } from '../components/PageHead';
 import { handleShouldStartLoad } from '../components/WebFlow';
 import { Empty } from '../components/ui';
 import { COLORS } from '../theme/tokens';
@@ -74,14 +74,9 @@ export default function WebScreen() {
         compact
         title={title ?? 'vtk.be'}
         right={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Herladen"
-            onPress={() => setNonce((n) => n + 1)}
-            hitSlop={10}
-          >
-            <RotateCw color={COLORS.yellow} size={19} />
-          </Pressable>
+          <HeadButton accessibilityLabel="Herladen" onPress={() => setNonce((n) => n + 1)}>
+            <RotateCw color={COLORS.ink} size={19} />
+          </HeadButton>
         }
       />
       <WebView

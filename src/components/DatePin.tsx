@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { AppLocale } from '../api/contract';
 import { COLORS, FONTS } from '../theme/tokens';
+import { CARD_SHADOW } from './HomeSection';
 
 const TZ = 'Europe/Brussels';
 
@@ -24,7 +25,7 @@ export function DatePin({
   iso: string;
   locale: AppLocale;
   size?: 'sm' | 'md';
-  tone?: 'yellow' | 'quiet' | 'plain';
+  tone?: 'yellow' | 'quiet' | 'plain' | 'ink';
   /** De maand eronder; in een lijst per week is die overbodig. */
   month?: boolean;
   /** De schaduw van een pin die over een affiche hangt. */
@@ -48,12 +49,13 @@ export function DatePin({
         box,
         tone === 'quiet' && styles.quiet,
         tone === 'plain' && styles.plain,
+        tone === 'ink' && styles.ink,
         shadow && styles.shadow,
       ]}
     >
-      <Text style={styles.small}>{weekday}</Text>
-      <Text style={[styles.day, size === 'sm' && styles.daySm]}>{day}</Text>
-      {month ? <Text style={styles.small}>{monthLabel}</Text> : null}
+      <Text style={[styles.small, tone === 'ink' && styles.smallInk]}>{weekday}</Text>
+      <Text style={[styles.day, size === 'sm' && styles.daySm, tone === 'ink' && styles.dayInk]}>{day}</Text>
+      {month ? <Text style={[styles.small, tone === 'ink' && styles.smallInk]}>{monthLabel}</Text> : null}
     </View>
   );
 }
@@ -67,11 +69,12 @@ const styles = StyleSheet.create({
   md: { width: 54, height: 54, borderRadius: 14 },
   sm: { width: 44, height: 44, borderRadius: 12 },
   quiet: { backgroundColor: COLORS.paper2 },
-  plain: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
-  },
+  // Een dag om te kiezen, zoals bij de broodjes: wit met de zachte schaduw van een kaart.
+  plain: { backgroundColor: COLORS.surface, ...CARD_SHADOW },
+  // De gekozen dag: inkt, met de weekdag in het geel.
+  ink: { backgroundColor: COLORS.ink },
+  smallInk: { color: COLORS.yellow },
+  dayInk: { color: COLORS.paper },
   shadow: {
     shadowColor: '#080D1C',
     shadowOpacity: 0.45,

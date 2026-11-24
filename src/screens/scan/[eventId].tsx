@@ -24,7 +24,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { PageHead } from '../../components/PageHead';
+import { HeadButton, PageHead } from '../../components/PageHead';
 import { ConflictBanner, OfflineBanner, QueueBanner } from '../../components/scanner/Banners';
 import { ScannerFeedback } from '../../components/scanner/ScannerFeedback';
 import { ScanCounters } from '../../components/scanner/SessionPanel';
@@ -132,20 +132,17 @@ export default function ScanScreen() {
               </Text>
             </View>
             {bootstrap.canManageScanners ? (
-              <Pressable
+              <HeadButton
+                accessibilityLabel="Scanners beheren"
                 onPress={() => setSheet('scanners')}
                 disabled={!scanner.online}
-                hitSlop={12}
-                accessibilityLabel="Scanners beheren"
-                accessibilityRole="button"
-                style={!scanner.online && styles.dimmed}
               >
-                <UserRoundCog size={21} color={COLORS.onDark} />
-              </Pressable>
+                <UserRoundCog size={20} color={COLORS.ink} />
+              </HeadButton>
             ) : null}
-            <Pressable onPress={close} hitSlop={12} accessibilityLabel="Scanner sluiten" accessibilityRole="button">
-              <X size={22} color={COLORS.onDark} />
-            </Pressable>
+            <HeadButton accessibilityLabel="Scanner sluiten" onPress={close}>
+              <X size={21} color={COLORS.ink} />
+            </HeadButton>
           </View>
         }
       />
@@ -361,7 +358,7 @@ const styles = StyleSheet.create({
   retryText: { fontFamily: FONTS.semibold, fontSize: 14, color: SCANNER.accentInk },
   retryOnDark: { backgroundColor: SCANNER.reticle },
   retryTextOnDark: { color: COLORS.ink },
-  headActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  headActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   dimmed: { opacity: 0.4 },
   pill: {
     flexDirection: 'row',

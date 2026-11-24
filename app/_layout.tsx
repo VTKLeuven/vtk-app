@@ -74,8 +74,9 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AppProvider>
-          {/* De schermkop is navy, dus de statusbalk staat licht. */}
-          <StatusBar style="light" />
+          {/* De schermkop is licht, dus de statusbalk staat donker. Home zet hem
+              licht zolang de foto bovenaan in beeld is (`HomeHero`). */}
+          <StatusBar style="dark" />
           <Stack
             screenOptions={{
               headerShown: false,

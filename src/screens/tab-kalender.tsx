@@ -9,7 +9,7 @@ import { messageFor, useResource } from '../api/useResource';
 import { EventTile } from '../components/EventTile';
 import { MonthView } from '../components/MonthView';
 import { PlanningView } from '../components/planning/PlanningView';
-import { PageHead } from '../components/PageHead';
+import { HeadButton, PageHead } from '../components/PageHead';
 import { Empty, ErrorState, Loading, StaleNotice, WeekHead } from '../components/ui';
 import { formatDay } from '../format';
 import { anchorOf, dayKeyOf, gridRange, todayKey, type MonthAnchor } from '../monthGrid';
@@ -20,6 +20,7 @@ import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { useTabParam } from '../useTabParam';
 import { groupByWeek } from '../weeks';
+import { CARD_SHADOW } from '../components/HomeSection';
 
 /** De tabbladen in de kop. */
 type Tab = 'planning' | 'agenda' | 'mijn';
@@ -163,14 +164,9 @@ export default function KalenderScreen() {
   };
 
   const bell = viewer ? (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Meldingen instellen"
-      onPress={() => router.push('/meldingen')}
-      hitSlop={10}
-    >
-      <Bell color={COLORS.yellow} size={20} />
-    </Pressable>
+    <HeadButton accessibilityLabel="Meldingen instellen" onPress={() => router.push('/meldingen')}>
+      <Bell color={COLORS.ink} size={20} />
+    </HeadButton>
   ) : undefined;
 
   // De planning heeft haar eigen verticale scroll (de uren van de dag), dus de
@@ -201,7 +197,7 @@ export default function KalenderScreen() {
         refreshControl={
           <RefreshControl
             refreshing={resource.refreshing}
-            tintColor={COLORS.onDark}
+            tintColor={COLORS.muted}
             onRefresh={() => void resource.refresh()}
           />
         }
@@ -349,14 +345,14 @@ function Segmented<T extends string>({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
   scrollContent: { paddingBottom: SPACING.xxl },
-  // Vangt het omlaag trekken op iOS op: daar verschijnt dan navy in plaats van papier.
+  // Wat boven de kop verschijnt als je op iOS omlaag trekt: papier, zoals de kop.
   overscroll: {
     position: 'absolute',
     top: -1000,
     left: 0,
     right: 0,
     height: 1000,
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.paper,
   },
   content: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.sm, gap: SPACING.md },
   week: { gap: SPACING.md, marginTop: SPACING.sm },
@@ -366,9 +362,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 3,
     borderRadius: RADIUS.pill,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
     backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
   },
   segment: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: RADIUS.pill },
   segmentActive: { backgroundColor: COLORS.ink },

@@ -14,6 +14,7 @@ import { ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice } from
 import { useTabRouter } from '../navigation';
 import { useApp } from '../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { CARD_SHADOW } from '../components/HomeSection';
 
 /**
  * Beheer: de admin van vtk.be, voor wie er rechten voor heeft.
@@ -364,10 +365,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.lg,
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    borderRadius: 20,
     padding: SPACING.lg,
+    ...CARD_SHADOW,
   },
   doorIcon: {
     width: 40,
@@ -381,13 +381,12 @@ const styles = StyleSheet.create({
   doorHint: { ...TYPE.small, fontSize: 12, color: COLORS.muted },
 
   pill: {
-    borderWidth: 1,
-    borderColor: COLORS.line,
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.pill,
     paddingHorizontal: 14,
     minHeight: 36,
     justifyContent: 'center',
+    ...CARD_SHADOW,
   },
   pillPrimary: { backgroundColor: COLORS.navy, borderColor: COLORS.navy },
   pillLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.ink },
@@ -398,12 +397,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingRight: 18,
     paddingLeft: 21,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    borderRadius: 18,
+    borderRadius: 20,
     backgroundColor: COLORS.surface,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.yellow,
+    ...CARD_SHADOW,
   },
   boTitle: { fontFamily: FONTS.semibold, fontSize: 16, lineHeight: 22, color: COLORS.ink },
   boPost: { gap: 4 },
@@ -461,9 +457,7 @@ const styles = StyleSheet.create({
   tile: {
     gap: 10,
     padding: 18,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    borderRadius: 18,
+    borderRadius: 20,
     backgroundColor: COLORS.surface,
     shadowColor: '#0A0F1F',
     shadowOpacity: 0.04,

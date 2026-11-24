@@ -11,7 +11,7 @@ import { fetchCalendarEvent, setEventInterest } from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
 import { Prose } from '../../components/Prose';
 import { PageHead } from '../../components/PageHead';
-import { Button, ErrorState, Loading, SectionHeading } from '../../components/ui';
+import { Button, CardList, ErrorState, Loading, SectionHeading } from '../../components/ui';
 import { addEventToDeviceCalendar, addResultMessage } from '../../deviceCalendar';
 import { formatDayShort, formatEventWhen, formatTimeRange } from '../../format';
 import { markdownToPlainText } from '../../markdown';
@@ -20,6 +20,7 @@ import { usePlanning } from '../../planning/usePlanning';
 import { useApp } from '../../state/app';
 import { useTabRouter } from '../../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
+import { CARD_SHADOW } from '../../components/HomeSection';
 
 /**
  * Eén evenement.
@@ -146,7 +147,7 @@ export default function EventScreen() {
       ) : null}
 
       <View style={styles.body}>
-        <View style={styles.facts}>
+        <CardList>
           <Fact label="Wanneer">
             {series && upcomingMoments.length > 0 ? (
               <View style={styles.moments}>
@@ -190,7 +191,7 @@ export default function EventScreen() {
               <Text style={styles.factText}>{themes}</Text>
             </Fact>
           ) : null}
-        </View>
+        </CardList>
 
         {event.ticketSlug ? (
           <Button label="Tickets" onPress={() => router.push(`/ticket/${event.ticketSlug}`)} />
@@ -260,7 +261,7 @@ export default function EventScreen() {
         {/* Twee verschillende plaatsen, dus twee regels met elk een zin uitleg.
             Als twee knoppen naast elkaar ("Zet in agenda", "Zet in mijn
             planning") was niet te zien wat het verschil was. */}
-        <View style={styles.saves}>
+        <CardList>
           <SaveRow
             icon={Smartphone}
             label="In de agenda van je telefoon"
@@ -284,7 +285,7 @@ export default function EventScreen() {
               onPress={togglePlanning}
             />
           ) : null}
-        </View>
+        </CardList>
 
         {event.description ? (
           <View style={styles.about}>
@@ -301,7 +302,7 @@ export default function EventScreen() {
                 ? 'Only those who chose to be visible. The counter above counts everyone.'
                 : 'Alleen wie zelf aangaf zichtbaar te willen zijn. De teller hierboven telt iedereen.'}
             </Text>
-            <View style={styles.attendees}>
+            <CardList>
               {event.attendees.map((attendee) => (
                 <View key={attendee.key} style={styles.attendee}>
                   <Text style={[styles.attendeeName, !attendee.name && styles.attendeeAnon]}>
@@ -317,7 +318,7 @@ export default function EventScreen() {
                   </Text>
                 </View>
               ))}
-            </View>
+            </CardList>
           </View>
         ) : null}
 
@@ -388,7 +389,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1000,
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.paper,
   },
   plate: {
     marginHorizontal: SPACING.xl - 4,
@@ -401,13 +402,11 @@ const styles = StyleSheet.create({
   photo: { ...StyleSheet.absoluteFill },
   body: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.lg, gap: SPACING.md },
 
-  facts: { borderTopWidth: 1, borderTopColor: COLORS.line2 },
+
   fact: {
     flexDirection: 'row',
     gap: SPACING.md,
     paddingVertical: 11,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line2,
   },
   factLabel: {
     width: 92,
@@ -451,14 +450,12 @@ const styles = StyleSheet.create({
   actionLabelPrimary: { color: COLORS.paper },
   note: { ...TYPE.small, color: COLORS.muted },
 
-  saves: { borderTopWidth: 1, borderTopColor: COLORS.line2 },
+
   save: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
     paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line,
   },
   saveText: { flex: 1, gap: 2 },
   saveLabel: { fontFamily: FONTS.semibold, fontSize: 15, lineHeight: 20, color: COLORS.ink },
@@ -467,22 +464,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: RADIUS.pill,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
     backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
   },
   saveActionActive: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
   saveActionLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.ink },
 
   about: { gap: SPACING.md, marginTop: SPACING.md },
-  attendees: { marginTop: SPACING.xs, borderTopWidth: 1, borderTopColor: COLORS.line },
+
   attendee: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: SPACING.md,
     paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line,
   },
   attendeeName: { ...TYPE.body, color: COLORS.ink, flex: 1 },
   attendeeAnon: { color: COLORS.muted, fontStyle: 'italic' },

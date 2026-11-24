@@ -8,6 +8,7 @@ import { PageHead } from '../components/PageHead';
 import { Card, Empty, ErrorState, Loading } from '../components/ui';
 import { useApp } from '../state/app';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { CARD_SHADOW } from '../components/HomeSection';
 
 /** Hoeveel jaren los in de balk staan; de rest zit erachter. */
 const YEARS_IN_BAR = 5;
@@ -115,11 +116,10 @@ const styles = StyleSheet.create({
   years: { gap: SPACING.sm, paddingBottom: SPACING.sm },
   year: {
     borderRadius: RADIUS.pill,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
     backgroundColor: COLORS.surface,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
+    ...CARD_SHADOW,
   },
   yearActive: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
   yearLabel: { ...TYPE.small, color: COLORS.body },

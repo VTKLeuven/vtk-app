@@ -16,6 +16,7 @@ import { refreshPushRegistration } from '../push';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { CARD_SHADOW } from '../components/HomeSection';
 
 /**
  * Profiel: wie je bent, en je shiften.
@@ -317,10 +318,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.md,
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    borderRadius: 20,
     padding: SPACING.lg,
+    ...CARD_SHADOW,
   },
   rowPressed: { backgroundColor: COLORS.paper2 },
   rowLabel: { ...TYPE.cardTitle, color: COLORS.ink, flex: 1 },

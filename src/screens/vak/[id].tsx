@@ -7,9 +7,9 @@ import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleS
 import type { AppBurgieclanCourse, AppBurgieclanDocument } from '../../api/contract';
 import { fetchBurgieclanCourse, fetchBurgieclanFile, setBurgieclanFavorite } from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
-import { PageHead } from '../../components/PageHead';
+import { HeadButton, PageHead } from '../../components/PageHead';
 import { EvaluationsView } from '../../components/studies/BurgieclanEvaluations';
-import { Empty, ErrorState, Loading, MarginRegister, StaleNotice } from '../../components/ui';
+import { CardList, Empty, ErrorState, Loading, MarginRegister, StaleNotice } from '../../components/ui';
 import { formatShortDate } from '../../format';
 import { useApp } from '../../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
@@ -107,16 +107,14 @@ export default function VakScreen() {
         title={course.name}
         subtitle={subtitleFor(course)}
         right={
-          <Pressable
-            accessibilityRole="button"
+          <HeadButton
             accessibilityLabel={starred ? 'Uit je vakken halen' : 'Bij je vakken zetten'}
-            accessibilityState={{ selected: starred, busy: starBusy }}
+            selected={starred}
             disabled={starBusy}
             onPress={() => void toggleStar()}
-            hitSlop={10}
           >
-            <Star size={22} color={COLORS.yellow} fill={starred ? COLORS.yellow : 'transparent'} />
-          </Pressable>
+            <Star size={21} color={starred ? COLORS.coinRim : COLORS.ink} fill={starred ? COLORS.yellow : 'transparent'} />
+          </HeadButton>
         }
         tabs={
           evaluations
@@ -155,7 +153,7 @@ export default function VakScreen() {
         {grouped.map(({ name, items }) => (
             <View key={name} style={styles.group}>
               {categories.length > 1 ? <Text style={styles.kicker}>{name}</Text> : null}
-              <View style={styles.register}>
+              <CardList>
                 {items.map((document) => (
                   <Pressable
                     key={document.id}
@@ -189,7 +187,7 @@ export default function VakScreen() {
                     )}
                   </Pressable>
                 ))}
-              </View>
+              </CardList>
             </View>
           ))}
 
@@ -262,14 +260,12 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: COLORS.ink,
   },
-  register: { borderTopWidth: 1, borderTopColor: COLORS.line2 },
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line2,
   },
   icon: {
     width: 36,

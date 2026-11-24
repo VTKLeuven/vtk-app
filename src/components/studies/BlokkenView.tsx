@@ -22,7 +22,7 @@ import {
   updateStudySession,
 } from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
-import { PageHead } from '../../components/PageHead';
+import { HeadButton, PageHead } from '../../components/PageHead';
 import {
   Skyline,
   buildingFor,
@@ -35,6 +35,7 @@ import { useApp } from '../../state/app';
 import { useTabRouter } from '../../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import type { StudiesTabs } from './tabs';
+import { CARD_SHADOW } from '../HomeSection';
 
 /**
  * Samen blokken.
@@ -222,14 +223,12 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
         tabs={tabs}
         right={
           group ? (
-            <Pressable
-              accessibilityRole="button"
+            <HeadButton
               accessibilityLabel={`Instellingen van ${group.name}`}
               onPress={() => router.push(`/studiegroep/${group.id}`)}
-              hitSlop={10}
             >
-              <Settings2 color={COLORS.yellow} size={21} />
-            </Pressable>
+              <Settings2 color={COLORS.ink} size={20} />
+            </HeadButton>
           ) : undefined
         }
       />
@@ -781,10 +780,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: 8,
     borderRadius: RADIUS.pill,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
     backgroundColor: COLORS.surface,
     marginRight: SPACING.sm,
+    ...CARD_SHADOW,
   },
   groupChipOn: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
   groupChipAdd: { paddingHorizontal: SPACING.md },

@@ -14,6 +14,7 @@ import { PageHead } from '../components/PageHead';
 import { SearchField } from '../components/SearchField';
 import { Empty, ErrorState, Loading, StaleNotice } from '../components/ui';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { CARD_SHADOW } from '../components/HomeSection';
 
 /**
  * De lokalenzoeker.
@@ -369,9 +370,8 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     paddingHorizontal: SPACING.md,
     borderRadius: RADIUS.pill,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
     backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
   },
   smallText: { ...TYPE.small, fontFamily: TYPE.cardTitle.fontFamily, color: COLORS.ink },
   dim: { opacity: 0.5 },
@@ -382,10 +382,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.md,
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    borderRadius: 20,
     padding: SPACING.md,
+    ...CARD_SHADOW,
   },
   rowPressed: { backgroundColor: COLORS.paper2 },
   rowText: { flex: 1, gap: 2 },

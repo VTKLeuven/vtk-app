@@ -19,6 +19,7 @@ import { Button, Card, Empty, ErrorState, Loading, StaleNotice } from '../compon
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { CARD_SHADOW } from '../components/HomeSection';
 
 /** Ruim genoeg voor een alinea; dezelfde grens als op de site (`MAX_OPEN_ANSWER_LENGTH`). */
 const MAX_OPEN_ANSWER = 2000;
@@ -298,14 +299,13 @@ const styles = StyleSheet.create({
   questionText: { ...TYPE.body, fontFamily: TYPE.cardTitle.fontFamily, color: COLORS.ink },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   choice: {
-    borderWidth: 1,
-    borderColor: COLORS.line2,
     borderRadius: RADIUS.pill,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     backgroundColor: COLORS.surface,
     minWidth: 64,
     alignItems: 'center',
+    ...CARD_SHADOW,
   },
   choiceSquare: { minWidth: 44, paddingHorizontal: SPACING.md },
   choiceSelected: { backgroundColor: COLORS.navy, borderColor: COLORS.navy },
@@ -316,13 +316,12 @@ const styles = StyleSheet.create({
   input: {
     ...TYPE.body,
     color: COLORS.ink,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
-    borderRadius: RADIUS.sm,
+    borderRadius: 20,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.surface,
     minHeight: 96,
     textAlignVertical: 'top',
+    ...CARD_SHADOW,
   },
 });

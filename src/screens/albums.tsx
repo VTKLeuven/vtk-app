@@ -6,11 +6,12 @@ import type { AppAlbum } from '../api/contract';
 import { fetchMedia } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { AlbumFeature, AlbumTile } from '../components/AlbumCard';
+import { CARD_SHADOW } from '../components/HomeSection';
 import { PageHead } from '../components/PageHead';
 import { SearchField } from '../components/SearchField';
 import { Empty, ErrorState, Loading, StaleNotice } from '../components/ui';
 import { useApp } from '../state/app';
-import { COLORS, DARK_GLASS, FONTS, SPACING, TYPE } from '../theme/tokens';
+import { COLORS, FONTS, SPACING, TYPE } from '../theme/tokens';
 
 /** Een rij in de lijst: het album dat een jaar opent, of twee naast elkaar. */
 type Row = { kind: 'feature'; album: AppAlbum } | { kind: 'pair'; albums: AppAlbum[] };
@@ -116,9 +117,9 @@ export default function AlbumsScreen() {
             style={({ pressed }) => [styles.searchButton, pressed && styles.pressed]}
           >
             {searching ? (
-              <X color={COLORS.onDark} size={18} />
+              <X color={COLORS.ink} size={19} />
             ) : (
-              <Search color={COLORS.onDark} size={18} />
+              <Search color={COLORS.ink} size={19} />
             )}
           </Pressable>
         }
@@ -220,14 +221,13 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
   // Dark glass, zoals elk bedieningselement op een navy band.
   searchButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: DARK_GLASS.background,
-    borderWidth: 1,
-    borderColor: DARK_GLASS.border,
+    backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
   },
   list: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xxl },
   count: { ...TYPE.small, color: COLORS.muted, marginTop: SPACING.md },

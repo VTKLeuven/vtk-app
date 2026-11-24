@@ -10,7 +10,8 @@ import { PageHead } from '../../components/PageHead';
 import { Prose } from '../../components/Prose';
 import { Button, Card, ErrorState, Loading } from '../../components/ui';
 import { useApp } from '../../state/app';
-import { COLORS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
+import { COLORS, SPACING, TYPE } from '../../theme/tokens';
+import { CARD_SHADOW } from '../../components/HomeSection';
 
 /**
  * Een contentpagina uit het CMS.
@@ -109,10 +110,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.md,
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    borderRadius: 20,
     padding: SPACING.lg,
+    ...CARD_SHADOW,
   },
   downloadPressed: { backgroundColor: COLORS.paper2 },
   downloadText: { flex: 1 },

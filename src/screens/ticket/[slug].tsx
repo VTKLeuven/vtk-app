@@ -16,7 +16,8 @@ import { Button, Card, Empty, ErrorState, Loading } from '../../components/ui';
 import { formatEventWhen, formatEuro } from '../../format';
 import { useApp } from '../../state/app';
 import { useTabRouter } from '../../navigation';
-import { COLORS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
+import { COLORS, SPACING, TYPE } from '../../theme/tokens';
+import { CARD_SHADOW } from '../../components/HomeSection';
 
 /**
  * Tickets kopen.
@@ -406,12 +407,11 @@ const styles = StyleSheet.create({
   input: {
     ...TYPE.body,
     color: COLORS.ink,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
-    borderRadius: RADIUS.sm,
+    borderRadius: 20,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
   },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between' },
 });

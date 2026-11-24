@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { CARD_SHADOW } from './HomeSection';
 import { PatternBand } from './PatternBand';
 
 export type HeadTab<T extends string> = {
@@ -18,30 +19,31 @@ export type HeadTab<T extends string> = {
 };
 
 /**
- * De donkere paginakop, `.vtk-page-head` uit `apps/web/app/design/vtk-base.css`.
+ * De paginakop: de titel van een scherm op papier, met eventueel een terugknop,
+ * een kleine regel erboven, een ondertitel, een actie rechts en tabbladen.
  *
- * Op de site opent elke pagina buiten de homepage hiermee: full-bleed navy met
- * het technische patroon op een derde sterkte, een lichte titel, een gedempte
- * ondertitel en een gele onderlijn van 5 px. In de app doet ze hetzelfde werk.
- * **Bouw geen tweede soort schermopener**; dat is een bestaande regel op de site
- * en ze geldt hier even hard. Home tekent dezelfde kop, met de openingsuren erin
- * (`children`).
- *
- * **Tabbladen horen in de kop** (`tabs`), als de pillen van de site: een volle
- * lichte pil voor wat open staat, een omlijnde voor de rest. Ze vervangen de gele
- * schuifschakelaar die vroeger onder de kop stond. Met `scroll` lopen ze op één
- * regel door tot over de rand, voor een lange rij zoals de jaartallen van de
- * albums; anders breken ze af naar een volgende regel.
+ * Tot november 2026 was dit `.vtk-page-head` van de site: full-bleed navy met het
+ * technische patroon en een gele onderlijn van 5 px. Sinds voorstel F1 (de nieuwe
+ * Home) is de app licht: de titel staat op de grond van het scherm, knoppen zijn
+ * witte ronde vlakjes met een zachte schaduw, en de tabbladen zijn pillen, zwart
+ * voor wat open staat en wit voor de rest. **Bouw geen tweede soort
+ * schermopener**; Home is de enige uitzondering (`HomeHero`).
  *
  * **De terugknop hoort hier en nergens anders.** De schermen draaien met
  * `headerShown: false`, dus er is geen systeemkop die er een tekent. Zonder deze
  * knop kwam je op iOS nergens meer weg zodra je één keer doorklikte. Hij staat
- * als kruimelpad boven de titel, zoals op de site, en verschijnt enkel wanneer er
- * iets is om naar terug te keren; een tabscherm zet `back={false}`.
+ * boven de titel en verschijnt enkel wanneer er iets is om naar terug te keren;
+ * een tabscherm zet `back={false}`.
  *
  * **`compact`** is voor een scherm dat zijn hoogte zelf nodig heeft, zoals de
  * planning onder Kalender: een kleinere titel, geen ondertitel en minder lucht.
- * Het blijft dezelfde kop (navy, patroon, gele lijn, pillen); enkel lager.
+ *
+ * Wat in `right` of `children` staat, staat op papier: geen `onDark`-kleuren meer.
+ * Voor een ronde knop rechts is er `HeadButton`.
+ *
+ * **`navy`** tekent nog de oude kop (navy, patroon, gele lijn). Enkel voor de
+ * transportplanning, die bewust de telefoonweergave van logistiek.vtk.be volgt
+ * en daarom in het oude ontwerp blijft.
  */
 /**
  * Vanaf deze lengte is de titel een naam en geen kop: een vak ("Elektrische
@@ -59,6 +61,7 @@ export function PageHead<T extends string = string>({
   backLabel = 'Terug',
   tabs,
   compact = false,
+  navy = false,
   children,
 }: {
   title: string;
@@ -73,7 +76,9 @@ export function PageHead<T extends string = string>({
   tabs?: { options: HeadTab<T>[]; value: T; onChange: (next: T) => void; scroll?: boolean };
   /** Een lagere kop; zie hierboven. */
   compact?: boolean;
-  /** Extra inhoud onderaan de kop, nog op de navy band. */
+  /** De oude navy kop; enkel voor de transportplanning, zie hierboven. */
+  navy?: boolean;
+  /** Extra inhoud onderaan de kop, op papier. */
   children?: React.ReactNode;
 }) {
   const insets = useSafeAreaInsets();
@@ -85,21 +90,36 @@ export function PageHead<T extends string = string>({
       style={[
         styles.head,
         compact && styles.headCompact,
-        { paddingTop: insets.top + (compact ? SPACING.sm : SPACING.md) },
+        navy && dark.head,
+        { paddingTop: insets.top + (compact ? SPACING.xs : SPACING.sm) },
       ]}
     >
-      <PatternBand offset={patternOffsetFor(title)} />
-
-      {showBack ? (
+      {navy ? <PatternBand offset={[-240, -120]} /> : null}
+      {showBack && navy ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={backLabel}
           onPress={() => router.back()}
           hitSlop={12}
-          style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+          style={({ pressed }) => [dark.back, pressed && styles.pressed]}
         >
           <ChevronLeft color={COLORS.onDarkMuted} size={18} />
-          <Text style={styles.backLabel}>{backLabel}</Text>
+          <Text style={dark.backLabel}>{backLabel}</Text>
+        </Pressable>
+      ) : showBack ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={backLabel}
+          onPress={() => router.back()}
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.back,
+            backLabel !== 'Terug' && styles.backWithLabel,
+            pressed && styles.pressed,
+          ]}
+        >
+          <ChevronLeft color={COLORS.ink} size={20} />
+          {backLabel !== 'Terug' ? <Text style={styles.backLabel}>{backLabel}</Text> : null}
         </Pressable>
       ) : compact ? null : (
         <View style={styles.noBack} />
@@ -107,11 +127,19 @@ export function PageHead<T extends string = string>({
 
       <View style={[styles.row, compact && styles.rowCompact]}>
         <View style={styles.text}>
-          {kicker && !compact ? <Text style={styles.kicker}>{kicker}</Text> : null}
-          <Text style={[styles.title, !compact && title.length > LONG_TITLE && styles.titleLong, compact && styles.titleCompact]}>
+          {kicker && !compact ? <Text style={[styles.kicker, navy && dark.muted]}>{kicker}</Text> : null}
+          <Text
+            accessibilityRole="header"
+            style={[
+              styles.title,
+              !compact && title.length > LONG_TITLE && styles.titleLong,
+              compact && styles.titleCompact,
+              navy && dark.title,
+            ]}
+          >
             {title}
           </Text>
-          {subtitle && !compact ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+          {subtitle && !compact ? <Text style={[styles.subtitle, navy && dark.muted]}>{subtitle}</Text> : null}
         </View>
         {right ? <View style={[styles.right, compact && styles.rightCompact]}>{right}</View> : null}
       </View>
@@ -152,6 +180,40 @@ export function PageHead<T extends string = string>({
   );
 }
 
+/**
+ * Een ronde knop voor `right` in de kop: wit, met de zachte schaduw van de kaarten
+ * op Home en een icoon in inkt. Altijd met een `accessibilityLabel`, want er staat
+ * geen tekst in.
+ */
+export function HeadButton({
+  accessibilityLabel,
+  onPress,
+  children,
+  disabled = false,
+  selected,
+}: {
+  accessibilityLabel: string;
+  onPress: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+  /** Voor een knop die aan of uit staat, zoals een ster. */
+  selected?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled, selected }}
+      disabled={disabled}
+      onPress={onPress}
+      hitSlop={4}
+      style={({ pressed }) => [styles.headButton, pressed && styles.pressed, disabled && styles.disabled]}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
 function TabPill<T extends string>({
   option,
   active,
@@ -182,24 +244,88 @@ function TabPill<T extends string>({
   );
 }
 
-/**
- * Elk scherm een eigen uitsnede van het patroon, afgeleid van de titel. Op de
- * site heeft elke band zijn eigen crop; zo toont ook hier geen twee koppen
- * hetzelfde stuk.
- */
-function patternOffsetFor(title: string): [number, number] {
-  let hash = 0;
-  for (const char of title) hash = (hash * 31 + char.charCodeAt(0)) % 9973;
-  return [-((hash * 7) % 620), -((hash * 13) % 620)];
-}
-
 const styles = StyleSheet.create({
   head: {
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.paper,
     paddingHorizontal: SPACING.xl - 4,
+    paddingBottom: SPACING.md,
+  },
+  headCompact: { paddingBottom: SPACING.sm },
+  back: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    width: 40,
+    height: 40,
+    marginBottom: SPACING.md,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
+  },
+  backWithLabel: { width: undefined, paddingLeft: 8, paddingRight: 14 },
+  backLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink },
+  noBack: { height: SPACING.lg },
+  pressed: { opacity: 0.6 },
+  disabled: { opacity: 0.4 },
+  row: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.md },
+  text: { flex: 1, gap: 6 },
+  rowCompact: { alignItems: 'center' },
+  right: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingBottom: 2 },
+  rightCompact: { paddingBottom: 0 },
+  kicker: { ...TYPE.small, fontSize: 14, color: COLORS.muted },
+  title: { fontFamily: FONTS.bold, fontSize: 32, lineHeight: 36, letterSpacing: -1.1, color: COLORS.ink },
+  titleCompact: { fontSize: 24, lineHeight: 28, letterSpacing: -0.7 },
+  titleLong: { fontSize: 24, lineHeight: 28, letterSpacing: -0.6 },
+  subtitle: { ...TYPE.body, color: COLORS.muted },
+  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.lg },
+  tabsCompact: { marginTop: SPACING.md },
+  // Tot tegen de rand van het scherm, zodat de laatste pil zichtbaar doorloopt.
+  tabsScroll: { marginTop: SPACING.lg, marginHorizontal: -(SPACING.xl - 4) },
+  tabsScrollContent: { gap: SPACING.sm, paddingHorizontal: SPACING.xl - 4, paddingBottom: 6 },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 40,
+    paddingHorizontal: 16,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
+  },
+  tabActive: { backgroundColor: COLORS.ink },
+  tabLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink },
+  tabLabelActive: { color: COLORS.paper, fontFamily: FONTS.bold },
+  tabCount: { fontFamily: FONTS.medium, fontSize: 13, color: COLORS.muted },
+  tabCountActive: { color: COLORS.onDarkMuted },
+  badge: {
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 6,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.yellow,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: { fontFamily: FONTS.bold, fontSize: 12, color: COLORS.ink },
+  headButton: {
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...CARD_SHADOW,
+  },
+});
+
+/** De oude navy kop, enkel nog voor `navy` (de transportplanning). */
+const dark = StyleSheet.create({
+  head: {
+    backgroundColor: COLORS.navy,
     paddingBottom: SPACING.xl,
     overflow: 'hidden',
-    // De gele onderlijn van `.vtk-page-head` (inset 0 -5px 0 var(--yellow)).
     borderBottomWidth: 5,
     borderBottomColor: COLORS.yellow,
   },
@@ -213,46 +339,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xs,
     paddingRight: SPACING.sm,
   },
-  headCompact: { paddingBottom: SPACING.md },
-  noBack: { height: SPACING.md },
-  pressed: { opacity: 0.6 },
   backLabel: { ...TYPE.small, color: COLORS.onDarkMuted },
-  row: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.md },
-  text: { flex: 1, gap: SPACING.sm },
-  rowCompact: { alignItems: 'center' },
-  right: { paddingBottom: SPACING.xs },
-  rightCompact: { paddingBottom: 0 },
-  kicker: { ...TYPE.small, color: COLORS.onDarkMuted },
-  title: { ...TYPE.pageTitle, color: COLORS.onDark },
-  titleCompact: { fontSize: 24, lineHeight: 28, letterSpacing: -0.6 },
-  titleLong: { fontSize: 24, lineHeight: 28, letterSpacing: -0.5 },
-  subtitle: { ...TYPE.body, color: COLORS.onDarkMuted },
-  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.lg },
-  tabsCompact: { marginTop: SPACING.md },
-  // Tot tegen de rand van het scherm, zodat de laatste pil zichtbaar doorloopt.
-  tabsScroll: { marginTop: SPACING.lg, marginRight: -(SPACING.xl - 4) },
-  tabsScrollContent: { gap: 6, paddingRight: SPACING.xl - 4 },
-  tab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    minHeight: 36,
-    paddingHorizontal: 14,
-    borderRadius: RADIUS.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-  },
-  tabActive: { backgroundColor: COLORS.onDark, borderColor: COLORS.onDark },
-  tabLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.onDark },
-  tabLabelActive: { color: COLORS.ink },
-  tabCount: { fontFamily: FONTS.medium, fontSize: 13, color: 'rgba(239,242,248,0.6)' },
-  tabCountActive: { color: COLORS.muted },
-  badge: {
-    minWidth: 18,
-    paddingHorizontal: 5,
-    borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.yellow,
-    alignItems: 'center',
-  },
-  badgeText: { fontFamily: FONTS.semibold, fontSize: 11, lineHeight: 16, color: COLORS.ink },
+  title: { color: COLORS.onDark },
+  muted: { color: COLORS.onDarkMuted },
 });

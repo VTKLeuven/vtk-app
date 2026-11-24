@@ -40,9 +40,10 @@ import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { PageHead } from '../PageHead';
 import { SearchField } from '../SearchField';
 import { Stepper } from '../Stepper';
-import { Button, Card, Empty, ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice } from '../ui';
+import { Button, Card, CardList, Empty, ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice } from '../ui';
 import { CudiOrderCard, euro } from './CudiOrderCard';
 import type { StudiesTabs } from './tabs';
+import { CARD_SHADOW } from '../HomeSection';
 
 /**
  * Wanneer een oudere cudi geen maximum meestuurt: één. Strenger dan cudi kan nooit
@@ -430,7 +431,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
                     <View style={styles.subjectHead}>
                       <Text style={styles.subjectName}>{group.type}</Text>
                     </View>
-                    <View style={styles.register}>
+                    <CardList>
                       {group.articles.map((article) => (
                         <ArticleRow
                           key={article.id}
@@ -440,7 +441,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
                           onQuantity={(q) => setQuantity(article, q)}
                         />
                       ))}
-                    </View>
+                    </CardList>
                   </View>
                 ))
               : null}
@@ -450,14 +451,14 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
         {hours && !hours.unavailable && hours.entries.length > 0 ? (
           <View style={styles.block}>
             <SectionHeading>Openingsuren deze week</SectionHeading>
-            <View style={styles.register}>
+            <CardList>
               {hours.entries.map((entry) => (
                 <View key={entry.day} style={styles.hoursRow}>
                   <Text style={styles.hoursDay}>{entry.day}</Text>
                   <Text style={styles.hoursValue}>{entry.hours}</Text>
                 </View>
               ))}
-            </View>
+            </CardList>
             {hours.note ? <Text style={styles.hint}>{hours.note}</Text> : null}
           </View>
         ) : null}
@@ -518,7 +519,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
             </View>
 
             <ScrollView contentContainerStyle={styles.sheetBody}>
-              <View style={styles.register}>
+              <CardList inset={0} style={styles.sheetList}>
                 {lines.map(({ article, quantity }) => (
                   <View key={article.id} style={styles.sheetLine}>
                     <View style={styles.flex}>
@@ -537,7 +538,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
                   <Text style={styles.title}>Totaal</Text>
                   <Text style={styles.price}>{euro(total)}</Text>
                 </View>
-              </View>
+              </CardList>
 
               {ordering.paymentMode === 'BOTH' && ordering.onlineCheckout ? (
                 <View style={styles.choices} accessibilityRole="radiogroup">
@@ -703,7 +704,7 @@ function SubjectList({
             {subject.code ? <Text style={styles.code}>{subject.code}</Text> : null}
             <Text style={styles.subjectName}>{subject.name}</Text>
           </View>
-          <View style={styles.register}>
+          <CardList>
             {subject.articles.map((article) => (
               <ArticleRow
                 key={article.id}
@@ -713,7 +714,7 @@ function SubjectList({
                 onQuantity={(q) => onQuantity(article, q)}
               />
             ))}
-          </View>
+          </CardList>
         </View>
       ))}
     </>
@@ -833,6 +834,8 @@ const pillBase = {
 };
 
 const styles = StyleSheet.create({
+  // In het blad onderaan is de lijst geen kaart: het blad is zelf al wit.
+  sheetList: { backgroundColor: 'transparent', borderRadius: 0, shadowOpacity: 0, elevation: 0 },
   root: { flex: 1, backgroundColor: COLORS.paper },
   content: { padding: SPACING.xl - 4, gap: SPACING.xl, paddingBottom: SPACING.xxl },
   flex: { flex: 1 },
@@ -894,12 +897,10 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   subjectName: { fontFamily: FONTS.semibold, fontSize: 15, lineHeight: 20, color: COLORS.ink },
-  register: { borderTopWidth: 1, borderTopColor: COLORS.line2 },
+
   item: {
     gap: SPACING.sm,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line2,
   },
   itemTop: { flexDirection: 'row', gap: SPACING.md },
   itemBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.md },
@@ -920,8 +921,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line2,
   },
   hoursDay: { ...TYPE.body, color: COLORS.body },
   hoursValue: { ...TYPE.body, color: COLORS.ink, fontVariant: ['tabular-nums'] },
@@ -963,8 +962,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: SPACING.md,
     paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line2,
   },
   sheetTotal: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: SPACING.md },
   choices: { gap: SPACING.sm },
@@ -974,10 +971,9 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
     minHeight: 56,
     padding: SPACING.md,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
+    borderRadius: 20,
     backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
   },
   choiceActive: { borderColor: COLORS.navy },
   radio: {

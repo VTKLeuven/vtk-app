@@ -40,6 +40,7 @@ import { mondayOf, shortDay, TYPE_LABELS, type Ref } from '../../planning/grid';
 import type { PlanningHandle } from '../../planning/usePlanning';
 import { COLORS, FONTS, PLANNING, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { Button } from '../ui';
+import { CARD_SHADOW } from '../HomeSection';
 
 /** Een blad dat van onder inschuift, op papier, zoals de rest van de app. */
 export function Sheet({
@@ -684,10 +685,9 @@ const styles = StyleSheet.create({
     minHeight: 64,
     paddingVertical: SPACING.sm,
     paddingHorizontal: 4,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
+    borderRadius: 20,
     backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
   },
   toggleActive: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
   toggleLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.ink },
@@ -713,10 +713,9 @@ const styles = StyleSheet.create({
     ...TYPE.small,
     color: COLORS.ink,
     backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
-    borderRadius: RADIUS.sm,
+    borderRadius: 20,
     padding: SPACING.md,
+    ...CARD_SHADOW,
   },
   buttons: { gap: SPACING.sm },
   setup: { gap: SPACING.md },
@@ -726,10 +725,9 @@ const styles = StyleSheet.create({
     ...TYPE.body,
     color: COLORS.ink,
     backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
-    borderRadius: RADIUS.sm,
+    borderRadius: 20,
     paddingHorizontal: SPACING.md,
     paddingVertical: 11,
+    ...CARD_SHADOW,
   },
 });

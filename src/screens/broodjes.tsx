@@ -17,7 +17,8 @@ import { messageFor, useResource } from '../api/useResource';
 import { DatePin } from '../components/DatePin';
 import { PageHead } from '../components/PageHead';
 import { Stepper } from '../components/Stepper';
-import { Button, Card, Empty, ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
+import { CARD_SHADOW } from '../components/HomeSection';
+import { Button, Card, CardList, Empty, ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
 import { formatDate, formatDay, formatEuro, formatTime, formatTimeRange } from '../format';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
@@ -177,7 +178,7 @@ function Ordering({
                 accessibilityLabel={formatDay(item.date, locale)}
                 onPress={() => setPicked(item.id)}
               >
-                <DatePin iso={item.date} locale={locale} tone={active ? 'yellow' : 'plain'} month={false} />
+                <DatePin iso={item.date} locale={locale} tone={active ? 'ink' : 'plain'} month={false} />
                 {item.order ? <View style={styles.dayDot} /> : null}
               </Pressable>
             );
@@ -487,10 +488,8 @@ function SessionView({
                   <Image source={{ uri: special.imageUrl }} style={styles.specialPhoto} contentFit="cover" />
                 ) : null}
                 <View style={styles.specialBody}>
-                  <Text style={styles.kicker}>Broodje van de week</Text>
-                  <View style={styles.rule}>
-                    <Text style={styles.specialName}>{special.name}</Text>
-                  </View>
+                  <Text style={styles.tag}>BROODJE VAN DE WEEK</Text>
+                  <Text style={styles.specialName}>{special.name}</Text>
                   {special.ingredients ? <Text style={styles.hint}>{special.ingredients}</Text> : null}
                   <View style={styles.specialLine}>
                     <Text style={styles.price}>
@@ -512,7 +511,7 @@ function SessionView({
             ) : null}
 
             <SectionHeading>Het aanbod</SectionHeading>
-            <View style={styles.register}>
+            <CardList>
               {regular.map((item) => {
                 const { quantity, available, max } = limitFor(item);
                 return (
@@ -544,7 +543,7 @@ function SessionView({
                   </View>
                 );
               })}
-            </View>
+            </CardList>
           </>
         ) : null}
 
@@ -555,7 +554,7 @@ function SessionView({
               Na de deadline geannuleerd en al gemaakt. Neem je een broodje over, dan haal je het
               af en betaal je aan de balie, tot {pickupEnd}.
             </Text>
-            <View style={styles.register}>
+            <CardList>
               {offered.map((item) => {
                 const full =
                   ownCount + 1 > maxItems || (item.isWeeklySpecial && ownWeekly + 1 > maxWeeklySpecial);
@@ -578,7 +577,7 @@ function SessionView({
                   </View>
                 );
               })}
-            </View>
+            </CardList>
           </View>
         ) : null}
 
@@ -696,13 +695,12 @@ const styles = StyleSheet.create({
 
   yours: {
     backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.yellow,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: COLORS.yellow,
     padding: SPACING.lg,
     gap: SPACING.sm,
+    ...CARD_SHADOW,
   },
   buttons: { flexDirection: 'row', gap: SPACING.sm },
   lines: { gap: SPACING.xs },
@@ -719,32 +717,42 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
   },
 
-  // Het broodje van de week: een uitgelichte kaart met de gele rail, zoals op de site.
+  // Het broodje van de week: een witte kaart met een geel label.
   special: {
     backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.yellow,
-    overflow: 'hidden',
+    borderRadius: 22,
+    ...CARD_SHADOW,
   },
-  specialPhoto: { width: '100%', aspectRatio: 2.6, backgroundColor: COLORS.paper2 },
-  specialBody: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, gap: 4 },
-  rule: { alignSelf: 'flex-start', paddingBottom: 5, borderBottomWidth: 3, borderBottomColor: COLORS.yellow },
-  specialName: { fontFamily: FONTS.semibold, fontSize: 18, lineHeight: 23, color: COLORS.ink },
+  specialPhoto: {
+    width: '100%',
+    aspectRatio: 2.6,
+    backgroundColor: COLORS.paper2,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+  },
+  specialBody: { padding: SPACING.lg, gap: 6 },
+  tag: {
+    alignSelf: 'flex-start',
+    fontFamily: FONTS.bold,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    color: COLORS.ink,
+    backgroundColor: COLORS.yellow,
+    borderRadius: RADIUS.pill,
+    overflow: 'hidden',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  specialName: { fontFamily: FONTS.bold, fontSize: 21, lineHeight: 26, letterSpacing: -0.5, color: COLORS.ink },
   specialLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
   price: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink, fontVariant: ['tabular-nums'] },
   low: { fontFamily: FONTS.regular, fontSize: 13, color: COLORS.muted },
 
-  register: { borderTopWidth: 1, borderTopColor: COLORS.line2 },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line2,
+    paddingVertical: SPACING.md,
   },
   thumb: { width: 44, height: 44, borderRadius: RADIUS.sm, backgroundColor: COLORS.paper2 },
   itemName: { fontFamily: FONTS.semibold, fontSize: 15, lineHeight: 20, color: COLORS.ink },
@@ -754,8 +762,9 @@ const styles = StyleSheet.create({
   smallButton: {
     backgroundColor: COLORS.ink,
     borderRadius: RADIUS.pill,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    minHeight: 40,
+    justifyContent: 'center',
   },
   smallButtonLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.paper },
   disabled: { opacity: 0.45 },
@@ -763,15 +772,23 @@ const styles = StyleSheet.create({
 
 
   // Het totaal en de knop, vast onderaan zoals op /theokot op een gsm.
+  // Zwevend boven de tabbalk, als een kaart.
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
-    paddingHorizontal: SPACING.xl - 4,
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.sm,
+    paddingLeft: SPACING.lg,
+    paddingRight: SPACING.md,
     paddingVertical: SPACING.md,
+    borderRadius: 22,
     backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.line2,
+    shadowColor: COLORS.navy,
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
   barTotal: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink, fontVariant: ['tabular-nums'] },
   barButton: { minWidth: 132 },

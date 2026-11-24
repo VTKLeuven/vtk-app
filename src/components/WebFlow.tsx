@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router';
 import { X } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView, type WebViewNavigation } from 'react-native-webview';
 
-import { COLORS, SPACING, TYPE } from '../theme/tokens';
+import { COLORS, FONTS, SPACING } from '../theme/tokens';
+import { HeadButton } from './PageHead';
 
 const IN_WEBVIEW_SCHEMES = new Set(['http:', 'https:', 'about:', 'data:', 'blob:']);
 
@@ -151,14 +152,9 @@ export function WebFlow({
     <View style={styles.root}>
       <View style={[styles.bar, { paddingTop: insets.top + SPACING.sm }]}>
         <Text style={styles.title}>{title}</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Sluiten"
-          onPress={() => router.back()}
-          hitSlop={12}
-        >
-          <X color={COLORS.onDark} size={22} />
-        </Pressable>
+        <HeadButton accessibilityLabel="Sluiten" onPress={() => router.back()}>
+          <X color={COLORS.ink} size={21} />
+        </HeadButton>
       </View>
 
       <WebView
@@ -191,7 +187,7 @@ export function WebFlow({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
   bar: {
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.paper,
     paddingHorizontal: SPACING.lg,
     paddingBottom: SPACING.md,
     flexDirection: 'row',
@@ -199,7 +195,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: SPACING.md,
   },
-  title: { ...TYPE.cardTitle, color: COLORS.onDark },
+  title: { fontFamily: FONTS.bold, fontSize: 20, letterSpacing: -0.5, color: COLORS.ink, flexShrink: 1 },
   web: { flex: 1, backgroundColor: COLORS.paper },
   loading: {
     ...StyleSheet.absoluteFill,

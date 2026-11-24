@@ -6,7 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { AppBurgieclanEvaluations, AppBurgieclanEvaluationSection, AppLocale } from '../../api/contract';
 import { formatShortDate } from '../../format';
 import { COLORS, FONTS, SPACING, TYPE } from '../../theme/tokens';
-import { Empty, MarginRegister, SectionHeading } from '../ui';
+import { CardList, Empty, MarginRegister, SectionHeading } from '../ui';
 
 /** Zoveel opmerkingen per rubriek staan er meteen; de rest achter "Alle opmerkingen". */
 const FIRST_COMMENTS = 3;
@@ -94,7 +94,7 @@ function Section({
       ) : null}
 
       {comments.length > 0 ? (
-        <View style={styles.register}>
+        <CardList>
           {shown.map((comment) => (
             <View key={comment.id} style={styles.comment}>
               <Text style={styles.commentText}>{comment.content}</Text>
@@ -106,7 +106,7 @@ function Section({
               </Text>
             </View>
           ))}
-        </View>
+        </CardList>
       ) : null}
       {comments.length > FIRST_COMMENTS ? (
         <Pressable
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   scale: { ...TYPE.small, fontSize: 12, color: COLORS.muted },
-  register: { borderTopWidth: 1, borderTopColor: COLORS.line2 },
+
   comment: { gap: 4, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.line2 },
   commentText: { ...TYPE.body, color: COLORS.ink },
   more: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.navy },

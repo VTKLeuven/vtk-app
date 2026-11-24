@@ -16,6 +16,7 @@ import { disablePush, enablePush, hasBeenAsked, pushIsOn } from '../push';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { CARD_SHADOW } from '../components/HomeSection';
 
 /**
  * Waarvoor je telefoon afgaat.
@@ -234,10 +235,9 @@ const styles = StyleSheet.create({
 
   list: {
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    borderRadius: 20,
     overflow: 'hidden',
+    ...CARD_SHADOW,
   },
   switchRow: {
     flexDirection: 'row',
@@ -254,11 +254,10 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   chip: {
     borderRadius: RADIUS.pill,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
   },
   chipActive: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
   chipLabel: { ...TYPE.small, color: COLORS.body },

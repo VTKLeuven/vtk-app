@@ -122,6 +122,7 @@ export default function VervoerScreen() {
   const thisWeek = data ? days.includes(todayKey()) : true;
   const head = (
     <PageHead
+      navy
       title={data?.weekNumber ? `Week ${data.weekNumber}` : 'Transport'}
       subtitle={data ? weekLabel(data.weekStart, locale) : 'De ritten van Logistiek'}
     >

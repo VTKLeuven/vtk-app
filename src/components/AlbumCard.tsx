@@ -15,6 +15,7 @@ import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { DatePin } from './DatePin';
+import { CARD_SHADOW } from './HomeSection';
 
 /** "1 foto", "386 foto's". */
 export function photoCount(count: number, locale: AppLocale): string {
@@ -161,9 +162,8 @@ const styles = StyleSheet.create({
 
   feature: {
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    borderRadius: 20,
+    ...CARD_SHADOW,
   },
   featureCover: {
     width: '100%',

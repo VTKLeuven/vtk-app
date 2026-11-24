@@ -11,7 +11,8 @@ import { SearchField } from '../components/SearchField';
 import { Empty, Loading } from '../components/ui';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
-import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { COLORS, SPACING, TYPE } from '../theme/tokens';
+import { CARD_SHADOW } from '../components/HomeSection';
 
 /** Wachttijd voor een getikte letter een zoekopdracht wordt. */
 const DEBOUNCE_MS = 350;
@@ -138,10 +139,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.md,
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    borderRadius: 20,
     padding: SPACING.lg,
+    ...CARD_SHADOW,
   },
   pressed: { backgroundColor: COLORS.paper2 },
   text: { flex: 1, gap: 2 },

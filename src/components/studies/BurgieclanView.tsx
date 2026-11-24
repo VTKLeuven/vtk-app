@@ -25,7 +25,7 @@ import { useApp } from '../../state/app';
 import { COLORS, FONTS, SPACING, TYPE } from '../../theme/tokens';
 import { PageHead } from '../PageHead';
 import { SearchField } from '../SearchField';
-import { Button, Card, Empty, ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice } from '../ui';
+import { Button, Card, CardList, Empty, ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice } from '../ui';
 import type { StudiesTabs } from './tabs';
 
 /**
@@ -259,7 +259,7 @@ export function CourseList({
   onToggle: (course: AppBurgieclanCourse) => void;
 }) {
   return (
-    <View style={styles.register}>
+    <CardList>
       {courses.map((course) => {
         const starred = favorite(course);
         return (
@@ -297,7 +297,7 @@ export function CourseList({
           </View>
         );
       })}
-    </View>
+    </CardList>
   );
 }
 
@@ -322,12 +322,10 @@ const styles = StyleSheet.create({
   body: { ...TYPE.body, color: COLORS.body },
   hint: { ...TYPE.small, color: COLORS.muted },
 
-  register: { borderTopWidth: 1, borderTopColor: COLORS.line2 },
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line2,
   },
   rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: 12 },
   code: {

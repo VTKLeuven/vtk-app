@@ -1,13 +1,13 @@
-import { ChevronRight, Flag } from 'lucide-react-native';
+import { Flag } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { AppLocale, AppPlanning, AppPlanningSession } from '../../api/contract';
 import { fetchPlanning } from '../../api/endpoints';
 import { useResource, type Resource } from '../../api/useResource';
-import { addDays, shortDay, TYPE_LABELS } from '../../planning/grid';
+import { addDays, shortDay, toneOf, TYPE_LABELS } from '../../planning/grid';
 import { nowInLeuven } from '../../planning/now';
-import { COLORS, FONTS, PLANNING, SPACING, TYPE } from '../../theme/tokens';
-import { SectionHeading } from '../ui';
+import { COLORS, FONTS, PLANNING, RADIUS, SPACING, TYPE } from '../../theme/tokens';
+import { CARD_SHADOW, HomeSection } from '../HomeSection';
 
 /** Hoeveel lessen Home vooruit kijkt. */
 const COUNT = 3;
@@ -58,11 +58,12 @@ export function useUpcomingLessons(locale: AppLocale, enabled: boolean): Upcomin
   return { lessons, today, now, resource };
 }
 
+
 /**
- * De lessen uit `useUpcomingLessons`, als register in de vorm van "Voor jou":
- * uur, vak, dag en lokaal, met haarlijnen en geen kaart per les. Een tik opent de
- * planning onder Kalender, waar je afvinkt of verbergt; hier wordt enkel gelezen.
- * Wat nu bezig is, krijgt de gele rail.
+ * De lessen uit `useUpcomingLessons` op Home: één witte kaart met per les het uur,
+ * een streepje in de kleur van de soort (dezelfde als in de planning en bij
+ * Burgieclan), het vak, en "Nu" voor wat bezig is. Een tik opent de planning onder
+ * Kalender, waar je afvinkt of verbergt; hier wordt enkel gelezen.
  */
 export function UpcomingLessonsList({
   upcoming,
@@ -75,63 +76,65 @@ export function UpcomingLessonsList({
   if (lessons.length === 0) return null;
 
   return (
-    <View style={styles.section}>
-      <View style={styles.pad}>
-        <SectionHeading
-          right={
-            <Pressable accessibilityRole="link" accessibilityLabel="Naar je planning" onPress={onOpen} hitSlop={8}>
-              <Text style={styles.link}>Planning →</Text>
-            </Pressable>
-          }
-        >
-          {lessons.every((session) => session.date === today) ? 'Lessen vandaag' : 'Komende lessen'}
-        </SectionHeading>
-      </View>
-      <View style={styles.register}>
-        {lessons.map((session) => (
+    <HomeSection
+      title={lessons.every((session) => session.date === today) ? 'Je lessen vandaag' : 'Je volgende lessen'}
+      link={{ label: 'Planning', accessibilityLabel: 'Naar je planning', onPress: onOpen }}
+    >
+      <View style={styles.card}>
+        {lessons.map((session, index) => (
           <Lesson
             key={session.uid}
             session={session}
             current={session.date === today && session.startMin <= now}
-            day={dayLabel(session.date, today)}
+            day={session.date === today ? null : dayLabel(session.date, today)}
+            last={index === lessons.length - 1}
             onPress={onOpen}
           />
         ))}
       </View>
-    </View>
+    </HomeSection>
   );
 }
 
-/** "Vandaag", "Morgen", of "di 24 nov". */
+/** "Morgen", of "Di 24 nov". */
 function dayLabel(date: string, today: string): string {
-  if (date === today) return 'Vandaag';
   if (date === addDays(today, 1)) return 'Morgen';
   const label = shortDay(date);
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
+const RAIL = {
+  lecture: PLANNING.lectureBorder,
+  practice: PLANNING.practiceBorder,
+  other: PLANNING.otherBorder,
+} as const;
+
 function Lesson({
   session,
   current,
   day,
+  last,
   onPress,
 }: {
   session: AppPlanningSession;
   current: boolean;
-  day: string;
+  /** `null` voor vandaag. */
+  day: string | null;
+  last: boolean;
   onPress: () => void;
 }) {
   const type = TYPE_LABELS[session.type] ?? TYPE_LABELS.other;
-  const when = current ? 'Nu' : day;
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={[
-        when,
+        current ? 'Nu' : (day ?? 'Vandaag'),
         `${session.start}${session.end ? ` tot ${session.end}` : ''}`,
         session.course,
+        type,
         session.location,
+        session.mandatory ? 'verplicht' : null,
         session.done ? 'afgevinkt' : null,
       ]
         .filter(Boolean)
@@ -139,7 +142,7 @@ function Lesson({
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
-        current && styles.current,
+        !last && styles.divider,
         session.done && styles.over,
         pressed && styles.pressed,
       ]}
@@ -148,43 +151,48 @@ function Lesson({
         <Text style={styles.start}>{session.start}</Text>
         {session.end ? <Text style={styles.end}>{session.end}</Text> : null}
       </View>
+      <View style={[styles.rail, { backgroundColor: RAIL[toneOf(session.type)] }]} />
       <View style={styles.text}>
         <Text style={[styles.title, session.done && styles.struck]} numberOfLines={2}>
           {session.course}
         </Text>
-        <Text style={styles.detail} numberOfLines={1}>
-          {[when, type, session.location].filter(Boolean).join(', ')}
-        </Text>
+        <View style={styles.metaRow}>
+          {current ? (
+            <View style={styles.now}>
+              <Text style={styles.nowText}>NU</Text>
+            </View>
+          ) : null}
+          <Text style={styles.detail} numberOfLines={1}>
+            {[day, type, session.location].filter(Boolean).join(', ')}
+          </Text>
+        </View>
       </View>
       {session.mandatory ? <Flag color={PLANNING.danger} size={15} /> : null}
-      <ChevronRight color={COLORS.muted} size={18} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  section: { marginTop: SPACING.xl, gap: SPACING.md },
-  pad: { paddingHorizontal: SPACING.xl - 4 },
-  link: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.navy },
-  register: { borderTopWidth: 1, borderTopColor: COLORS.line },
+  card: { backgroundColor: COLORS.surface, borderRadius: 20, ...CARD_SHADOW },
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: SPACING.md,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xl - 4,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line,
+    paddingVertical: 14,
+    paddingHorizontal: SPACING.lg,
   },
-  // Wat nu bezig is, krijgt de gele rail, zoals een dringende taak in "Voor jou".
-  current: { borderLeftWidth: 3, borderLeftColor: COLORS.yellow, paddingLeft: SPACING.xl - 7 },
+  divider: { borderBottomWidth: 1, borderBottomColor: COLORS.line },
   over: { opacity: 0.5 },
   pressed: { backgroundColor: COLORS.paper2 },
-  time: { width: 44 },
+  time: { width: 44, paddingTop: 1 },
   start: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink, fontVariant: ['tabular-nums'] },
-  end: { ...TYPE.small, fontSize: 12, color: COLORS.muted, fontVariant: ['tabular-nums'] },
-  text: { flex: 1, gap: 2 },
-  title: { ...TYPE.cardTitle, fontSize: 15, color: COLORS.ink },
+  end: { ...TYPE.small, fontSize: 13, color: COLORS.muted, fontVariant: ['tabular-nums'] },
+  rail: { width: 4, borderRadius: 2 },
+  text: { flex: 1, gap: 4 },
+  title: { ...TYPE.cardTitle, fontSize: 15, lineHeight: 20, color: COLORS.ink },
   struck: { textDecorationLine: 'line-through' },
-  detail: { ...TYPE.small, color: COLORS.muted },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  now: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: RADIUS.pill, backgroundColor: COLORS.ink },
+  nowText: { fontFamily: FONTS.bold, fontSize: 11, color: COLORS.yellow },
+  detail: { ...TYPE.small, flexShrink: 1, color: COLORS.muted },
 });

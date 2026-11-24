@@ -7,11 +7,12 @@ import { messageFor, useResource } from '../api/useResource';
 import { PageHead } from '../components/PageHead';
 import { PassCode } from '../components/PassCode';
 import { RewardCoins } from '../components/RewardCoins';
-import { Button, Card, ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
+import { Button, Card, CardList, ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
 import { formatShortDate, formatVouchers } from '../format';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { CARD_SHADOW } from '../components/HomeSection';
 
 /**
  * Bonnetjes: je shiften van dit jaar, wat ze opleverden en wat je ermee kan.
@@ -275,7 +276,7 @@ function Register({
       <View style={styles.pad}>
         <SectionHeading>{title}</SectionHeading>
       </View>
-      <View style={styles.register}>
+      <CardList inset={0} style={styles.cardList}>
         {entries.map((entry) => (
           <View key={entry.id} style={styles.entry}>
             <Text style={styles.entryWhen}>{formatShortDate(entry.at, locale, false)}</Text>
@@ -288,12 +289,13 @@ function Register({
             </Text>
           </View>
         ))}
-      </View>
+      </CardList>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  cardList: { marginHorizontal: SPACING.lg },
   root: { flex: 1, backgroundColor: COLORS.paper },
   content: { paddingTop: SPACING.xl, gap: SPACING.xl, paddingBottom: SPACING.xxl },
   pad: { paddingHorizontal: SPACING.xl - 4 },
@@ -304,10 +306,9 @@ const styles = StyleSheet.create({
   hero: {
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.lg,
-    borderWidth: 1,
-    borderColor: COLORS.line,
     padding: SPACING.lg + 2,
     gap: SPACING.md,
+    ...CARD_SHADOW,
   },
   heroTop: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md },
   eyebrow: { ...TYPE.kicker, color: COLORS.muted },
@@ -383,15 +384,13 @@ const styles = StyleSheet.create({
 
   passBlock: { gap: SPACING.md },
 
-  register: { borderTopWidth: 1, borderTopColor: COLORS.line },
+
   entry: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
-    paddingHorizontal: SPACING.xl - 4,
+    paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line,
   },
   entryWhen: { width: 56, ...TYPE.small, color: COLORS.muted, fontVariant: ['tabular-nums'] },
   entryWhat: { flex: 1, ...TYPE.body, color: COLORS.ink },

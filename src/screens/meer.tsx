@@ -7,6 +7,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { baseUrl } from '../api/client';
 import type { AppNavTab } from '../api/contract';
+import { CARD_SHADOW } from '../components/HomeSection';
 import { PageHead } from '../components/PageHead';
 import { ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice, type RegisterLink } from '../components/ui';
 import { nativeRouteFor, pageSlugFor } from '../nativeRoute';
@@ -91,7 +92,7 @@ export default function MeerScreen() {
   return (
     <>
       <PageHead title="Meer" back={false}>
-        {/* Jij, in de kop als donker glas. Een eigen tab was dat niet waard: je
+        {/* Jij, als witte kaart in de kop. Een eigen tab was dat niet waard: je
             opent je profiel een paar keer per jaar, niet een paar keer per dag. */}
         <Pressable
           accessibilityRole="button"
@@ -114,7 +115,7 @@ export default function MeerScreen() {
               {viewer ? 'Je profiel en meldingen' : 'Log in om te bestellen en tickets te kopen'}
             </Text>
           </View>
-          <ChevronRight color={COLORS.onDarkMuted} size={18} />
+          <ChevronRight color={COLORS.muted} size={18} />
         </Pressable>
 
         <Pressable
@@ -289,32 +290,31 @@ const styles = StyleSheet.create({
   pressedDark: { opacity: 0.7 },
   hint: { ...TYPE.small, color: COLORS.muted },
 
-  // Op de navy band: donker glas, zoals de panelen op de navy banden van de site.
   me: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
     marginTop: SPACING.lg,
     padding: SPACING.md,
-    borderRadius: RADIUS.md,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
   },
-  avatar: { width: 42, height: 42, borderRadius: RADIUS.pill, backgroundColor: COLORS.yellow },
+  avatar: { width: 44, height: 44, borderRadius: RADIUS.pill, backgroundColor: COLORS.yellow },
   avatarEmpty: { alignItems: 'center', justifyContent: 'center' },
   initials: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink },
-  meName: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.onDark },
-  meHint: { ...TYPE.small, fontSize: 12.5, color: COLORS.onDarkMuted },
+  meName: { fontFamily: FONTS.bold, fontSize: 16, color: COLORS.ink },
+  meHint: { ...TYPE.small, fontSize: 13, color: COLORS.muted },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    marginTop: SPACING.sm,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    marginTop: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    minHeight: 48,
     borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.paper,
+    backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
   },
   searchText: { ...TYPE.small, fontSize: 14, color: COLORS.muted },
 
@@ -323,13 +323,17 @@ const styles = StyleSheet.create({
   tiles: { gap: SPACING.md },
   tile: {
     backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    overflow: 'hidden',
+    borderRadius: 20,
+    ...CARD_SHADOW,
   },
   tileHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingRight: SPACING.lg },
-  tilePhoto: { width: 76, height: 76, backgroundColor: COLORS.paper2 },
+  tilePhoto: {
+    width: 76,
+    height: 76,
+    backgroundColor: COLORS.paper2,
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+  },
   // Het gestreepte vlak van de site voor een tegel zonder foto.
   striped: { overflow: 'hidden' },
   stripe: {

@@ -1,3 +1,4 @@
+import { Children, isValidElement } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,14 +10,15 @@ import {
 } from 'react-native';
 
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { CARD_SHADOW } from './HomeSection';
 
 /**
- * De bouwstenen die op elk scherm terugkomen, in de taal van de site:
- * witte kaarten met een dunne navy-getinte rand op een papieren grond, een
- * donkere primaire knop, en geel enkel als accent.
+ * De bouwstenen die op elk scherm terugkomen, in de taal van de nieuwe Home
+ * (voorstel F1, november 2026): witte kaarten met ronde hoeken en een zachte
+ * schaduw op een papieren grond, een zwarte pil als primaire knop, en geel enkel
+ * als accent.
  *
- * Geen gradiënten, geen schaduwspel, geen kaart in een kaart. Dat is geen smaak
- * maar de afspraak in CLAUDE.md, en ze houdt de app en de site op elkaar.
+ * Geen gradiënten en geen kaart in een kaart.
  */
 
 // ── Kaart ───────────────────────────────────────────────────────────────────
@@ -24,7 +26,7 @@ import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 export function Card({
   children,
   style,
-  /** Markeert een uitgelichte kaart met een gele rail, zoals op de site. */
+  /** Markeert een uitgelichte kaart met een gele rand. */
   featured = false,
 }: {
   children: React.ReactNode;
@@ -60,6 +62,37 @@ export function CardButton({
     >
       {children}
     </Pressable>
+  );
+}
+
+/**
+ * Een lijst als één witte kaart, met een haarlijn tussen de rijen en niet erna.
+ * Vervangt sinds de nieuwe Home de registers met haarlijnen op papier. De rijen
+ * zelf tekenen geen rand; `inset` is de lucht links en rechts van elke rij, of
+ * `0` voor een rij die zelf zijn marge zet (en dan tot tegen de rand oplicht).
+ */
+export function CardList({
+  children,
+  inset = SPACING.lg,
+  style,
+}: {
+  children: React.ReactNode;
+  inset?: number;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const rows = Children.toArray(children).filter(Boolean);
+  if (rows.length === 0) return null;
+  return (
+    <View style={[styles.cardList, style]}>
+      {rows.map((row, index) => (
+        <View
+          key={isValidElement(row) && row.key != null ? row.key : index}
+          style={[{ paddingHorizontal: inset }, index > 0 && styles.cardListDivider]}
+        >
+          {row}
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -191,24 +224,23 @@ export function StaleNotice({ onRetry }: { onRetry: () => void }) {
 }
 
 /**
- * Een kop met de gele lijn eronder, zo breed als de kop zelf: de behandeling van
- * een h2 op de site (`.prose-vtk h2::after`, de titel van een eventtegel, "Over
- * dit event"). Een lijn over de hele breedte leest als een scheiding tussen twee
- * delen, niet als een lijn onder een titel.
+ * De kop van een deel van een scherm: een klein woord in kapitalen, gedempt, met
+ * eventueel een link rechts ("Kalender"). Zoals de koppen op Home; tot november
+ * 2026 was dit een titel met de gele lijn eronder, zoals een h2 op de site.
  */
 export function SectionHeading({
   children,
   right,
 }: {
   children: string;
-  /** Een link of actie rechts op dezelfde hoogte, zoals "Kalender ->". */
+  /** Een link of actie rechts op dezelfde hoogte, zoals "Kalender". */
   right?: React.ReactNode;
 }) {
   return (
     <View style={styles.headingRow}>
-      <View style={styles.heading}>
-        <Text style={styles.headingText}>{children}</Text>
-      </View>
+      <Text accessibilityRole="header" style={styles.headingText}>
+        {children.toUpperCase()}
+      </Text>
       {right ?? null}
     </View>
   );
@@ -298,17 +330,18 @@ export function SectionTitle({ children }: { children: string }) {
 const styles = StyleSheet.create({
   headingRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: SPACING.md,
+    minHeight: 24,
   },
-  heading: {
-    alignSelf: 'flex-start',
-    paddingBottom: 6,
-    borderBottomWidth: 3,
-    borderBottomColor: COLORS.yellow,
+  headingText: {
+    flexShrink: 1,
+    fontFamily: FONTS.semibold,
+    fontSize: 11,
+    letterSpacing: 1.4,
+    color: COLORS.muted,
   },
-  headingText: { ...TYPE.heading, color: COLORS.ink },
   week: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -322,20 +355,18 @@ const styles = StyleSheet.create({
   weekRange: { ...TYPE.small, color: COLORS.muted },
   card: {
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    borderRadius: 20,
     padding: SPACING.lg,
     gap: SPACING.sm,
+    ...CARD_SHADOW,
   },
-  cardFeatured: {
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.yellow,
-  },
-  cardPressed: { backgroundColor: COLORS.paper2 },
+  cardFeatured: { borderWidth: 2, borderColor: COLORS.yellow },
+  cardList: { backgroundColor: COLORS.surface, borderRadius: 20, ...CARD_SHADOW },
+  cardListDivider: { borderTopWidth: 1, borderTopColor: COLORS.line },
+  cardPressed: { opacity: 0.85 },
 
   button: {
-    minHeight: 44,
+    minHeight: 48,
     paddingHorizontal: SPACING.xl,
     borderRadius: RADIUS.pill,
     alignItems: 'center',
@@ -344,7 +375,7 @@ const styles = StyleSheet.create({
   },
   buttonPrimary: { backgroundColor: COLORS.ink, borderColor: COLORS.ink },
   buttonPrimaryOnDark: { backgroundColor: COLORS.surface, borderColor: COLORS.surface },
-  buttonGhost: { backgroundColor: 'transparent', borderColor: COLORS.line2 },
+  buttonGhost: { backgroundColor: COLORS.surface, borderColor: COLORS.controlBorder },
   buttonGhostOnDark: { borderColor: 'rgba(255,255,255,0.28)' },
   buttonPressed: { opacity: 0.85 },
   buttonDisabled: { opacity: 0.45 },
@@ -366,11 +397,12 @@ const styles = StyleSheet.create({
   stateHint: { ...TYPE.body, color: COLORS.muted },
 
   stale: {
-    backgroundColor: COLORS.paper2,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line,
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.sm,
+    backgroundColor: COLORS.lowBg,
+    borderRadius: 14,
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.sm + 2,
   },
   staleText: { ...TYPE.small, color: COLORS.body },
 
