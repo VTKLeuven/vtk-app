@@ -31,6 +31,15 @@ komen er naast.
   waarin je een account kan aanmaken, en de login linkt naar `/registreren`.
 - `ITSAppUsesNonExemptEncryption: false` staat er al, dus geen exportvragen bij
   elke upload.
+- **Het icoon op iOS is `assets/vtk.icon`** (`ios.icon` in `app.json`), een
+  bundel van Icon Composer voor het Liquid Glass van iOS 26: het logo als één
+  platte vectorlaag (`Assets/vtk.svg`) in navy op geel, met een donkere variant
+  (geel op navy) en een getinte. Het glas, de schaduw en de rand tekent iOS zelf;
+  zet die dus niet in de laag. Aanpassen doe je in Icon Composer, dat bij Xcode
+  26 hoort. Oudere iOS-versies krijgen een plat icoon dat Xcode bij de build uit
+  dezelfde bundel maakt. `assets/icon.png` blijft het icoon van Android en Expo
+  Go: wijzig je het ene, wijzig dan het andere mee. Een ander icoon komt enkel
+  met een nieuwe build, niet met `eas update`.
 
 ## Wat jij moet doen
 

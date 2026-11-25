@@ -9,6 +9,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
+      "icon": "./assets/vtk.icon",
       "supportsTablet": false,
       "bundleIdentifier": "be.vtk.app",
       "infoPlist": {
