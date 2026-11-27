@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS, FONTS, RADIUS, SPACING } from '../theme/tokens';
@@ -32,6 +32,8 @@ export function YellowHead<T extends string>({
     /** `badge` is een aantal in een bolletje, zoals de tickets die nog komen. */
     options: { value: T; label: string; badge?: number }[];
     onChange: (next: T) => void;
+    /** Eén rij die opzij scrolt in plaats van af te breken, voor veel pillen (de Alma's). */
+    scroll?: boolean;
   };
   /** Een `YellowHeadButton`, zoals de bel van Kalender. */
   right?: React.ReactNode;
@@ -50,6 +52,31 @@ export function YellowHead<T extends string>({
       {title}
     </Text>
   );
+  const pills = tabs?.options.map((option) => {
+    const active = option.value === tabs?.value;
+    return (
+      <Pressable
+        key={option.value}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: active }}
+        accessibilityLabel={option.badge ? `${option.label}, ${option.badge}` : undefined}
+        onPress={() => tabs?.onChange(option.value)}
+        style={({ pressed }) => [
+          styles.pill,
+          option.badge ? styles.pillWithBadge : null,
+          active && styles.pillActive,
+          pressed && styles.pressed,
+        ]}
+      >
+        <Text style={[styles.pillLabel, active && styles.pillLabelActive]}>{option.label}</Text>
+        {option.badge ? (
+          <View style={[styles.badge, active && styles.badgeActive]}>
+            <Text style={[styles.badgeLabel, active && styles.badgeLabelActive]}>{option.badge}</Text>
+          </View>
+        ) : null}
+      </Pressable>
+    );
+  });
   return (
     <View style={[styles.head, { paddingTop: insets.top + SPACING.sm }]}>
       {back ? (
@@ -79,33 +106,21 @@ export function YellowHead<T extends string>({
         </View>
       )}
       {tabs ? (
-      <View style={styles.pills} accessibilityRole="tablist">
-        {tabs.options.map((option) => {
-          const active = option.value === tabs.value;
-          return (
-            <Pressable
-              key={option.value}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={option.badge ? `${option.label}, ${option.badge}` : undefined}
-              onPress={() => tabs.onChange(option.value)}
-              style={({ pressed }) => [
-                styles.pill,
-                option.badge ? styles.pillWithBadge : null,
-                active && styles.pillActive,
-                pressed && styles.pressed,
-              ]}
-            >
-              <Text style={[styles.pillLabel, active && styles.pillLabelActive]}>{option.label}</Text>
-              {option.badge ? (
-                <View style={[styles.badge, active && styles.badgeActive]}>
-                  <Text style={[styles.badgeLabel, active && styles.badgeLabelActive]}>{option.badge}</Text>
-                </View>
-              ) : null}
-            </Pressable>
-          );
-        })}
-      </View>
+        tabs.scroll ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.pillScroll}
+            contentContainerStyle={styles.pillRow}
+            accessibilityRole="tablist"
+          >
+            {pills}
+          </ScrollView>
+        ) : (
+          <View style={styles.pills} accessibilityRole="tablist">
+            {pills}
+          </View>
+        )
       ) : null}
       {children}
     </View>
@@ -204,8 +219,19 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
   },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 },
-  title: { fontFamily: FONTS.bold, fontSize: 34, lineHeight: 38, letterSpacing: -1.3, color: COLORS.navy },
+  top: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 44,
+  },
+  title: {
+    fontFamily: FONTS.bold,
+    fontSize: 34,
+    lineHeight: 38,
+    letterSpacing: -1.3,
+    color: COLORS.navy,
+  },
   titleDetail: { fontSize: 30, lineHeight: 34, letterSpacing: -1 },
   titleBlock: { flexShrink: 1, gap: 4 },
   subtitle: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.navy },
@@ -220,6 +246,9 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
   disabled: { opacity: 0.35 },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  // Tot tegen de randen van het scherm, zodat je ziet dat er nog meer pillen zijn.
+  pillScroll: { flexGrow: 0, marginHorizontal: -SIDE },
+  pillRow: { gap: SPACING.sm, paddingHorizontal: SIDE },
   pill: {
     height: 38,
     justifyContent: 'center',
@@ -227,7 +256,12 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.pill,
     backgroundColor: 'rgba(14, 26, 54, 0.08)',
   },
-  pillWithBadge: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingRight: SPACING.sm },
+  pillWithBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    paddingRight: SPACING.sm,
+  },
   pillActive: { backgroundColor: COLORS.navy },
   // Het bolletje draait de kleuren van de pil om: navy op het waas, geel op navy.
   badge: {
@@ -240,7 +274,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.navy,
   },
   badgeActive: { backgroundColor: COLORS.yellow },
-  badgeLabel: { fontFamily: FONTS.bold, fontSize: 12, color: COLORS.yellow, fontVariant: ['tabular-nums'] },
+  badgeLabel: {
+    fontFamily: FONTS.bold,
+    fontSize: 12,
+    color: COLORS.yellow,
+    fontVariant: ['tabular-nums'],
+  },
   badgeLabelActive: { color: COLORS.navy },
   pillLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.navy },
   pillLabelActive: { fontFamily: FONTS.bold, color: COLORS.yellow },
@@ -251,9 +290,18 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.pill,
     backgroundColor: 'rgba(14, 26, 54, 0.08)',
   },
-  segment: { height: 32, justifyContent: 'center', paddingHorizontal: 14, borderRadius: RADIUS.pill },
+  segment: {
+    height: 32,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    borderRadius: RADIUS.pill,
+  },
   segmentActive: { backgroundColor: COLORS.surface },
-  segmentLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.navy },
+  segmentLabel: {
+    fontFamily: FONTS.semibold,
+    fontSize: 13,
+    color: COLORS.navy,
+  },
   segmentLabelActive: { fontFamily: FONTS.bold },
 
   round: {

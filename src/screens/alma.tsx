@@ -20,7 +20,7 @@ import type { AppAlma, AppAlmaDish, AppAlmaRestaurant } from '../api/contract';
 import { fetchAlma } from '../api/endpoints';
 import { messageFor, useResource, type Resource } from '../api/useResource';
 import { almaClock, almaPrice, almaStatusLine } from '../alma';
-import { PageHead } from '../components/PageHead';
+import { YellowHead } from '../components/YellowHead';
 import { PhotoViewer, type ViewerPhoto } from '../components/PhotoViewer';
 import { CardList, Empty, ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice } from '../components/ui';
 import { useApp } from '../state/app';
@@ -50,9 +50,10 @@ const DIET: Record<NonNullable<AppAlmaDish['diet']>, string | null> = {
  * op de pagina van dat restaurant op alma.be. Een tik op een gerecht toont de
  * foto in het groot. Home toont enkel de vier van Arenberg (`AlmaToday`).
  *
- * Het restaurant kies je met de pillen in de kop, de dag met de rij eronder. De
- * prijs is die voor studenten en personeel van KU Leuven; de twee andere staan op
- * alma.be. De gegevens komen van vtk.be, dat alma.be leest (`lib/alma/` op de
+ * Sinds eind november 2026 met de gele kop (voorstel 4): het restaurant kies je
+ * met de pillen in het geel, de dag met de vierkantjes eronder, en elke dag opent
+ * met de openingsuren van de hele week. De prijs is die voor studenten en
+ * personeel van KU Leuven; de twee andere staan op alma.be. De gegevens komen van vtk.be, dat alma.be leest (`lib/alma/` op de
  * site); de app praat zelf niet met Alma.
  */
 export default function AlmaScreen() {
@@ -105,9 +106,10 @@ export default function AlmaScreen() {
 
   const head = (
     <View {...backSwipe.panHandlers}>
-      <PageHead
+      <YellowHead
         title="Alma"
-        subtitle="Arenberg, het centrum en Gasthuisberg"
+        subtitle={restaurant ? almaStatusLine(restaurant) : null}
+        back
         tabs={{
           value: slug,
           onChange: setSlug,
@@ -117,24 +119,33 @@ export default function AlmaScreen() {
             label: candidate.shortName,
           })),
         }}
-      />
+      >
+        {data ? (
+          <DaySquares
+            from={data.date}
+            pages={pages}
+            selected={pages[index] ?? data.date}
+            onSelect={(date) => goTo(pages.indexOf(date))}
+          />
+        ) : null}
+      </YellowHead>
     </View>
   );
 
   if (base.loading && !data) {
     return (
-      <>
+      <View style={styles.root}>
         {head}
         <Loading />
-      </>
+      </View>
     );
   }
   if (!data || !restaurant) {
     return (
-      <>
+      <View style={styles.root}>
         {head}
         <ErrorState message={messageFor(base.error)} onRetry={() => void base.refresh()} />
-      </>
+      </View>
     );
   }
 
@@ -142,8 +153,6 @@ export default function AlmaScreen() {
     <View style={styles.root}>
       {head}
       {base.stale ? <StaleNotice onRetry={() => void base.refresh()} /> : null}
-      <Status restaurant={restaurant} />
-      <Days dates={pages} selected={pages[index] ?? data.date} onSelect={(date) => goTo(pages.indexOf(date))} />
 
       {/* Eén pagina per dag. De pagina volgt je vinger, dus halverwege zie je de
           helft van beide dagen; loslaten schuift door naar de dag waar je het
@@ -203,8 +212,11 @@ function DayPage({
         <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
       ) : (
         <>
+          <WeekHours restaurant={restaurant} selected={date} />
+          <Text accessibilityRole="header" style={styles.dayHeading}>
+            {dayHeading(date)}
+          </Text>
           <Menu restaurant={restaurant} date={date} key={`${restaurant.slug}:${date}`} />
-          <Hours restaurant={restaurant} />
           <MarginRegister
             title="Meer"
             style={styles.register}
@@ -236,44 +248,47 @@ function DayPage({
   );
 }
 
-function Status({ restaurant }: { restaurant: AppAlmaRestaurant }) {
-  return (
-    <View style={styles.status}>
-      <View style={[styles.statusPill, restaurant.openNow && styles.statusPillOpen]}>
-        <Text style={[styles.statusText, restaurant.openNow && styles.statusOpen]}>{almaStatusLine(restaurant)}</Text>
-      </View>
-      {restaurant.today.length > 0 ? (
-        <Text style={styles.statusToday} numberOfLines={1}>
-          {restaurant.today
-            .map((window) => `${almaClock(window.start)}–${almaClock(window.end ?? window.start)}`)
-            .join(', ')}
-        </Text>
-      ) : null}
-    </View>
-  );
+/** "2026-11-27" van vandaag in Brussel. */
+function todayKey(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Brussels' }).format(new Date());
 }
 
-/** "Vandaag", "Morgen", of "do 26". */
-function dayLabel(date: string): string {
-  const todayKey = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Brussels',
-  }).format(new Date());
-  if (date === todayKey) return 'Vandaag';
-  const tomorrow = new Date(`${todayKey}T12:00:00Z`);
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-  if (date === tomorrow.toISOString().slice(0, 10)) return 'Morgen';
-  return new Intl.DateTimeFormat('nl-BE', {
+function addDays(date: string, days: number): string {
+  const next = new Date(`${date}T12:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next.toISOString().slice(0, 10);
+}
+
+/** "Vandaag", "Morgen", of "Maandag 30 november". */
+function dayHeading(date: string): string {
+  const today = todayKey();
+  if (date === today) return 'Vandaag';
+  if (date === addDays(today, 1)) return 'Morgen';
+  const label = new Intl.DateTimeFormat('nl-BE', {
     timeZone: 'UTC',
-    weekday: 'short',
+    weekday: 'long',
     day: 'numeric',
-  })
-    .format(new Date(`${date}T12:00:00Z`))
-    .replace('.', '');
+    month: 'long',
+  }).format(new Date(`${date}T12:00:00Z`));
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-function Days({ dates, selected, onSelect }: { dates: string[]; selected: string; onSelect: (date: string) => void }) {
-  // Twee weken vooruit is genoeg; Alma zet soms tot twee maanden online.
-  const shown = dates;
+/**
+ * De dagen als vierkantjes in het geel, zoals de week op Home (voorstel 4,
+ * november 2026): elke dag van vandaag tot de laatste dag met een menu, en een
+ * dag zonder menu (het weekend) gedempt en niet aan te tikken.
+ */
+function DaySquares({
+  from,
+  pages,
+  selected,
+  onSelect,
+}: {
+  from: string;
+  pages: string[];
+  selected: string;
+  onSelect: (date: string) => void;
+}) {
   const strip = useRef<ScrollViewInstance>(null);
   const offsets = useRef<Record<string, number>>({});
   // Na een veeg over het menu: de gekozen dag in beeld houden.
@@ -281,17 +296,29 @@ function Days({ dates, selected, onSelect }: { dates: string[]; selected: string
     const x = offsets.current[selected];
     if (x !== undefined) strip.current?.scrollTo({ x: Math.max(0, x - SPACING.xl), animated: true });
   }, [selected]);
-  if (shown.length === 0) return null;
+
+  const last = pages[pages.length - 1] ?? from;
+  const days: string[] = [];
+  for (let day = from; day <= last && days.length < 21; day = addDays(day, 1)) days.push(day);
+  const withMenu = new Set(pages);
+  const format = (options: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat('nl-BE', { timeZone: 'UTC', ...options });
+  const weekday = format({ weekday: 'short' });
+  const dayOfMonth = format({ day: 'numeric' });
+  const full = format({ weekday: 'long', day: 'numeric', month: 'long' });
+
   return (
     <ScrollView
       ref={strip}
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={styles.daysStrip}
-      contentContainerStyle={styles.days}
+      style={styles.squaresStrip}
+      contentContainerStyle={styles.squares}
     >
-      {shown.map((date) => {
+      {days.map((date) => {
+        const noon = new Date(`${date}T12:00:00Z`);
         const active = date === selected;
+        const open = withMenu.has(date);
         return (
           <Pressable
             key={date}
@@ -299,11 +326,21 @@ function Days({ dates, selected, onSelect }: { dates: string[]; selected: string
               offsets.current[date] = event.nativeEvent.layout.x;
             }}
             accessibilityRole="button"
-            accessibilityState={{ selected: active }}
+            accessibilityLabel={open ? full.format(noon) : `${full.format(noon)}, geen menu`}
+            accessibilityState={{ selected: active, disabled: !open }}
+            disabled={!open}
             onPress={() => onSelect(date)}
-            style={({ pressed }) => [styles.day, active && styles.dayActive, pressed && !active && styles.dayPressed]}
+            style={({ pressed }) => [
+              styles.square,
+              !open && styles.squareOff,
+              active && styles.squareActive,
+              pressed && styles.pressed,
+            ]}
           >
-            <Text style={[styles.dayText, active && styles.dayTextActive]}>{dayLabel(date)}</Text>
+            <Text style={[styles.squareWeekday, active && styles.squareTextActive]}>
+              {weekday.format(noon).replace('.', '')}
+            </Text>
+            <Text style={[styles.squareDay, active && styles.squareTextActive]}>{dayOfMonth.format(noon)}</Text>
           </Pressable>
         );
       })}
@@ -342,16 +379,18 @@ function Menu({ restaurant, date }: { restaurant: AppAlmaRestaurant; date: strin
 
   return (
     <View style={styles.menu}>
-      <Text style={styles.priceNote}>Prijzen voor studenten en personeel van KU Leuven.</Text>
       {restaurant.menu.map((section) => {
         const all = section.groups.flatMap((group) => group.dishes);
+        // Een categorie zonder gerechten (Warm buffet op een dag zonder warme
+        // maaltijd) staat er niet als lege kop.
+        if (all.length === 0) return null;
         const folded = all.length > FOLD + 1 && !unfolded.has(section.title);
         let budget = folded ? FOLD : Infinity;
         return (
           <View key={section.title} style={styles.section}>
             <SectionHeading>{section.title}</SectionHeading>
             {section.groups.map((group, groupIndex) => {
-              if (budget <= 0) return null;
+              if (budget <= 0 || group.dishes.length === 0) return null;
               const dishes = group.dishes.slice(0, budget);
               budget -= dishes.length;
               return (
@@ -397,7 +436,10 @@ function Dish({ dish, onPress }: { dish: AppAlmaDish; onPress?: () => void }) {
       accessibilityHint={onPress ? 'Toont de foto in het groot' : undefined}
       accessibilityLabel={[dish.name, price, diet, meta].filter(Boolean).join(', ')}
     >
-      <View style={styles.thumb}>
+      {/* Alma's foto's zijn meestal PNG's met een doorzichtige achtergrond: daar
+          hoort geen grijs vlak achter. Zonder foto blijft het vakje leeg, zodat
+          de namen onder elkaar blijven staan. */}
+      <View style={[styles.thumb, dish.imageUrl && !/\.png(?:$|\?)/i.test(dish.imageUrl) ? styles.thumbFilled : null]}>
         {dish.imageUrl ? (
           <Image cachePolicy="memory-disk"
             source={{ uri: dish.imageUrl }}
@@ -441,43 +483,61 @@ function hoursDay(date: string): string {
   return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)} ${day}/${month}`;
 }
 
-function Hours({ restaurant }: { restaurant: AppAlmaRestaurant }) {
-  if (restaurant.hours.length === 0) return null;
-  const todayKey = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Brussels',
-  }).format(new Date());
+/**
+ * De openingsuren van het gekozen restaurant voor de hele week, als één tabel
+ * bovenaan elke dag: een rij per dag, een kolom per soort (warme maaltijden,
+ * snacks). Tot november 2026 stonden ze onderaan, onder het hele menu, en vond
+ * niemand ze. De dag die je bekijkt staat in het vet.
+ */
+function WeekHours({ restaurant, selected }: { restaurant: AppAlmaRestaurant; selected: string }) {
+  const kinds = restaurant.hours.filter((kind) => kind.days.length > 0);
+  if (kinds.length === 0) return null;
+  const dates = [...new Set(kinds.flatMap((kind) => kind.days.map((day) => day.date)))].sort();
 
   return (
     <View style={styles.section}>
       <SectionHeading>Openingsuren</SectionHeading>
-      {restaurant.hours.map((kind) => (
-        <View key={kind.kind} style={styles.group}>
-          <Text style={styles.groupTitle}>{kind.kind.toUpperCase()}</Text>
-          <CardList>
-            {kind.days.map((day) => {
-              const isToday = day.date === todayKey;
-              return (
-                <View key={day.date} style={styles.hoursRow}>
-                  <Text style={[styles.hoursDay, isToday && styles.hoursToday]}>{hoursDay(day.date)}</Text>
+      <CardList>
+        {kinds.length > 1 ? (
+          <View key="kop" style={styles.hoursRow}>
+            <View style={styles.hoursDayCell} />
+            {kinds.map((kind) => (
+              <Text key={kind.kind} style={[styles.hoursCell, styles.hoursKind]} numberOfLines={2}>
+                {kind.kind}
+              </Text>
+            ))}
+          </View>
+        ) : null}
+        {dates.map((date) => {
+          const current = date === selected;
+          return (
+            <View key={date} style={styles.hoursRow}>
+              <Text style={[styles.hoursDay, styles.hoursDayCell, current && styles.hoursToday]}>{hoursDay(date)}</Text>
+              {kinds.map((kind) => {
+                const windows = kind.days.find((day) => day.date === date)?.windows ?? [];
+                return (
                   <Text
+                    key={kind.kind}
                     style={[
+                      styles.hoursCell,
                       styles.hoursValue,
-                      day.windows.length === 0 && styles.hoursClosed,
-                      isToday && styles.hoursToday,
+                      windows.length === 0 && styles.hoursClosed,
+                      current && styles.hoursToday,
                     ]}
                   >
-                    {day.windows.length === 0
+                    {windows.length === 0
                       ? 'Gesloten'
-                      : day.windows
+                      : windows
                           .map((window) => `${almaClock(window.start)}–${almaClock(window.end ?? window.start)}`)
-                          .join(' en ')}
+                          .join('\n')}
                   </Text>
-                </View>
-              );
-            })}
-          </CardList>
-        </View>
-      ))}
+                );
+              })}
+            </View>
+          );
+        })}
+      </CardList>
+      {kinds.length === 1 ? <Text style={styles.hoursNote}>{kinds[0].kind}</Text> : null}
     </View>
   );
 }
@@ -487,55 +547,42 @@ const styles = StyleSheet.create({
   pager: { flex: 1 },
   // Enkel zo hoog als de pillen: buiten een verticale lijst rekte de rij anders uit
   // tot de hele vrije hoogte.
-  daysStrip: { flexGrow: 0, flexShrink: 0 },
+  // De dagen lopen tot tegen de randen van het scherm, zoals de pillen erboven.
+  squaresStrip: { flexGrow: 0, flexShrink: 0, marginHorizontal: -(SPACING.xl - 4) },
+  squares: { gap: 6, paddingHorizontal: SPACING.xl - 4 },
+  square: {
+    width: 48,
+    height: 56,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 1,
+    backgroundColor: COLORS.surface,
+  },
+  squareOff: { backgroundColor: 'rgba(14, 26, 54, 0.08)' },
+  squareActive: { backgroundColor: COLORS.navy },
+  squareWeekday: {
+    fontFamily: FONTS.semibold,
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: COLORS.navy,
+  },
+  squareDay: { fontFamily: FONTS.bold, fontSize: 18, color: COLORS.navy, fontVariant: ['tabular-nums'] },
+  squareTextActive: { color: COLORS.yellow },
+  dayHeading: {
+    fontFamily: FONTS.bold,
+    fontSize: 22,
+    letterSpacing: -0.5,
+    color: COLORS.navy,
+    paddingHorizontal: SPACING.lg + SPACING.xs,
+    // De eerste categorie van het menu brengt haar eigen lucht mee.
+    marginBottom: -SPACING.xl,
+  },
   root: { flex: 1, backgroundColor: COLORS.paper },
   content: { paddingTop: SPACING.sm, paddingBottom: SPACING.xxl * 2, gap: SPACING.xl },
-  status: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.lg,
-  },
   // Open in het groen, dicht in het grijs; geen geel bolletje meer.
-  statusPill: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 5,
-    borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.paper2,
-  },
-  statusPillOpen: { backgroundColor: COLORS.okBg },
-  statusText: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.body },
-  statusOpen: { color: COLORS.okInk },
-  statusToday: {
-    ...TYPE.small,
-    color: COLORS.muted,
-    fontVariant: ['tabular-nums'],
-  },
-  days: {
-    gap: SPACING.sm,
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
-  },
-  day: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: RADIUS.pill,
-    borderWidth: 1,
-    borderColor: COLORS.controlBorder,
-  },
-  dayActive: { backgroundColor: COLORS.ink, borderColor: COLORS.ink },
-  dayPressed: { backgroundColor: COLORS.paper2 },
-  dayText: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.ink },
-  dayTextActive: { color: COLORS.surface },
-  menu: { paddingTop: SPACING.sm },
-  priceNote: {
-    ...TYPE.small,
-    color: COLORS.muted,
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
-  },
+  menu: {},
   section: {
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.xl,
@@ -558,9 +605,9 @@ const styles = StyleSheet.create({
     width: 52,
     height: 40,
     borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.paper,
     overflow: 'hidden',
   },
+  thumbFilled: { backgroundColor: COLORS.paper },
   dishText: { flex: 1, gap: 3 },
   dishName: {
     fontFamily: FONTS.medium,
@@ -587,10 +634,14 @@ const styles = StyleSheet.create({
   moreText: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.navy },
   hoursRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     gap: SPACING.md,
-    paddingVertical: 11,
+    paddingVertical: 10,
   },
+  hoursDayCell: { width: 72 },
+  hoursCell: { flex: 1, textAlign: 'right' },
+  hoursKind: { ...TYPE.small, fontSize: 12, color: COLORS.muted },
+  hoursNote: { ...TYPE.small, fontSize: 12, color: COLORS.muted, paddingHorizontal: SPACING.xs },
   hoursDay: { ...TYPE.body, fontSize: 14, color: COLORS.body },
   hoursValue: {
     fontFamily: FONTS.semibold,

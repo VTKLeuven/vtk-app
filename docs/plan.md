@@ -914,3 +914,21 @@ afgewezen: de twee kolommen registers met de gele lijn in de marge, zonder kaart
 erom, zijn overzichtelijker. In de kop staan je profiel, Feedback App en Zoeken
 zoals voordien; hun bolletjes en je initialen zijn navy met geel, want een geel
 rondje verdwijnt tegen de gele kop.
+
+## November 2026: Alma en Broodjes in het geel, en de gele pil
+
+Na een canvas met vier opties voor elk scherm:
+
+- **Alma (optie 4)**: de gele kop met de status als ondertitel, de restaurants
+  als pillen die opzij scrollen (`scroll` op de tabs van `YellowHead`) en de dagen
+  als vierkantjes zoals de week op Home; een dag zonder menu staat gedempt. Elke
+  dag opent met de openingsuren van de hele week als één tabel (een kolom per
+  soort, de bekeken dag in het vet): onderaan vond niemand ze. De zin over de
+  prijzen is weg, een categorie zonder gerechten ook, en achter een foto met een
+  doorzichtige achtergrond (Alma's PNG's) staat geen grijs vlak meer.
+- **Broodjes (optie 1 en 3)**: de foto van de ploeg maakte plaats voor de gele
+  kop met de verkoopdagen als datumpinnen. Heb je voor die dag al besteld, dan
+  staat je bestelling als witte kaart in het geel, met het afhaaluur en
+  Aanpassen, Annuleren of Vrijgeven.
+- **De tabbalk**: de actieve tab staat op een gele pil met een vet label, zoals
+  in de ontwerpen van Home. Tot nu stond die enkel in de mockups.

@@ -15,7 +15,8 @@ import {
 } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { DatePin } from '../components/DatePin';
-import { PhotoHead } from '../components/PageHead';
+import { CARD_SHADOW } from '../components/HomeSection';
+import { YellowHead } from '../components/YellowHead';
 import { Stepper } from '../components/Stepper';
 import { Button, Card, CardList, Empty, ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
 import { formatDate, formatDay, formatEuro, formatTime, formatTimeRange } from '../format';
@@ -49,8 +50,13 @@ export default function BroodjesScreen() {
   const { locale, viewer, gate, refresh: refreshApp } = useApp();
   const resource = useResource('theokot', () => fetchTheokot(locale), locale);
 
-  // De foto van het Theokot-team bovenaan, zoals een evenement zijn affiche heeft.
-  const head = () => <PhotoHead image={THEOKOT_PHOTO} title="Broodjes" height={220} />;
+  // De gele kop van de andere schermen; `extra` komt onderaan in het geel (de
+  // verkoopdagen, en je bestelling als je er al een hebt).
+  const head = (extra?: React.ReactNode) => (
+    <YellowHead title="Broodjes" subtitle="Bestellen en afhalen in het Theokot" back>
+      {extra}
+    </YellowHead>
+  );
 
   if (!viewer) {
     return (
@@ -102,7 +108,7 @@ export default function BroodjesScreen() {
   return (
     <View style={styles.root}>
       <Ordering
-        head={head()}
+        head={head}
         data={resource.data}
         stale={resource.stale}
         refreshing={resource.refreshing}
@@ -130,8 +136,8 @@ function Ordering({
   locale,
   onChanged,
 }: {
-  /** De kop met de foto; scrolt mee met de rest. */
-  head: React.ReactNode;
+  /** De gele kop; scrolt mee met de rest. */
+  head: (extra?: React.ReactNode) => React.ReactNode;
   data: AppTheokot;
   stale: boolean;
   refreshing: boolean;
@@ -145,9 +151,10 @@ function Ordering({
     sessions.find((session) => session.canOrder || session.order || session.canTakeOver) ?? sessions[0];
   const session = sessions.find((item) => item.id === picked) ?? fallback;
 
-  const header = (
+  // Wat bovenaan op het papier staat, onder de kop: oude gegevens, een schorsing,
+  // een bericht van de Theokot-ploeg.
+  const notices = (
     <>
-      <View style={styles.bleed}>{head}</View>
       {stale ? <StaleNotice onRetry={onRefresh} /> : null}
 
       {ban ? (
@@ -169,46 +176,52 @@ function Ordering({
           <Text style={styles.body}>{message}</Text>
         </Card>
       ) : null}
-
-      {sessions.length > 1 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.daysScroll}
-          contentContainerStyle={styles.days}
-        >
-          {sessions.map((item) => {
-            const active = item.id === session?.id;
-            return (
-              <Pressable
-                key={item.id}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={formatDay(item.date, locale)}
-                onPress={() => setPicked(item.id)}
-              >
-                <DatePin iso={item.date} locale={locale} tone={active ? 'ink' : 'plain'} month={false} />
-                {item.order ? <View style={styles.dayDot} /> : null}
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      ) : null}
     </>
   );
+
+  // De verkoopdagen als datumpinnen in het geel (voorstel 1, november 2026).
+  const pins =
+    sessions.length > 1 ? (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.daysScroll}
+        contentContainerStyle={styles.days}
+      >
+        {sessions.map((item) => {
+          const active = item.id === session?.id;
+          return (
+            <Pressable
+              key={item.id}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={item.order ? `${formatDay(item.date, locale)}, besteld` : formatDay(item.date, locale)}
+              onPress={() => setPicked(item.id)}
+            >
+              <DatePin iso={item.date} locale={locale} tone={active ? 'ink' : 'plain'} month={false} />
+              {item.order ? <View style={styles.dayDot} /> : null}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    ) : null;
 
   if (!session) {
     return (
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.scroll}
         style={styles.root}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {header}
-        <Empty
-          title="Geen verkoopdagen open"
-          hint="Er staat nu niets klaar om te bestellen. Het Theokot zet de dagen meestal een paar dagen op voorhand open."
-        />
+        <View style={styles.overscroll} />
+        {head(pins)}
+        <View style={styles.content}>
+          {notices}
+          <Empty
+            title="Geen verkoopdagen open"
+            hint="Er staat nu niets klaar om te bestellen. Het Theokot zet de dagen meestal een paar dagen op voorhand open."
+          />
+        </View>
       </ScrollView>
     );
   }
@@ -216,7 +229,15 @@ function Ordering({
   return (
     <SessionView
       session={session}
-      header={header}
+      head={(extra) =>
+        head(
+          <>
+            {pins}
+            {extra}
+          </>,
+        )
+      }
+      notices={notices}
       refreshing={refreshing}
       onRefresh={onRefresh}
       locale={locale}
@@ -259,7 +280,8 @@ function OrderLines({
  */
 function SessionView({
   session,
-  header,
+  head,
+  notices,
   refreshing,
   onRefresh,
   locale,
@@ -269,7 +291,9 @@ function SessionView({
   onChanged,
 }: {
   session: AppTheokotSession;
-  header: React.ReactNode;
+  /** De gele kop met de verkoopdagen; `extra` is je bestelling, onder de dagen. */
+  head: (extra?: React.ReactNode) => React.ReactNode;
+  notices: React.ReactNode;
   refreshing: boolean;
   onRefresh: () => void;
   locale: AppLocale;
@@ -437,174 +461,184 @@ function SessionView({
   const stock = (available: number) =>
     available === 0 ? 'uitverkocht' : available <= LOW_STOCK ? `nog ${available}` : null;
 
+  // Wie al besteld heeft, ziet zijn bestelling meteen in het geel onder de dagen
+  // (voorstel 3, november 2026), met aanpassen, annuleren of vrijgeven erbij.
+  const yours =
+    order && !editing ? (
+      <View style={styles.yours}>
+        <Text style={styles.kicker}>Jouw bestelling voor {weekdayOf(session.date, locale)}</Text>
+        <OrderLines order={order} label="Totaal" />
+        <Text style={styles.hint}>
+          Afhalen {formatTimeRange(session.pickupStart, session.pickupEnd, locale)} aan de balie, met je studentenkaart.
+        </Text>
+        {order.releasedCount ? (
+          <Text style={styles.hint}>
+            {order.releasedCount === 1
+              ? '1 broodje van deze bestelling staat vrij voor overname en is niet meer van jou.'
+              : `${order.releasedCount} broodjes van deze bestelling staan vrij voor overname en zijn niet meer van jou.`}{' '}
+            Wat om {pickupEnd} niet overgenomen is, telt als no-show.
+          </Text>
+        ) : null}
+        {order.canCancel ? (
+          <View style={styles.buttons}>
+            {order.canEdit ? (
+              <View style={styles.flex}>
+                <Button label="Aanpassen" variant="ghost" busy={busy} onPress={startEditing} />
+              </View>
+            ) : null}
+            <View style={styles.flex}>
+              <Button label="Annuleren" variant="ghost" busy={busy} onPress={cancel} />
+            </View>
+          </View>
+        ) : order.canRelease && order.lines.length > 0 ? (
+          <>
+            <Text style={styles.hint}>
+              De deadline is voorbij en je broodjes worden al gemaakt. Kan je toch niet komen,
+              geef ze dan vrij: een ander kan ze overnemen.
+            </Text>
+            <Button label="Annuleren en vrijgeven" variant="ghost" busy={busy} onPress={release} />
+          </>
+        ) : (
+          <Text style={styles.hint}>
+            Kom je bestelling zeker afhalen: drie keer niet afhalen levert een tijdelijke
+            schorsing op.
+          </Text>
+        )}
+      </View>
+    ) : null;
+
   return (
     <View style={styles.root}>
       <ScrollView
         style={styles.root}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {header}
+        <View style={styles.overscroll} />
+        {head(yours)}
+        <View style={styles.content}>
+          {notices}
 
-        <Text style={styles.when}>
-          {session.window === 'UPCOMING' ? (
-            <>Bestellen opent <Text style={styles.strong}>{formatDay(session.orderOpenAt, locale)}</Text>, </>
-          ) : session.window === 'OPEN' ? (
-            <>Bestellen tot <Text style={styles.strong}>{formatDay(session.orderCloseAt, locale)} {formatTime(session.orderCloseAt, locale)}</Text>, </>
-          ) : (
-            <>Bestellen is gesloten, </>
-          )}
-          afhalen <Text style={styles.strong}>{formatTimeRange(session.pickupStart, session.pickupEnd, locale)}</Text>.
-        </Text>
-
-        {order && !editing ? (
-          <View style={styles.yours}>
-            <Text style={styles.kicker}>Jouw bestelling</Text>
-            <OrderLines order={order} label="Totaal" />
-            {order.releasedCount ? (
-              <Text style={styles.hint}>
-                {order.releasedCount === 1
-                  ? '1 broodje van deze bestelling staat vrij voor overname en is niet meer van jou.'
-                  : `${order.releasedCount} broodjes van deze bestelling staan vrij voor overname en zijn niet meer van jou.`}{' '}
-                Wat om {pickupEnd} niet overgenomen is, telt als no-show.
-              </Text>
-            ) : null}
-            {order.canCancel ? (
-              <View style={styles.buttons}>
-                {order.canEdit ? (
-                  <View style={styles.flex}>
-                    <Button label="Aanpassen" variant="ghost" busy={busy} onPress={startEditing} />
-                  </View>
-                ) : null}
-                <View style={styles.flex}>
-                  <Button label="Annuleren" variant="ghost" busy={busy} onPress={cancel} />
-                </View>
-              </View>
-            ) : order.canRelease && order.lines.length > 0 ? (
-              <>
-                <Text style={styles.hint}>
-                  De deadline is voorbij en je broodjes worden al gemaakt. Kan je toch niet komen,
-                  geef ze dan vrij: een ander kan ze overnemen.
-                </Text>
-                <Button label="Annuleren en vrijgeven" variant="ghost" busy={busy} onPress={release} />
-              </>
+          <Text style={styles.when}>
+            {session.window === 'UPCOMING' ? (
+              <>Bestellen opent <Text style={styles.strong}>{formatDay(session.orderOpenAt, locale)}</Text>, </>
+            ) : session.window === 'OPEN' ? (
+              <>Bestellen tot <Text style={styles.strong}>{formatDay(session.orderCloseAt, locale)} {formatTime(session.orderCloseAt, locale)}</Text>, </>
             ) : (
-              <Text style={styles.hint}>
-                Kom je bestelling zeker afhalen: drie keer niet afhalen levert een tijdelijke
-                schorsing op.
-              </Text>
+              <>Bestellen is gesloten, </>
             )}
-          </View>
-        ) : null}
+            afhalen <Text style={styles.strong}>{formatTimeRange(session.pickupStart, session.pickupEnd, locale)}</Text>.
+          </Text>
 
-        {ordering ? (
-          <>
-            {special ? (
-              <View style={styles.special}>
-                {special.imageUrl ? (
-                  <Image cachePolicy="memory-disk" source={{ uri: special.imageUrl }} style={styles.specialPhoto} contentFit="cover" />
-                ) : null}
-                <View style={styles.specialBody}>
-                  <Text style={styles.tag}>BROODJE VAN DE WEEK</Text>
-                  <Text style={styles.specialName}>{special.name}</Text>
-                  {special.ingredients ? <Text style={styles.hint}>{special.ingredients}</Text> : null}
-                  <View style={styles.specialLine}>
-                    <Text style={styles.price}>
-                      {formatEuro(special.priceCents)}
-                      {stock(limitFor(special).available) ? (
-                        <Text style={styles.low}>   {stock(limitFor(special).available)}</Text>
-                      ) : null}
-                    </Text>
-                    <Stepper
-                      value={limitFor(special).quantity}
-                      max={limitFor(special).max}
-                      label={special.name}
-                      disabled={banned || limitFor(special).available === 0}
-                      onChange={(next) => setQuantity(special.id, next)}
-                    />
+          {ordering ? (
+            <>
+              {special ? (
+                <View style={styles.special}>
+                  {special.imageUrl ? (
+                    <Image cachePolicy="memory-disk" source={{ uri: special.imageUrl }} style={styles.specialPhoto} contentFit="cover" />
+                  ) : null}
+                  <View style={styles.specialBody}>
+                    <Text style={styles.tag}>BROODJE VAN DE WEEK</Text>
+                    <Text style={styles.specialName}>{special.name}</Text>
+                    {special.ingredients ? <Text style={styles.hint}>{special.ingredients}</Text> : null}
+                    <View style={styles.specialLine}>
+                      <Text style={styles.price}>
+                        {formatEuro(special.priceCents)}
+                        {stock(limitFor(special).available) ? (
+                          <Text style={styles.low}>   {stock(limitFor(special).available)}</Text>
+                        ) : null}
+                      </Text>
+                      <Stepper
+                        value={limitFor(special).quantity}
+                        max={limitFor(special).max}
+                        label={special.name}
+                        disabled={banned || limitFor(special).available === 0}
+                        onChange={(next) => setQuantity(special.id, next)}
+                      />
+                    </View>
                   </View>
                 </View>
-              </View>
-            ) : null}
+              ) : null}
 
-            <SectionHeading>Het aanbod</SectionHeading>
-            <CardList style={styles.flat}>
-              {regular.map((item) => {
-                const { quantity, available, max } = limitFor(item);
-                return (
-                  <View key={item.id} style={styles.item}>
-                    {/* Het Theokot werkt zonder foto's; een leeg vakje ervoor las als een
-                        afbeelding die niet laadde. Zet iemand er toch een, dan staat ze er. */}
-                    {item.imageUrl ? (
-                      <Image cachePolicy="memory-disk" source={{ uri: item.imageUrl }} style={styles.thumb} contentFit="cover" />
-                    ) : null}
-                    <View style={styles.flex}>
-                      <Text style={styles.itemName}>{item.name}</Text>
-                      {item.ingredients ? (
-                        <Text style={styles.hint} numberOfLines={2}>
-                          {item.ingredients}
-                        </Text>
+              <SectionHeading>Het aanbod</SectionHeading>
+              <CardList style={styles.flat}>
+                {regular.map((item) => {
+                  const { quantity, available, max } = limitFor(item);
+                  return (
+                    <View key={item.id} style={styles.item}>
+                      {/* Het Theokot werkt zonder foto's; een leeg vakje ervoor las als een
+                          afbeelding die niet laadde. Zet iemand er toch een, dan staat ze er. */}
+                      {item.imageUrl ? (
+                        <Image cachePolicy="memory-disk" source={{ uri: item.imageUrl }} style={styles.thumb} contentFit="cover" />
                       ) : null}
-                      <Text style={styles.itemMeta}>
-                        {formatEuro(item.priceCents)}
-                        {stock(available) ? <Text style={styles.low}>   {stock(available)}</Text> : null}
-                      </Text>
+                      <View style={styles.flex}>
+                        <Text style={styles.itemName}>{item.name}</Text>
+                        {item.ingredients ? (
+                          <Text style={styles.hint} numberOfLines={2}>
+                            {item.ingredients}
+                          </Text>
+                        ) : null}
+                        <Text style={styles.itemMeta}>
+                          {formatEuro(item.priceCents)}
+                          {stock(available) ? <Text style={styles.low}>   {stock(available)}</Text> : null}
+                        </Text>
+                      </View>
+                      <Stepper
+                        value={quantity}
+                        max={max}
+                        label={item.name}
+                        disabled={banned || available === 0}
+                        onChange={(next) => setQuantity(item.id, next)}
+                      />
                     </View>
-                    <Stepper
-                      value={quantity}
-                      max={max}
-                      label={item.name}
-                      disabled={banned || available === 0}
-                      onChange={(next) => setQuantity(item.id, next)}
-                    />
-                  </View>
-                );
-              })}
-            </CardList>
-          </>
-        ) : null}
+                  );
+                })}
+              </CardList>
+            </>
+          ) : null}
 
-        {offered.length > 0 && !banned ? (
-          <View style={styles.takeover}>
-            <SectionHeading>Vrijgekomen broodjes</SectionHeading>
+          {offered.length > 0 && !banned ? (
+            <View style={styles.takeover}>
+              <SectionHeading>Vrijgekomen broodjes</SectionHeading>
+              <Text style={styles.hint}>
+                Na de deadline geannuleerd en al gemaakt. Neem je een broodje over, dan haal je het
+                af en betaal je aan de balie, tot {pickupEnd}.
+              </Text>
+              <CardList style={styles.flat}>
+                {offered.map((item) => {
+                  const full =
+                    ownCount + 1 > maxItems || (item.isWeeklySpecial && ownWeekly + 1 > maxWeeklySpecial);
+                  return (
+                    <View key={item.id} style={styles.item}>
+                      <View style={styles.flex}>
+                        <Text style={styles.itemName}>{item.name}</Text>
+                        <Text style={styles.itemMeta}>
+                          {formatEuro(item.priceCents)}   {item.released} vrij
+                        </Text>
+                      </View>
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={busy || full}
+                        onPress={() => takeOver(item)}
+                        style={({ pressed }) => [styles.smallButton, (busy || full) && styles.disabled, pressed && styles.pressed]}
+                      >
+                        <Text style={styles.smallButtonLabel}>Overnemen</Text>
+                      </Pressable>
+                    </View>
+                  );
+                })}
+              </CardList>
+            </View>
+          ) : null}
+
+          {!ordering && !order && offered.length === 0 ? (
             <Text style={styles.hint}>
-              Na de deadline geannuleerd en al gemaakt. Neem je een broodje over, dan haal je het
-              af en betaal je aan de balie, tot {pickupEnd}.
+              {session.window === 'UPCOMING'
+                ? 'Het aanbod verschijnt hier zodra het bestellen opengaat.'
+                : 'Bestellen is gesloten voor deze dag.'}
             </Text>
-            <CardList style={styles.flat}>
-              {offered.map((item) => {
-                const full =
-                  ownCount + 1 > maxItems || (item.isWeeklySpecial && ownWeekly + 1 > maxWeeklySpecial);
-                return (
-                  <View key={item.id} style={styles.item}>
-                    <View style={styles.flex}>
-                      <Text style={styles.itemName}>{item.name}</Text>
-                      <Text style={styles.itemMeta}>
-                        {formatEuro(item.priceCents)}   {item.released} vrij
-                      </Text>
-                    </View>
-                    <Pressable
-                      accessibilityRole="button"
-                      disabled={busy || full}
-                      onPress={() => takeOver(item)}
-                      style={({ pressed }) => [styles.smallButton, (busy || full) && styles.disabled, pressed && styles.pressed]}
-                    >
-                      <Text style={styles.smallButtonLabel}>Overnemen</Text>
-                    </Pressable>
-                  </View>
-                );
-              })}
-            </CardList>
-          </View>
-        ) : null}
-
-        {!ordering && !order && offered.length === 0 ? (
-          <Text style={styles.hint}>
-            {session.window === 'UPCOMING'
-              ? 'Het aanbod verschijnt hier zodra het bestellen opengaat.'
-              : 'Bestellen is gesloten voor deze dag.'}
-          </Text>
-        ) : null}
+          ) : null}
+        </View>
       </ScrollView>
 
       {ordering ? (
@@ -637,6 +671,11 @@ function SessionView({
       ) : null}
     </View>
   );
+}
+
+/** "maandag", voor "Jouw bestelling voor maandag". */
+function weekdayOf(iso: string, locale: AppLocale): string {
+  return formatDay(iso, locale).split(' ')[0] ?? '';
 }
 
 /**
@@ -680,13 +719,19 @@ function orderErrorText(error: unknown): string {
   }
 }
 
-const THEOKOT_PHOTO = require('../../assets/snel/theokot.jpg');
-
 const styles = StyleSheet.create({
-  // De kop met de foto loopt tot tegen de randen, buiten de marge van de inhoud.
-  bleed: { marginHorizontal: -(SPACING.xl - 4), marginTop: -(SPACING.xl - 4) },
   root: { flex: 1, backgroundColor: COLORS.paper },
-  content: { padding: SPACING.xl - 4, gap: SPACING.md, paddingBottom: SPACING.xxl },
+  scroll: { paddingBottom: SPACING.xxl },
+  // Wat boven de kop verschijnt als je op iOS omlaag trekt: geel, zoals de kop.
+  overscroll: {
+    position: 'absolute',
+    top: -1000,
+    left: 0,
+    right: 0,
+    height: 1000,
+    backgroundColor: COLORS.yellow,
+  },
+  content: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxl },
   flex: { flex: 1 },
   title: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },
@@ -721,13 +766,13 @@ const styles = StyleSheet.create({
   // Op Broodjes is alles één vlak: kaarten met een dun randje en zonder schaduw,
   // want de schaduwen kleurden de grond rond de dagen en de kaarten grijzer.
   flat: { shadowOpacity: 0, elevation: 0, borderWidth: 1, borderColor: COLORS.line2 },
+  // Je bestelling, als witte kaart in het geel.
   yours: {
     backgroundColor: COLORS.surface,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: COLORS.yellow,
+    borderRadius: 20,
     padding: SPACING.lg,
     gap: SPACING.sm,
+    ...CARD_SHADOW,
   },
   buttons: { flexDirection: 'row', gap: SPACING.sm },
   lines: { gap: SPACING.xs },

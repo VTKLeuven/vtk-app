@@ -162,9 +162,13 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
    wat bij het tabblad hoort (de dagen die je ziet in de week, de voortgang per
    vak als één balk, Lijst of Agenda). Een VTK-evenement in de planning is
    lichtgeel met een gele rand en het logo, een eigen item papier met een
-   stippelrand; geen gekleurde rail aan één kant. Een scherm met een eigen beeld (een evenement, een ticket,
-   de broodjes) opent met `PhotoHead`: de foto over de volle breedte en de titel
-   op papier eronder. **De transportplanning (`vervoer.tsx`) volgt de app, maar
+   stippelrand; geen gekleurde rail aan één kant. Een scherm met een eigen beeld (een evenement, een ticket)
+   opent met `PhotoHead`: de foto over de volle breedte en de titel
+   op papier eronder. Ook Tickets, Meer, Alma en Broodjes hebben de gele kop:
+   Alma met de restaurants als pillen, de dagen als vierkantjes en bovenaan elke
+   dag de openingsuren van de week; Broodjes met de verkoopdagen in het geel, en
+   je bestelling eronder als je er al een hebt. De actieve tab in de tabbalk
+   staat op een gele pil. **De transportplanning (`vervoer.tsx`) volgt de app, maar
    haar agenda is exact die van logistiek.vtk.be** (drie dagen naast elkaar, de
    hele dag in beeld, dezelfde kleuren, arceringen en randen); verander daar
    niets aan zonder de site. Praesidium hield zijn eigen vorm. De scanner aan de deur
