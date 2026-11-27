@@ -133,7 +133,14 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
       <View style={styles.overscroll} />
       {/* Het zoekveld staat in het geel, zoals op het voorstel van november 2026. */}
       <YellowHead title="Studies" tabs={tabs}>
-        <SearchField value={query} onChange={setQuery} placeholder="Zoek een vak op naam of code" label="Vakken zoeken" />
+        <SearchField
+          value={query}
+          onChange={setQuery}
+          placeholder="Zoek een vak op naam of code"
+          label="Vakken zoeken"
+          // In de gele kop: zonder eigen marge, de kop zet de ruimte al.
+          style={styles.headSearch}
+        />
       </YellowHead>
       <View style={styles.content}>
         {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
@@ -305,6 +312,7 @@ export function courseMeta(course: AppBurgieclanCourse): string {
 }
 
 const styles = StyleSheet.create({
+  headSearch: { margin: 0 },
   root: { flex: 1, backgroundColor: COLORS.paper },
   scroll: { paddingBottom: SPACING.xxl },
   content: { padding: SPACING.xl - 4, gap: SPACING.xl, paddingBottom: SPACING.xxl },

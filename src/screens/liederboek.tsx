@@ -75,6 +75,7 @@ export default function LiederboekScreen() {
                 onChange={setQuery}
                 placeholder="Titel of paginanummer"
                 label="Zoek een lied op titel of paginanummer"
+                style={styles.searchField}
               />
             </View>
           </PageHead>
@@ -151,6 +152,7 @@ const styles = StyleSheet.create({
   headWrap: { marginHorizontal: -SPACING.lg, marginBottom: SPACING.lg },
   overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
   search: {},
+  searchField: { margin: 0 },
 
   // Eén witte kaart voor de hele lijst: de eerste en laatste rij ronden de hoeken af.
   row: {

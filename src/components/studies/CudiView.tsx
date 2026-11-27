@@ -1,7 +1,7 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Image } from 'expo-image';
 import { useFocusEffect } from 'expo-router';
-import { CalendarClock, Check, ChevronDown, ChevronRight, ShoppingBag, X } from 'lucide-react-native';
+import { CalendarClock, Check, ChevronDown, ChevronRight, Clock, ShoppingBag, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type {
   AppCudiArticle,
   AppCudiCatalog,
+  AppCudiOverview,
   AppCudiOrder,
   AppCudiOrderResult,
   AppCudiTimeslots,
@@ -130,6 +131,8 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
   const count = lines.reduce((sum, line) => sum + line.quantity, 0);
 
   const hours = overview.data?.hours ?? null;
+  // De uren van de week staan dicht, zoals bij Alma.
+  const [hoursOpen, setHoursOpen] = useState(false);
   /**
    * De gele kop: het logo van de cursusdienst met wanneer ze open is, en rechts
    * al je bestellingen. De knop naar de tijdsloten stond hier ook, maar dan stond
@@ -337,18 +340,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
         {placed ? <PlacedNotice result={placed} /> : null}
 
         {hours && !hours.unavailable && hours.entries.length > 0 ? (
-          <View style={styles.block}>
-            <Text accessibilityRole="header" style={styles.heading}>Openingsuren deze week</Text>
-            <CardList>
-              {hours.entries.map((entry) => (
-                <View key={entry.day} style={styles.hoursRow}>
-                  <Text style={styles.hoursDay}>{entry.day}</Text>
-                  <Text style={styles.hoursValue}>{entry.hours}</Text>
-                </View>
-              ))}
-            </CardList>
-            {hours.note ? <Text style={styles.hint}>{hours.note}</Text> : null}
-          </View>
+          <HoursCard hours={hours} open={hoursOpen} onToggle={() => setHoursOpen((current) => !current)} />
         ) : null}
 
         {ready.length > 0 ? (
@@ -1051,13 +1043,24 @@ const styles = StyleSheet.create({
   pillMine: { backgroundColor: COLORS.yellow, color: COLORS.ink },
   pillFull: { backgroundColor: COLORS.paper2, color: COLORS.muted },
 
-  hoursRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
+  hoursCard: { backgroundColor: COLORS.surface, borderRadius: 20, ...CARD_SHADOW },
+  hoursHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.lg },
+  hoursTitle: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink },
+  hoursSummary: { ...TYPE.small, color: COLORS.muted, marginTop: 2, fontVariant: ['tabular-nums'] },
+  hoursSummaryOpen: { fontFamily: FONTS.semibold, color: COLORS.okInk },
+  hoursBody: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.line2,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.lg,
   },
-  hoursDay: { ...TYPE.body, color: COLORS.body },
-  hoursValue: { ...TYPE.body, color: COLORS.ink, fontVariant: ['tabular-nums'] },
+  hoursClosed: { fontFamily: FONTS.regular, color: COLORS.muted },
+  hoursToday: { color: COLORS.ink, fontFamily: FONTS.bold },
+  hoursNote: { ...TYPE.small, fontSize: 12, color: COLORS.muted, marginTop: SPACING.sm },
+  hoursRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingVertical: 7 },
+  hoursDay: { ...TYPE.body, fontSize: 14, color: COLORS.body },
+  hoursValue: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink, fontVariant: ['tabular-nums'] },
 
   bar: {
     flexDirection: 'row',
@@ -1124,6 +1127,65 @@ const styles = StyleSheet.create({
 });
 
 /** "Open tot 13:50", "Gesloten, opent di 12:35": de regel van de server, als zin. */
+/**
+ * De openingsuren als uitklapkaart, dezelfde als bij Alma: dicht de stand van
+ * nu, open de hele week met vandaag vet.
+ */
+function HoursCard({
+  hours,
+  open,
+  onToggle,
+}: {
+  hours: NonNullable<AppCudiOverview['hours']>;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const weekday = new Intl.DateTimeFormat('nl-BE', { timeZone: 'Europe/Brussels', weekday: 'long' })
+    .format(new Date())
+    .slice(0, 2)
+    .toLowerCase();
+  const isToday = (day: string) => day.trim().slice(0, 2).toLowerCase() === weekday;
+  return (
+    <View style={styles.hoursCard}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={`Openingsuren van de cursusdienst, ${open ? 'dichtklappen' : 'de hele week tonen'}`}
+        onPress={onToggle}
+        style={({ pressed }) => [styles.hoursHead, pressed && styles.pressed]}
+      >
+        <Clock color={COLORS.navy} size={18} />
+        <View style={styles.flex}>
+          <Text style={styles.hoursTitle}>Openingsuren</Text>
+          {!open ? (
+            <Text style={[styles.hoursSummary, hours.openNow && styles.hoursSummaryOpen]} numberOfLines={1}>
+              {hoursLine(hours.openNow, hours.detail)}
+            </Text>
+          ) : null}
+        </View>
+        <ChevronDown color={COLORS.navy} size={20} style={open ? styles.chevronOpen : undefined} />
+      </Pressable>
+      {open ? (
+        <View style={styles.hoursBody}>
+          {hours.entries.map((entry) => {
+            const today = isToday(entry.day);
+            const closed = /^(gesloten|closed)$/i.test(entry.hours.trim());
+            return (
+              <View key={entry.day} style={styles.hoursRow}>
+                <Text style={[styles.hoursDay, today && styles.hoursToday]}>{entry.day}</Text>
+                <Text style={[styles.hoursValue, closed && styles.hoursClosed, today && styles.hoursToday]}>
+                  {entry.hours}
+                </Text>
+              </View>
+            );
+          })}
+          {hours.note ? <Text style={styles.hoursNote}>{hours.note}</Text> : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 function hoursLine(openNow: boolean, detail: string): string {
   const text = detail.trim();
   if (openNow) return text.startsWith('tot') ? `Open ${text}` : 'Nu open';

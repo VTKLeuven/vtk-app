@@ -93,7 +93,13 @@ export default function WegwijzerScreen() {
     <View style={styles.root}>
       <PageHead title="Wegwijzer" subtitle="Het grondplan van de VTK Jobfair">
         {data ? (
-          <SearchField value={query} onChange={setQuery} placeholder="Zoek een bedrijf" label="Zoek een bedrijf op de jobfair" />
+          <SearchField
+            value={query}
+            onChange={setQuery}
+            placeholder="Zoek een bedrijf"
+            label="Zoek een bedrijf op de jobfair"
+            style={styles.searchField}
+          />
         ) : null}
       </PageHead>
 
@@ -286,6 +292,7 @@ function CompanySheet({ booth, onClose }: { booth: ExportedBooth | null; onClose
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
+  searchField: { margin: 0 },
   flex: { flex: 1 },
   pressed: { opacity: 0.6 },
   hint: { ...TYPE.small, color: COLORS.muted },
