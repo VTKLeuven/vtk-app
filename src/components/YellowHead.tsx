@@ -1,4 +1,5 @@
-import { Bell } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -7,42 +8,72 @@ import { COLORS, FONTS, RADIUS, SPACING } from '../theme/tokens';
 const SIDE = SPACING.xl - 4;
 
 /**
- * De kop van Kalender in de stijl van Home (voorstel G.1, november 2026): een geel
- * vlak met de titel, rechts de bel voor de meldingen, en de tabbladen als pillen.
- * Navy met gele letters voor wat open staat, een navy waas voor de rest.
+ * De kop van een tab in de stijl van Home (voorstel G.1, november 2026): een geel
+ * vlak met de titel, rechts een ronde navy knop, en de tabbladen als pillen. Navy
+ * met gele letters voor wat open staat, een navy waas voor de rest. Kalender en
+ * Studies openen ermee.
  *
  * `children` komt onderaan in het geel: wat bij het tabblad hoort (de week van de
- * planning, de voortgang per vak, Lijst of Agenda).
+ * planning, de voortgang per vak, Lijst of Agenda, wanneer cudi open is).
  */
-export function KalenderHead<T extends string>({
+export function YellowHead<T extends string>({
+  title,
+  subtitle,
   tabs,
-  onBell,
+  right,
+  back = false,
   children,
 }: {
-  tabs: { value: T; options: { value: T; label: string }[]; onChange: (next: T) => void };
-  /** Zonder login is er geen bel. */
-  onBell?: () => void;
+  title: string;
+  /** Een regel onder de titel, zoals de code en de studiepunten van een vak. */
+  subtitle?: string | null;
+  tabs?: { value: T; options: { value: T; label: string }[]; onChange: (next: T) => void };
+  /** Een `YellowHeadButton`, zoals de bel van Kalender. */
+  right?: React.ReactNode;
+  /**
+   * Een doorklikscherm (een vak): een ronde terugknop links, en de titel op een
+   * eigen regel eronder, zodat een lange naam de knoppen niet wegduwt.
+   */
+  back?: boolean;
   children?: React.ReactNode;
 }) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const showBack = back && router.canGoBack();
+  const titleText = (
+    <Text accessibilityRole="header" style={[styles.title, back && styles.titleDetail]}>
+      {title}
+    </Text>
+  );
   return (
     <View style={[styles.head, { paddingTop: insets.top + SPACING.sm }]}>
-      <View style={styles.top}>
-        <Text accessibilityRole="header" style={styles.title}>
-          Kalender
-        </Text>
-        {onBell ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Meldingen instellen"
-            onPress={onBell}
-            hitSlop={6}
-            style={({ pressed }) => [styles.bell, pressed && styles.pressed]}
-          >
-            <Bell color={COLORS.yellow} size={19} />
-          </Pressable>
-        ) : null}
-      </View>
+      {back ? (
+        <>
+          <View style={styles.top}>
+            {showBack ? (
+              <YellowHeadButton label="Terug" onPress={() => router.back()}>
+                <ChevronLeft color={COLORS.yellow} size={21} strokeWidth={2.4} />
+              </YellowHeadButton>
+            ) : (
+              <View />
+            )}
+            {right}
+          </View>
+          <View style={styles.titleBlock}>
+            {titleText}
+            {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+          </View>
+        </>
+      ) : (
+        <View style={styles.top}>
+          <View style={styles.titleBlock}>
+            {titleText}
+            {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+          </View>
+          {right}
+        </View>
+      )}
+      {tabs ? (
       <View style={styles.pills} accessibilityRole="tablist">
         {tabs.options.map((option) => {
           const active = option.value === tabs.value;
@@ -59,8 +90,32 @@ export function KalenderHead<T extends string>({
           );
         })}
       </View>
+      ) : null}
       {children}
     </View>
+  );
+}
+
+/** De ronde navy knop rechts in de gele kop, met het icoon in het geel. */
+export function YellowHeadButton({
+  label,
+  onPress,
+  children,
+}: {
+  label: string;
+  onPress: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      hitSlop={6}
+      style={({ pressed }) => [styles.bell, pressed && styles.pressed]}
+    >
+      {children}
+    </Pressable>
   );
 }
 
@@ -135,6 +190,9 @@ const styles = StyleSheet.create({
   },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 },
   title: { fontFamily: FONTS.bold, fontSize: 34, lineHeight: 38, letterSpacing: -1.3, color: COLORS.navy },
+  titleDetail: { fontSize: 30, lineHeight: 34, letterSpacing: -1 },
+  titleBlock: { flexShrink: 1, gap: 4 },
+  subtitle: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.navy },
   bell: {
     width: 44,
     height: 44,

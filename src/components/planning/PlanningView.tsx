@@ -50,7 +50,7 @@ import { BlokView } from './BlokView';
 import { PersonalSheet, type ItemDraft, type PersonalTarget } from './PersonalSheet';
 import { CourseList, SemesterGrid } from './OverviewViews';
 import { ModeBar, PLANNING_MODES, ToolbarButton, type PlanningMode } from './ViewPicker';
-import { YellowRoundButton } from '../KalenderHead';
+import { YellowRoundButton } from '../YellowHead';
 
 const GUTTER = 44;
 const HOUR = 52;

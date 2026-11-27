@@ -158,7 +158,7 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
    je lessen, "Voor jou", Alma, "Ook binnenkort" (de evenementen vanaf morgen als
    schuiflijst) en "Snel naar". **Broodjes en shiften staan nooit tussen je
    lessen.** **Kalender volgt Home** (november 2026): een geel vlak
-   (`KalenderHead`) met de titel, de bel en de tabbladen als pillen, en daarin
+   (`YellowHead`) met de titel, de bel en de tabbladen als pillen, en daarin
    wat bij het tabblad hoort (de dagen die je ziet in de week, de voortgang per
    vak als één balk, Lijst of Agenda). Een VTK-evenement in de planning is
    lichtgeel met een gele rand en het logo, een eigen item papier met een
@@ -233,13 +233,15 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
   Studeren; `/studeren` verwijst door, ook in een pushbericht) heeft drie
   tabbladen als pillen in de kop: Blokken (samen blokken), Cursusdienst en
   Burgieclan. Elk tabblad is een weergave in `src/components/studies/` die zijn
-  eigen `PageHead` tekent met dezelfde pillen; `routes:check` kijkt ook in die
+  eigen gele kop (`YellowHead`, zoals Kalender) tekent met dezelfde pillen; je
+  studiegroep kies je boven de zaal en niet als pillen in de kop, en de knop
+  naar de tijdsloten van cudi staat altijd in de kop; `routes:check` kijkt ook in die
   map. Cudi en Burgieclan zijn gewone schermen op gegevens die vtk.be ondertekend
   bij hen ophaalt (`lib/cudi/` en `lib/burgieclan/` op de site): reserveren en
   annuleren bij cudi gaat door dezelfde functie als de webshop daar, een document
   van Burgieclan opent als pdf in het systeemvenster. Tickets heeft twee tabbladen
   (Kopen/Mijne) als pillen in de kop (`tabs` op `PageHead`). Kalender heeft er
-  drie (Planning, Evenementen, Mijn lijst) in een gele kop (`KalenderHead`) en
+  drie (Planning, Evenementen, Mijn lijst) in een gele kop (`YellowHead`) en
   opent op **Planning**, ook wie niet ingelogd is (die krijgt
   daar de vraag om in te loggen en daarna zijn lessenrooster te importeren) en voor wie die
   heeft (de Burgieclan-koppeling via `src/components/planning/PlanningView.tsx`;

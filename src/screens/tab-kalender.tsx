@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { Bell, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -8,7 +8,7 @@ import { fetchCalendar, setEventInterest } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { AGENDA_WEEKS, AgendaGrid } from '../components/AgendaGrid';
 import { EventRow, MyEventCard } from '../components/EventRow';
-import { KalenderHead, YellowRoundButton, YellowSegmented } from '../components/KalenderHead';
+import { YellowHead, YellowHeadButton, YellowRoundButton, YellowSegmented } from '../components/YellowHead';
 import { PlanningView } from '../components/planning/PlanningView';
 import { Button, Card, Empty, ErrorState, Loading, StaleNotice } from '../components/ui';
 import { formatDay } from '../format';
@@ -31,7 +31,7 @@ const VIEW_KEY = 'kalender-weergave';
 
 /**
  * De kalender, sinds november 2026 in de stijl van Home (voorstel G.1): een geel
- * vlak met de titel, de bel en de tabbladen als pillen (`KalenderHead`), en
+ * vlak met de titel, de bel en de tabbladen als pillen (`YellowHead`), en
  * daaronder witte kaarten op papier.
  *
  * **Evenementen** heeft twee weergaven, gekozen in het geel: **Lijst** (per dag,
@@ -165,7 +165,11 @@ export default function KalenderScreen() {
       ...(viewer ? [{ value: 'mijn' as const, label: 'Mijn lijst' }] : []),
     ],
   };
-  const onBell = viewer ? () => router.push('/meldingen') : undefined;
+  const bell = viewer ? (
+    <YellowHeadButton label="Meldingen instellen" onPress={() => router.push('/meldingen')}>
+      <Bell color={COLORS.yellow} size={19} />
+    </YellowHeadButton>
+  ) : undefined;
 
   // De planning heeft haar eigen verticale scroll (de uren van de dag) en tekent
   // de kop zelf.
@@ -176,9 +180,9 @@ export default function KalenderScreen() {
           <PlanningView
             locale={locale}
             renderHead={(extra) => (
-              <KalenderHead tabs={tabs} onBell={onBell}>
+              <YellowHead title="Kalender" tabs={tabs} right={bell}>
                 {extra}
-              </KalenderHead>
+              </YellowHead>
             )}
             onOpenEvent={(id) => router.push(`/evenement/${id}`)}
             onOpenCourse={(id) => router.push(`/vak/${id}`)}
@@ -187,7 +191,7 @@ export default function KalenderScreen() {
         ) : (
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={styles.overscroll} />
-            <KalenderHead tabs={tabs} />
+            <YellowHead title="Kalender" tabs={tabs} />
             <View style={styles.content}>
               <Card>
                 <Text style={styles.loginTitle}>Log eerst in</Text>
@@ -346,9 +350,9 @@ export default function KalenderScreen() {
         }
       >
         <View style={styles.overscroll} />
-        <KalenderHead tabs={tabs} onBell={onBell}>
+        <YellowHead title="Kalender" tabs={tabs} right={bell}>
           {headExtra}
-        </KalenderHead>
+        </YellowHead>
         {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
         <View style={styles.content}>{body}</View>
       </ScrollView>

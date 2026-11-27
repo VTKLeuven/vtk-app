@@ -23,9 +23,9 @@ import { messageFor, useResource } from '../../api/useResource';
 import { useTabRouter } from '../../navigation';
 import { useApp } from '../../state/app';
 import { COLORS, FONTS, SPACING, TYPE } from '../../theme/tokens';
-import { PageHead } from '../PageHead';
+import { YellowHead } from '../YellowHead';
 import { SearchField } from '../SearchField';
-import { Button, Card, CardList, Empty, ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice } from '../ui';
+import { Button, Card, CardList, Empty, ErrorState, Loading, MarginRegister, StaleNotice } from '../ui';
 import type { StudiesTabs } from './tabs';
 
 /**
@@ -44,12 +44,9 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
   const router = useTabRouter();
   const { locale, viewer } = useApp();
   const head = (
-    <PageHead
-      title="Studies"
-      subtitle="Samenvattingen, examens en notities per vak"
-      back={false}
-      tabs={tabs}
-    />
+    <YellowHead title="Studies" tabs={tabs}>
+      <Text style={styles.headLine}>Samenvattingen, examens en notities per vak</Text>
+    </YellowHead>
   );
 
   const resource = useResource(
@@ -125,28 +122,25 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
   const favourites = (resource.data?.courses ?? []).filter((course) => overrides[course.id] ?? true);
 
   return (
-    <>
-      {head}
-      <SearchField
-        value={query}
-        onChange={setQuery}
-        placeholder="Zoek een vak op naam of code"
-        label="Vakken zoeken"
-        style={styles.search}
-      />
-      <ScrollView
-        style={styles.root}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <RefreshControl refreshing={resource.refreshing} onRefresh={() => void resource.refresh()} />
-        }
-      >
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={styles.scroll}
+      keyboardShouldPersistTaps="handled"
+      refreshControl={
+        <RefreshControl refreshing={resource.refreshing} tintColor={COLORS.navy} onRefresh={() => void resource.refresh()} />
+      }
+    >
+      <View style={styles.overscroll} />
+      {/* Het zoekveld staat in het geel, zoals op het voorstel van november 2026. */}
+      <YellowHead title="Studies" tabs={tabs}>
+        <SearchField value={query} onChange={setQuery} placeholder="Zoek een vak op naam of code" label="Vakken zoeken" />
+      </YellowHead>
+      <View style={styles.content}>
         {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
 
         {searching ? (
           <View style={styles.block}>
-            <SectionHeading>Gevonden</SectionHeading>
+            <Text accessibilityRole="header" style={styles.heading}>Gevonden</Text>
             {search.loading && search.courses.length === 0 ? (
               <ActivityIndicator color={COLORS.navy} style={styles.spinner} />
             ) : search.error ? (
@@ -169,7 +163,7 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
           <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
         ) : (
           <View style={styles.block}>
-            <SectionHeading>Jouw vakken</SectionHeading>
+            <Text accessibilityRole="header" style={styles.heading}>Jouw vakken</Text>
             {favourites.length === 0 ? (
               <Text style={styles.hint}>
                 Zoek je vakken hierboven en tik op de ster. Ze staan dan hier, en op Burgieclan bij
@@ -198,8 +192,8 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
             },
           ]}
         />
-      </ScrollView>
-    </>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -312,10 +306,21 @@ export function courseMeta(course: AppBurgieclanCourse): string {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
+  scroll: { paddingBottom: SPACING.xxl },
   content: { padding: SPACING.xl - 4, gap: SPACING.xl, paddingBottom: SPACING.xxl },
+  // Trekt de gele kop door wanneer je op iOS omlaag trekt.
+  overscroll: {
+    position: 'absolute',
+    top: -1000,
+    left: 0,
+    right: 0,
+    height: 1000,
+    backgroundColor: COLORS.yellow,
+  },
+  headLine: { fontFamily: FONTS.bold, fontSize: 17, color: COLORS.navy },
+  heading: { fontFamily: FONTS.bold, fontSize: 22, letterSpacing: -0.5, color: COLORS.navy },
   flex: { flex: 1 },
   block: { gap: SPACING.md },
-  search: { marginHorizontal: SPACING.xl - 4 },
   pressed: { opacity: 0.6 },
   spinner: { alignSelf: 'flex-start', marginVertical: SPACING.md },
   title: { ...TYPE.cardTitle, color: COLORS.ink },

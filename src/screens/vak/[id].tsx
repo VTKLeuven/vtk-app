@@ -7,7 +7,7 @@ import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleS
 import type { AppBurgieclanCourse, AppBurgieclanDocument } from '../../api/contract';
 import { fetchBurgieclanCourse, fetchBurgieclanFile, setBurgieclanFavorite } from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
-import { HeadButton, PageHead } from '../../components/PageHead';
+import { YellowHead, YellowHeadButton } from '../../components/YellowHead';
 import { EvaluationsView } from '../../components/studies/BurgieclanEvaluations';
 import { CardList, Empty, ErrorState, Loading, MarginRegister, StaleNotice } from '../../components/ui';
 import { formatShortDate } from '../../format';
@@ -48,7 +48,7 @@ export default function VakScreen() {
   if (resource.loading && !detail) {
     return (
       <>
-        <PageHead title={naam ?? 'Vak'} />
+        <YellowHead title={naam ?? 'Vak'} back />
         <Loading />
       </>
     );
@@ -56,7 +56,7 @@ export default function VakScreen() {
   if (!detail) {
     return (
       <>
-        <PageHead title={naam ?? 'Vak'} />
+        <YellowHead title={naam ?? 'Vak'} back />
         <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
       </>
     );
@@ -102,19 +102,19 @@ export default function VakScreen() {
 
   return (
     <>
-      <PageHead
-        kicker={course.code}
+      <YellowHead
+        back
         title={course.name}
-        subtitle={subtitleFor(course)}
+        subtitle={[course.code, subtitleFor(course)].filter(Boolean).join(' · ')}
         right={
-          <HeadButton
-            accessibilityLabel={starred ? 'Uit je vakken halen' : 'Bij je vakken zetten'}
-            selected={starred}
-            disabled={starBusy}
-            onPress={() => void toggleStar()}
+          <YellowHeadButton
+            label={starred ? 'Uit je vakken halen' : 'Bij je vakken zetten'}
+            onPress={() => {
+              if (!starBusy) void toggleStar();
+            }}
           >
-            <Star size={21} color={starred ? COLORS.coinRim : COLORS.ink} fill={starred ? COLORS.yellow : 'transparent'} />
-          </HeadButton>
+            <Star size={20} color={COLORS.yellow} fill={starred ? COLORS.yellow : 'transparent'} />
+          </YellowHeadButton>
         }
         tabs={
           evaluations
@@ -122,8 +122,8 @@ export default function VakScreen() {
                 value: view,
                 onChange: setView,
                 options: [
-                  { value: 'documenten', label: 'Documenten', count: documents.length },
-                  { value: 'evaluaties', label: 'Evaluaties', count: commentCount },
+                  { value: 'documenten', label: `Documenten ${documents.length}` },
+                  { value: 'evaluaties', label: `Evaluaties ${commentCount}` },
                 ],
               }
             : undefined

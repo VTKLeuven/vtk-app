@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 
-import { ChevronRight, Pause, Pencil, Play, Plus, Settings2, Square, Trash2, Users } from 'lucide-react-native';
+import { Check, ChevronDown, ChevronRight, Pause, Pencil, Play, Plus, Settings2, Square, Trash2, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppState,
@@ -23,7 +23,7 @@ import {
   updateStudySession,
 } from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
-import { HeadButton, PageHead } from '../../components/PageHead';
+import { YellowHead, YellowHeadButton } from '../../components/YellowHead';
 import { Sheet } from '../../components/planning/PlanningSheets';
 import {
   Skyline,
@@ -37,7 +37,6 @@ import { useApp } from '../../state/app';
 import { useTabRouter } from '../../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import type { StudiesTabs } from './tabs';
-import { CARD_SHADOW } from '../HomeSection';
 
 /**
  * Samen blokken.
@@ -68,8 +67,13 @@ const SKYLINE_HEIGHT = 126;
 
 /**
  * Samen blokken, het eerste tabblad van Studies (`src/screens/tab-studies.tsx`).
- * `tabs` zijn de pillen van de kop; elk tabblad tekent zijn eigen kop zodat de
- * titelregel bij de inhoud past.
+ * `tabs` zijn de pillen van de gele kop (`YellowHead`); elk tabblad tekent zijn
+ * eigen kop zodat de regel eronder bij de inhoud past.
+ *
+ * **De groep kies je bij de zaal, niet in de kop.** Tot november 2026 stonden je
+ * groepen als pillen onder de tabbladen, en dan lezen ze als nog een rij
+ * tabbladen. Nu is de naam van de groep de kop boven "wie zit er nu", met een
+ * pijltje dat een blad met je groepen opent (`GroupSheet`).
  */
 export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
   const router = useTabRouter();
@@ -83,6 +87,7 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
 
   const [overview, setOverview] = useState<AppStudyOverview | null>(null);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [pickingGroup, setPickingGroup] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -181,9 +186,12 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
 
   if (!viewer) {
     return (
-      <>
-        <PageHead title="Studies" subtitle="Blok samen met je vrienden" back={false} tabs={tabs} />
-        <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.root} contentContainerStyle={styles.scroll}>
+        <View style={styles.overscroll} />
+        <YellowHead title="Studies" tabs={tabs}>
+          <Text style={styles.headLine}>Blok samen met je vrienden</Text>
+        </YellowHead>
+        <View style={styles.content}>
           <Card>
             <Text style={styles.cardTitle}>Log eerst in</Text>
             <Text style={styles.body}>
@@ -191,70 +199,62 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
             </Text>
             <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
           </Card>
-        </ScrollView>
-      </>
+        </View>
+      </ScrollView>
     );
   }
 
   if (resource.loading && !overview) {
     return (
-      <>
-        <PageHead title="Studies" subtitle="Blok samen met je vrienden" back={false} tabs={tabs} />
+      <View style={styles.root}>
+        <YellowHead title="Studies" tabs={tabs}>
+          <Text style={styles.headLine}>Blok samen met je vrienden</Text>
+        </YellowHead>
         <Loading label="Studeren ophalen" />
-      </>
+      </View>
     );
   }
   if (!overview) {
     return (
-      <>
-        <PageHead title="Studies" subtitle="Blok samen met je vrienden" back={false} tabs={tabs} />
+      <View style={styles.root}>
+        <YellowHead title="Studies" tabs={tabs}>
+          <Text style={styles.headLine}>Blok samen met je vrienden</Text>
+        </YellowHead>
         <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
-      </>
+      </View>
     );
   }
 
   const yours = group?.members.find((member) => member.isYou) ?? null;
 
   return (
-    <>
-      <PageHead
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={styles.scroll}
+      refreshControl={
+        <RefreshControl refreshing={resource.refreshing} tintColor={COLORS.navy} onRefresh={() => void resource.refresh()} />
+      }
+    >
+      <View style={styles.overscroll} />
+      <YellowHead
         title="Studies"
-        kicker={group?.name ?? null}
-        subtitle={roomLine(group, overview)}
-        back={false}
         tabs={tabs}
         right={
           group ? (
-            <HeadButton
-              accessibilityLabel={`Instellingen van ${group.name}`}
+            <YellowHeadButton
+              label={`Instellingen van ${group.name}`}
               onPress={() => router.push(`/studiegroep/${group.id}`)}
             >
-              <Settings2 color={COLORS.ink} size={20} />
-            </HeadButton>
+              <Settings2 color={COLORS.yellow} size={19} />
+            </YellowHeadButton>
           ) : undefined
         }
-      />
-
-      <ScrollView
-        style={styles.root}
-        contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={resource.refreshing}
-            onRefresh={() => void resource.refresh()}
-          />
-        }
       >
-        {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
+        <Text style={styles.headLine}>{roomLine(group, overview)}</Text>
+      </YellowHead>
 
-        {groups.length > 0 ? (
-          <GroupChips
-            groups={groups}
-            activeId={group?.id ?? null}
-            onPick={setActiveGroupId}
-            onNew={() => router.push('/studiegroep/nieuw')}
-          />
-        ) : null}
+      <View style={styles.content}>
+        {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
 
         <SessionPanel
           overview={overview}
@@ -272,7 +272,23 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
         {problem ? <Text style={styles.problem}>{problem}</Text> : null}
 
         {group ? (
-          <Room group={group} onOpen={() => router.push(`/studiegroep/${group.id}`)} />
+          <View style={styles.section}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Groep: ${group.name}. Tik om van groep te wisselen of een groep te maken`}
+              onPress={() => setPickingGroup(true)}
+              hitSlop={6}
+              style={({ pressed }) => [styles.groupTitle, pressed && styles.rowPressed]}
+            >
+              <Text style={styles.sectionTitle} numberOfLines={1}>
+                {group.name}
+              </Text>
+              <View style={styles.groupTitleChevron}>
+                <ChevronDown color={COLORS.navy} size={16} strokeWidth={2.4} />
+              </View>
+            </Pressable>
+            <Room group={group} onOpen={() => router.push(`/studiegroep/${group.id}`)} />
+          </View>
         ) : (
           <NoGroups onNew={() => router.push('/studiegroep/nieuw')} />
         )}
@@ -281,8 +297,23 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
         {group ? <Leaderboard group={group} /> : null}
 
         <YourWeek overview={overview} yours={yours} />
-      </ScrollView>
-    </>
+      </View>
+
+      <GroupSheet
+        visible={pickingGroup}
+        groups={groups}
+        activeId={group?.id ?? null}
+        onPick={(id) => {
+          setActiveGroupId(id);
+          setPickingGroup(false);
+        }}
+        onNew={() => {
+          setPickingGroup(false);
+          router.push('/studiegroep/nieuw');
+        }}
+        onClose={() => setPickingGroup(false)}
+      />
+    </ScrollView>
   );
 }
 
@@ -772,46 +803,55 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 // ── Groepen ─────────────────────────────────────────────────────────────────
 
-function GroupChips({
+/**
+ * Je groepen, in een blad dat opent vanaf de naam van de groep boven de zaal:
+ * wie er in elke groep nu zit, en onderaan een nieuwe groep maken of er een
+ * binnengaan met een code.
+ */
+function GroupSheet({
+  visible,
   groups,
   activeId,
   onPick,
   onNew,
+  onClose,
 }: {
+  visible: boolean;
   groups: AppStudyGroup[];
   activeId: string | null;
   onPick: (id: string) => void;
   onNew: () => void;
+  onClose: () => void;
 }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-      {groups.map((group) => {
-        const active = group.id === activeId;
-        return (
-          <Pressable
-            key={group.id}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
-            accessibilityLabel={`${group.name}, ${group.liveCount} nu bezig`}
-            onPress={() => onPick(group.id)}
-            style={[styles.groupChip, active && styles.groupChipOn]}
-          >
-            {group.liveCount > 0 ? <View style={styles.pip} /> : null}
-            <Text style={[styles.groupChipText, active && styles.groupChipTextOn]}>
-              {group.name}
-            </Text>
-          </Pressable>
-        );
-      })}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Groep maken of deelnemen"
-        onPress={onNew}
-        style={[styles.groupChip, styles.groupChipAdd]}
-      >
-        <Plus color={COLORS.navy} size={15} />
-      </Pressable>
-    </ScrollView>
+    <Sheet visible={visible} title="Je groepen" onClose={onClose}>
+      <View style={styles.sheetList}>
+        {groups.map((item, index) => {
+          const active = item.id === activeId;
+          return (
+            <Pressable
+              key={item.id}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`${item.name}, ${item.liveCount} nu bezig`}
+              onPress={() => onPick(item.id)}
+              style={({ pressed }) => [styles.groupRow, index > 0 && styles.sheetLine, pressed && styles.rowPressed]}
+            >
+              <View style={styles.sheetText}>
+                <Text style={styles.sheetName}>{item.name}</Text>
+                <Text style={styles.sheetSub}>
+                  {item.liveCount > 0
+                    ? `${item.liveCount} van de ${item.memberCount} nu bezig`
+                    : `${item.memberCount} ${item.memberCount === 1 ? 'lid' : 'leden'}`}
+                </Text>
+              </View>
+              {active ? <Check color={COLORS.navy} size={18} /> : null}
+            </Pressable>
+          );
+        })}
+      </View>
+      <Button label="Groep maken of deelnemen" variant="ghost" onPress={onNew} />
+    </Sheet>
   );
 }
 
@@ -835,7 +875,35 @@ function NoGroups({ onNew }: { onNew: () => void }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
-  content: { padding: SPACING.lg, gap: SPACING.lg, paddingBottom: SPACING.xxl },
+  scroll: { paddingBottom: SPACING.xxl },
+  content: { padding: SPACING.lg, paddingTop: SPACING.xl - 2, gap: SPACING.lg },
+  // Trekt de gele kop door wanneer je op iOS omlaag trekt.
+  overscroll: {
+    position: 'absolute',
+    top: -1000,
+    left: 0,
+    right: 0,
+    height: 1000,
+    backgroundColor: COLORS.yellow,
+  },
+  headLine: { fontFamily: FONTS.bold, fontSize: 17, color: COLORS.navy },
+  section: { gap: SPACING.md },
+  sectionTitle: { flexShrink: 1, fontFamily: FONTS.bold, fontSize: 22, letterSpacing: -0.5, color: COLORS.navy },
+  groupTitle: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, alignSelf: 'flex-start', paddingHorizontal: SPACING.xs },
+  groupTitleChevron: {
+    width: 26,
+    height: 26,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.paper2,
+  },
+  sheetList: { backgroundColor: COLORS.surface, borderRadius: RADIUS.md, overflow: 'hidden' },
+  groupRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.md },
+  sheetLine: { borderTopWidth: 1, borderTopColor: COLORS.line },
+  sheetText: { flex: 1, gap: 2 },
+  sheetName: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink },
+  sheetSub: { ...TYPE.small, color: COLORS.muted },
 
   panel: {
     backgroundColor: COLORS.navy,
@@ -921,22 +989,6 @@ const styles = StyleSheet.create({
   chipText: { ...TYPE.small, color: COLORS.onDarkMuted },
   chipTextOn: { color: COLORS.ink, fontFamily: TYPE.cardTitle.fontFamily },
 
-  groupChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 8,
-    borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.surface,
-    marginRight: SPACING.sm,
-    ...CARD_SHADOW,
-  },
-  groupChipOn: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
-  groupChipAdd: { paddingHorizontal: SPACING.md },
-  groupChipText: { ...TYPE.small, color: COLORS.body },
-  groupChipTextOn: { color: COLORS.ink, fontFamily: TYPE.cardTitle.fontFamily },
-  pip: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.yellowDeep },
 
   label: {
     ...TYPE.kicker,

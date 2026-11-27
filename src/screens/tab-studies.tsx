@@ -44,7 +44,7 @@ export default function StudiesScreen() {
     onChange: setTab,
     options: [
       { value: 'blokken', label: 'Blokken' },
-      { value: 'cudi', label: 'Cudi' },
+      { value: 'cudi', label: 'Cursusdienst' },
       { value: 'burgieclan', label: 'Burgieclan' },
     ],
   };

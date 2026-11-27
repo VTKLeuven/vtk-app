@@ -845,7 +845,7 @@ Geel als vlak is een uitzondering voor Home, geen nieuwe regel; zie regel 8 in
 
 Kalender kreeg dezelfde taal als Home, na een canvas met vijf schermen:
 
-- **Een gele kop** (`KalenderHead`) met "Kalender", de bel in navy en de
+- **Een gele kop** (`YellowHead`) met "Kalender", de bel in navy en de
   tabbladen als pillen. Daarin staat wat bij het tabblad hoort.
 - **Planning, week**: de dagen die je ziet ("Week 49 · 30 nov - 2 dec") met
   bladeren en Vandaag staan in het geel; de weergaven Week, Per vak, Semester en
@@ -860,3 +860,19 @@ Kalender kreeg dezelfde taal als Home, na een canvas met vijf schermen:
   `AgendaGrid`), bladeren per vier weken. `MonthView` en `EventTile` zijn weg.
 - **Mijn lijst**: groter, met hoe lang het nog duurt op de foto en een knop naar
   de tickets (`MyEventCard`).
+
+## November 2026: Studies in het geel
+
+Studies kreeg dezelfde gele kop als Kalender (`YellowHead`, tot dan
+`KalenderHead`), na een canvas met vijf schermen:
+
+- **Blokken**: in het geel wie er nu zit. **Je groepen staan niet meer als
+  pillen onder de tabbladen**: die lazen als nog een rij tabbladen. De naam van
+  de groep is nu de kop boven de zaal, met een pijltje dat een blad met je
+  groepen opent (`GroupSheet`), en daar maak je ook een nieuwe groep.
+- **Cursusdienst** (de pil heette Cudi): in het geel het logo met wanneer ze
+  open is, en **altijd de knop naar de tijdsloten** wanneer cudi ermee werkt,
+  met je tijdslot erin als je er een hebt. Rechtsboven al je bestellingen.
+- **Burgieclan**: het zoekveld staat in het geel. Een vak opent met dezelfde
+  kop, een terugknop en de ster rechtsboven.
+- De koppen van een deel zijn op deze schermen een titel in navy, zoals op Home.

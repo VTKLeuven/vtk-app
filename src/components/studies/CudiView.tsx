@@ -1,7 +1,7 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Image } from 'expo-image';
 import { useFocusEffect } from 'expo-router';
-import { CalendarClock, Check, ChevronDown, ChevronRight, X } from 'lucide-react-native';
+import { CalendarClock, Check, ChevronDown, ChevronRight, ShoppingBag, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -37,10 +37,10 @@ import { formatDayShort, formatTime } from '../../format';
 import { useTabRouter } from '../../navigation';
 import { useApp } from '../../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
-import { PageHead } from '../PageHead';
 import { SearchField } from '../SearchField';
 import { Stepper } from '../Stepper';
-import { Button, Card, CardList, Empty, ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice } from '../ui';
+import { Button, Card, CardList, Empty, ErrorState, Loading, MarginRegister, StaleNotice } from '../ui';
+import { YellowHead, YellowHeadButton } from '../YellowHead';
 import { CudiOrderCard, euro } from './CudiOrderCard';
 import type { StudiesTabs } from './tabs';
 import { CARD_SHADOW } from '../HomeSection';
@@ -129,17 +129,53 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
   const count = lines.reduce((sum, line) => sum + line.quantity, 0);
 
   const hours = overview.data?.hours ?? null;
+  // Je eerstvolgende tijdslot, als je er een hebt.
+  const mySlot = (timeslots.data?.mine ?? []).find((slot) => new Date(slot.end) > new Date()) ?? null;
+  /**
+   * De gele kop: het logo van de cursusdienst met wanneer ze open is, en altijd de
+   * knop naar de tijdsloten wanneer cudi daarmee werkt. Tot november 2026 stond
+   * die knop enkel in de kaart van wat klaarligt; nu vind je hem zonder te zoeken.
+   */
   const head = (
-    <PageHead
+    <YellowHead
       title="Studies"
-      subtitle={
-        hours && !hours.unavailable
-          ? `De cursusdienst is ${hours.openNow ? 'open' : 'gesloten'}, ${hours.detail}`
-          : 'Je cursussen reserveren en afhalen'
-      }
-      back={false}
       tabs={tabs}
-    />
+      right={
+        viewer ? (
+          <YellowHeadButton label="Al je bestellingen" onPress={() => router.push('/cudi-bestellingen')}>
+            <ShoppingBag color={COLORS.yellow} size={19} />
+          </YellowHeadButton>
+        ) : undefined
+      }
+    >
+      <View style={styles.headRow}>
+        <Image
+          source={require('../../../assets/openingsuren/cursusdienst.png')}
+          style={styles.headLogo}
+          contentFit="contain"
+          accessibilityLabel="Cursusdienst"
+        />
+        <Text style={styles.headStatus}>
+          {hours && !hours.unavailable ? hoursLine(hours.openNow, hours.detail) : 'Je cursussen reserveren en afhalen'}
+        </Text>
+      </View>
+      {viewer && timeslots.data?.enabled ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={mySlot ? 'Je tijdslot bekijken of wijzigen' : 'Een tijdslot reserveren'}
+          onPress={() => router.push('/cudi-tijdsloten')}
+          style={({ pressed }) => [styles.slotButton, pressed && styles.pressed]}
+        >
+          <CalendarClock color={COLORS.yellow} size={18} />
+          <Text style={styles.slotLabel} numberOfLines={1}>
+            {mySlot
+              ? `Je tijdslot: ${formatDayShort(mySlot.start, locale)} ${formatTime(mySlot.start, locale)}`
+              : 'Tijdslot reserveren'}
+          </Text>
+          <ChevronRight color={COLORS.yellow} size={18} />
+        </Pressable>
+      ) : null}
+    </YellowHead>
   );
 
   if (!viewer) {
@@ -271,11 +307,10 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
 
   return (
     <View style={styles.root}>
-      {head}
       <ScrollView
         ref={scroll}
         style={styles.root}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
@@ -288,6 +323,9 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
           />
         }
       >
+        <View style={styles.overscroll} />
+        {head}
+        <View style={styles.content}>
         {overview.stale ? <StaleNotice onRetry={() => void overview.refresh()} /> : null}
 
         {data.gate ? (
@@ -317,7 +355,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
 
         {hours && !hours.unavailable && hours.entries.length > 0 ? (
           <View style={styles.block}>
-            <SectionHeading>Openingsuren deze week</SectionHeading>
+            <Text accessibilityRole="header" style={styles.heading}>Openingsuren deze week</Text>
             <CardList>
               {hours.entries.map((entry) => (
                 <View key={entry.day} style={styles.hoursRow}>
@@ -369,7 +407,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
 
         {!data.gate ? (
           <View style={styles.block}>
-            <SectionHeading>{searching ? 'Zoeken' : 'Voor jouw vakken'}</SectionHeading>
+            <Text accessibilityRole="header" style={styles.heading}>{searching ? 'Zoeken' : 'Voor jouw vakken'}</Text>
             <SearchField
               value={query}
               onChange={setQuery}
@@ -481,6 +519,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
             onPress: () => void WebBrowser.openBrowserAsync(link.url),
           }))}
         />
+        </View>
       </ScrollView>
 
       {count > 0 ? (
@@ -903,7 +942,31 @@ const styles = StyleSheet.create({
   // In het blad onderaan is de lijst geen kaart: het blad is zelf al wit.
   sheetList: { backgroundColor: 'transparent', borderRadius: 0, shadowOpacity: 0, elevation: 0 },
   root: { flex: 1, backgroundColor: COLORS.paper },
+  scroll: { paddingBottom: SPACING.xxl },
   content: { padding: SPACING.xl - 4, gap: SPACING.xl, paddingBottom: SPACING.xxl },
+  // Trekt de gele kop door wanneer je op iOS omlaag trekt.
+  overscroll: {
+    position: 'absolute',
+    top: -1000,
+    left: 0,
+    right: 0,
+    height: 1000,
+    backgroundColor: COLORS.yellow,
+  },
+  heading: { fontFamily: FONTS.bold, fontSize: 22, letterSpacing: -0.5, color: COLORS.navy },
+  headRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  headLogo: { width: 53, height: 38 },
+  headStatus: { flex: 1, fontFamily: FONTS.bold, fontSize: 15, color: COLORS.navy },
+  slotButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    height: 48,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.navy,
+  },
+  slotLabel: { flex: 1, fontFamily: FONTS.bold, fontSize: 15, color: COLORS.yellow },
   flex: { flex: 1 },
   block: { gap: SPACING.md },
   pressed: { opacity: 0.6 },
@@ -1054,3 +1117,12 @@ const styles = StyleSheet.create({
   radioActive: { backgroundColor: COLORS.navy, borderColor: COLORS.navy },
   sheetButtons: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.sm },
 });
+
+/** "Open tot 13:50", "Gesloten, opent di 12:35": de regel van de server, als zin. */
+function hoursLine(openNow: boolean, detail: string): string {
+  const text = detail.trim();
+  if (openNow) return text.startsWith('tot') ? `Open ${text}` : 'Nu open';
+  if (text === 'gesloten') return 'Gesloten';
+  if (text.startsWith('opent')) return `Gesloten, o${text.slice(1)}`;
+  return `Gesloten, opent ${text}`;
+}
