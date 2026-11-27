@@ -16,11 +16,27 @@ niet opnieuw moet beginnen. Pas het hier aan wanneer je het daar aanpast.
 
 **What's New in This Version** (per versie, verplicht vanaf de tweede):
 
-- **1.3.0**: Je ticket gaat nu rechtstreeks naar Apple Wallet, zonder witte pagina erna.
-  De studietimer loopt door als je je telefoon weglegt, en de vakken waaraan je werkt
-  beheer je zelf. Bij de Alma's staan ook Alma 1, Alma 2 en Gasthuisberg; tik op een
-  gerecht voor de foto. De cursusdienst toont de openingsuren bovenaan, en de affiches
-  op Home worden beter bijgesneden.
+- **1.3.0** (de wijzigingen van 27 november 2026):
+
+  ```
+  Een nieuw, geel ontwerp. Home toont de week van VTK: tik een dag aan en veeg door de evenementen. Wat er open is, staat eronder als drie tegels, met je broodje of je tijdslot bij de cursusdienst erbij. Wat de ronde knop bovenaan opent, kies je zelf door hem lang in te drukken.
+
+  Nieuw onder Meer: het Liederboek, met alle 740 liedjes uit het Leuvens Liedboek en de KVHV-codex, ook zonder netwerk.
+
+  Tickets zijn compacter. In het grote scherm veeg je naar het volgende ticket van je bestelling, je kiest zelf hoe je betaalt, en je ticket gaat rechtstreeks naar Apple Wallet, zonder witte pagina erna.
+
+  Studies: documenten van Burgieclan openen in de app, je bestellingen bij de cursusdienst hebben de kleuren van cudi, en bij samen blokken loopt de teller door als je je telefoon weglegt. De vakken waaraan je werkt, beheer je zelf.
+
+  Alma: ook Alma 1, Alma 2 en Gasthuisberg, de uren van de week bovenaan, en een tik op een gerecht toont de foto.
+
+  En verder: Shiften per dag met de dagen bovenaan, aftellen tot je broodjes kan bestellen, een kop die meeschuift bij het scrollen, terug naar boven met een tik op de tab, en affiches bijgesneden zoals VTK ze koos.
+  ```
+
+  Voor Google, dat 500 tekens toelaat (476):
+
+  ```
+  Een nieuw, geel ontwerp. Home toont de week van VTK met de evenementen per dag en wat er open is. Nieuw: het Liederboek met alle 740 liedjes, ook zonder netwerk. Tickets zijn compacter, je veegt tussen de tickets van een bestelling en Google Wallet opent rechtstreeks. Documenten van Burgieclan openen in de app, en bij samen blokken loopt de teller door als je je telefoon weglegt. Bij Alma ook Alma 1, Alma 2 en Gasthuisberg. Kies zelf wat de ronde knop bovenaan Home opent.
+  ```
 - **1.2.0**: Een volledig nieuw ontwerp. Home opent met de evenementen van vandaag, wat er
   open is en je volgende lessen. Nieuw: de menu's van de Alma's, tijdsloten bij de
   cursusdienst, vakevaluaties van Burgieclan, en je tickets met de affiche van het
@@ -90,15 +106,26 @@ Location is only used on the device to draw a walking route to a classroom and i
 
 **Volledige beschrijving**: dezelfde als de Description hierboven.
 
-**Release notes** (500 per taal): dezelfde als "What's New" hierboven. Voor de
-eerste release volstaat "Eerste versie van de app van VTK Leuven."
+**Release notes** (500 per taal): dezelfde als "What's New" hierboven, of de
+korte versie die erbij staat wanneer die langer is. Noem bij Apple geen Google
+Wallet en bij Google geen Apple Wallet. Voor de eerste release volstaat "Eerste
+versie van de app van VTK Leuven."
 
 **Afbeeldingen**, gemaakt uit `assets/icon.png` en `assets/splash-icon.png`:
 
 - icoon 512 x 512: `store/play/icon-512.png`;
 - feature graphic 1024 x 500: `store/play/feature-graphic-1024x500.png`.
 
-De telefoonscreenshots mogen dezelfde zijn als die voor Apple, maar Google
-weigert een beeld waarvan de lange zijde meer dan twee keer de korte is. De
-6.9"-screenshots van Apple (1320 x 2868) zijn net te lang; snij ze bij tot
-1320 x 2640 of lever ze apart aan (bv. 1080 x 1920).
+**Screenshots.** Die voor Apple staan in `store/apple/screenshots/` (1206 x
+2622, rechtstreeks van een iPhone, genummerd in de volgorde van de store). Google
+weigert een beeld waarvan de lange zijde meer dan twee keer de korte is, en wil
+er ook voor een 7"- en een 10"-tablet. `python3 scripts/play-screenshots.py`
+maakt ze uit die van Apple: het screenshot op een navy vlak, als PNG zonder
+alfakanaal, in `store/play/screenshots/`:
+
+- `phone/` 1080 x 1920;
+- `tablet-7/` 1200 x 1920;
+- `tablet-10/` 1600 x 2560.
+
+Nieuwe screenshots: vervang die in `store/apple/screenshots/` en draai het script
+opnieuw.
