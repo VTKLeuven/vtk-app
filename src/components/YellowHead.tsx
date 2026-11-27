@@ -80,21 +80,25 @@ export function YellowHead<T extends string>({
   return (
     <View style={[styles.head, { paddingTop: insets.top + SPACING.sm }]}>
       {back ? (
+        // De titel naast de terugknop (eind november 2026, zoals Beheer): geen
+        // aparte regel meer voor de knop. De regel eronder staat over de volle breedte.
         <>
-          <View style={styles.top}>
+          <View style={styles.inlineRow}>
             {showBack ? (
               <YellowHeadButton label="Terug" onPress={() => router.back()}>
                 <ChevronLeft color={COLORS.yellow} size={21} strokeWidth={2.4} />
               </YellowHeadButton>
-            ) : (
-              <View />
-            )}
+            ) : null}
+            <Text
+              accessibilityRole="header"
+              numberOfLines={3}
+              style={[styles.title, styles.titleInline, title.length > 30 && styles.titleInlineLong]}
+            >
+              {title}
+            </Text>
             {right}
           </View>
-          <View style={styles.titleBlock}>
-            {titleText}
-            {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-          </View>
+          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
         </>
       ) : (
         <View style={styles.top}>
@@ -233,6 +237,9 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
   },
   titleDetail: { fontSize: 30, lineHeight: 34, letterSpacing: -1 },
+  inlineRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: 44 },
+  titleInline: { flex: 1, fontSize: 26, lineHeight: 30, letterSpacing: -0.8 },
+  titleInlineLong: { fontSize: 21, lineHeight: 25, letterSpacing: -0.5 },
   titleBlock: { flexShrink: 1, gap: 4 },
   subtitle: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.navy },
   bell: {

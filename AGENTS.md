@@ -140,7 +140,9 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
    - **Elke kop is geel** (sinds eind november 2026): `PageHead` en `YellowHead`
      zijn allebei een geel vlak met een afgeronde onderkant, de titel in navy,
      een navy terugknop met een geel pijltje, en tabbladen als pillen (navy met
-     geel voor wat open staat, een navy waas voor de rest). Een actie rechts is
+     geel voor wat open staat, een navy waas voor de rest). **Op een scherm met
+     een terugknop staat de titel naast die knop**, niet eronder (eind november
+     2026, zoals Beheer); enkel een tabscherm heeft de grote titel op een eigen regel. Een actie rechts is
      een `HeadButton` (wit, rond) of een `YellowHeadButton` (navy, rond). Wat in
      `right` of `children` staat, staat op het geel: navy en wit, geen grijs.
    - **De kop schuift mee weg** (eind november 2026): ze staat in de scroll

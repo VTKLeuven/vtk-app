@@ -91,7 +91,11 @@ export function PageHead<T extends string = string>({
   const showBack = back && router.canGoBack();
   useStatusBar('dark');
 
-  if (inline) {
+  // De titel naast de terugknop (eind november 2026, zoals Beheer): wie terug kan,
+  // krijgt geen aparte regel voor de knop meer. Een tabscherm zonder terugknop
+  // houdt de grote titel, behalve met `inline`.
+  if (inline || (showBack && !compact)) {
+    const long = title.length > LONG_TITLE;
     return (
       <View style={[styles.head, styles.headInline, { paddingTop: insets.top + SPACING.xs }]}>
         <View style={styles.inlineRow}>
@@ -106,11 +110,49 @@ export function PageHead<T extends string = string>({
               <ChevronLeft color={COLORS.yellow} size={21} strokeWidth={2.4} />
             </Pressable>
           ) : null}
-          <Text accessibilityRole="header" numberOfLines={1} style={[styles.title, styles.titleInline]}>
-            {title}
-          </Text>
+          <View style={styles.inlineText}>
+            {kicker && !inline ? <Text style={styles.kicker}>{kicker}</Text> : null}
+            <Text
+              accessibilityRole="header"
+              numberOfLines={inline ? 1 : 3}
+              style={[styles.title, styles.titleInline, long && styles.titleInlineLong]}
+            >
+              {title}
+            </Text>
+          </View>
           {right ? <View style={styles.right}>{right}</View> : null}
         </View>
+        {subtitle && !inline ? <Text style={[styles.subtitle, styles.subtitleInline]}>{subtitle}</Text> : null}
+        {tabs ? (
+          tabs.scroll ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={[styles.tabsScroll, styles.tabsScrollInline]}
+              contentContainerStyle={styles.tabsScrollContent}
+            >
+              {tabs.options.map((option) => (
+                <TabPill
+                  key={option.value}
+                  option={option}
+                  active={option.value === tabs.value}
+                  onPress={() => tabs.onChange(option.value)}
+                />
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={[styles.tabs, styles.tabsCompact]}>
+              {tabs.options.map((option) => (
+                <TabPill
+                  key={option.value}
+                  option={option}
+                  active={option.value === tabs.value}
+                  onPress={() => tabs.onChange(option.value)}
+                />
+              ))}
+            </View>
+          )
+        ) : null}
         {children ? <View style={styles.inlineChildren}>{children}</View> : null}
       </View>
     );
@@ -357,7 +399,11 @@ const styles = StyleSheet.create({
   inlineRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: 44 },
   inlineChildren: { marginTop: SPACING.md },
   backInline: { marginBottom: 0 },
-  titleInline: { flex: 1, fontSize: 26, lineHeight: 30, letterSpacing: -0.8 },
+  inlineText: { flex: 1, gap: 2 },
+  titleInline: { fontSize: 26, lineHeight: 30, letterSpacing: -0.8 },
+  titleInlineLong: { fontSize: 21, lineHeight: 25, letterSpacing: -0.5 },
+  subtitleInline: { marginTop: SPACING.sm },
+  tabsScrollInline: { marginTop: SPACING.md - 12 },
   back: {
     flexDirection: 'row',
     alignItems: 'center',
