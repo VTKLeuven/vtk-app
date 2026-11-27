@@ -905,3 +905,12 @@ schermen (voorstel B voor Mijn tickets):
   betalen niet, dan blijft de bestelling klaarstaan en betaal je opnieuw. Een
   server zonder `paymentMethods` of een betaalwijze die intussen uit staat,
   valt terug op de bestelpagina van de site.
+
+## November 2026: Meer in het geel
+
+Meer kreeg de gele kop (`YellowHead`) en verder niets. Twee voorstellen die Doen
+en Mensen in witte kaarten staken en Alles van VTK als tegels toonden, werden
+afgewezen: de twee kolommen registers met de gele lijn in de marge, zonder kaart
+erom, zijn overzichtelijker. In de kop staan je profiel, Feedback App en Zoeken
+zoals voordien; hun bolletjes en je initialen zijn navy met geel, want een geel
+rondje verdwijnt tegen de gele kop.

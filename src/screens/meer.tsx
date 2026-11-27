@@ -8,7 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { baseUrl } from '../api/client';
 import type { AppLocale, AppNavTab } from '../api/contract';
 import { CARD_SHADOW } from '../components/HomeSection';
-import { PageHead } from '../components/PageHead';
+import { YellowHead } from '../components/YellowHead';
 import { ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice, type RegisterLink } from '../components/ui';
 import { nativeRouteFor, pageSlugFor } from '../nativeRoute';
 import { useApp } from '../state/app';
@@ -22,7 +22,8 @@ import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
  * bestellen). Dit is het zelfstandig naamwoord: de mensen, de foto's, de piano,
  * de shiften, de hele CMS-boom uit het beheer, en je eigen profiel.
  *
- * In de vorm van de site (november 2026): je profiel als donker glas in de kop,
+ * In de vorm van de site (november 2026), met sinds eind november de gele kop van
+ * Home en de andere tabs (`YellowHead`): je profiel als witte kaart in de kop,
  * de snelkoppelingen als het register in de marge (een kleine kop in kapitalen,
  * een haarlijn links, gedempte links met lucht ertussen; geen witte groepen met
  * icoontjes), en de onderdelen van VTK als de tegels van een categoriepagina:
@@ -90,103 +91,104 @@ export default function MeerScreen() {
   ];
 
   return (
-    <>
-      <PageHead title="Meer" back={false}>
-        {/* Jij, als witte kaart in de kop. Een eigen tab was dat niet waard: je
-            opent je profiel een paar keer per jaar, niet een paar keer per dag. */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={viewer ? `Profiel van ${viewer.name}` : 'Inloggen'}
-          onPress={() => router.push(viewer ? '/profiel' : '/inloggen')}
-          style={({ pressed }) => [styles.me, pressed && styles.pressedDark]}
-        >
-          {viewer?.avatarUrl ? (
-            <Image cachePolicy="memory-disk" source={{ uri: viewer.avatarUrl }} style={styles.avatar} contentFit="cover" />
-          ) : (
-            <View style={[styles.avatar, styles.avatarEmpty]}>
-              <Text style={styles.initials}>{viewer ? initialsOf(viewer.name) : '?'}</Text>
+    <View style={styles.root}>
+      <ScrollView contentContainerStyle={styles.scroll} style={styles.root}>
+        <View style={styles.overscroll} />
+        <YellowHead title="Meer">
+          {/* Jij, als witte kaart in de kop. Een eigen tab was dat niet waard: je
+              opent je profiel een paar keer per jaar, niet een paar keer per dag. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={viewer ? `Profiel van ${viewer.name}` : 'Inloggen'}
+            onPress={() => router.push(viewer ? '/profiel' : '/inloggen')}
+            style={({ pressed }) => [styles.me, pressed && styles.pressedDark]}
+          >
+            {viewer?.avatarUrl ? (
+              <Image cachePolicy="memory-disk" source={{ uri: viewer.avatarUrl }} style={styles.avatar} contentFit="cover" />
+            ) : (
+              <View style={[styles.avatar, styles.avatarEmpty]}>
+                <Text style={styles.initials}>{viewer ? initialsOf(viewer.name) : '?'}</Text>
+              </View>
+            )}
+            <View style={styles.flex}>
+              <Text style={styles.meName} numberOfLines={1}>
+                {viewer?.name ?? 'Niet ingelogd'}
+              </Text>
+              <Text style={styles.meHint} numberOfLines={1}>
+                {viewer ? 'Je profiel en meldingen' : 'Log in om te bestellen en tickets te kopen'}
+              </Text>
             </View>
-          )}
-          <View style={styles.flex}>
-            <Text style={styles.meName} numberOfLines={1}>
-              {viewer?.name ?? 'Niet ingelogd'}
-            </Text>
-            <Text style={styles.meHint} numberOfLines={1}>
-              {viewer ? 'Je profiel en meldingen' : 'Log in om te bestellen en tickets te kopen'}
-            </Text>
-          </View>
-          <ChevronRight color={COLORS.muted} size={18} />
-        </Pressable>
+            <ChevronRight color={COLORS.muted} size={18} />
+          </Pressable>
 
-        {/* Feedback op de app gaat naar Dopl, het formulier zonder zijn eigen kop,
-            in je taal en met je naam en e-mail al ingevuld als je ingelogd bent. */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Feedback over de app geven"
-          onPress={() =>
-            router.push({ pathname: '/web', params: { url: feedbackUrl(locale, viewer), title: 'Feedback App' } })
-          }
-          style={({ pressed }) => [styles.search, pressed && styles.pressedDark]}
-        >
-          <View style={styles.searchIcon}>
-            <MessageSquare color={COLORS.ink} size={15} />
-          </View>
-          <Text style={[styles.feedbackText, styles.flex]}>Feedback App</Text>
-          <ChevronRight color={COLORS.muted} size={18} />
-        </Pressable>
+          {/* Feedback op de app gaat naar Dopl, het formulier zonder zijn eigen kop,
+              in je taal en met je naam en e-mail al ingevuld als je ingelogd bent. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Feedback over de app geven"
+            onPress={() =>
+              router.push({ pathname: '/web', params: { url: feedbackUrl(locale, viewer), title: 'Feedback App' } })
+            }
+            style={({ pressed }) => [styles.search, pressed && styles.pressedDark]}
+          >
+            <View style={styles.searchIcon}>
+              <MessageSquare color={COLORS.yellow} size={15} />
+            </View>
+            <Text style={[styles.feedbackText, styles.flex]}>Feedback App</Text>
+            <ChevronRight color={COLORS.muted} size={18} />
+          </Pressable>
 
-        <Pressable
-          accessibilityRole="search"
-          accessibilityLabel="Zoeken"
-          onPress={() => router.push('/zoeken')}
-          style={({ pressed }) => [styles.search, pressed && styles.pressedDark]}
-        >
-          <View style={styles.searchIcon}>
-            <Search color={COLORS.ink} size={15} />
-          </View>
-          <Text style={styles.searchText}>Zoeken op vtk.be</Text>
-        </Pressable>
-      </PageHead>
-
-      <ScrollView contentContainerStyle={styles.content} style={styles.root}>
+          <Pressable
+            accessibilityRole="search"
+            accessibilityLabel="Zoeken"
+            onPress={() => router.push('/zoeken')}
+            style={({ pressed }) => [styles.search, pressed && styles.pressedDark]}
+          >
+            <View style={styles.searchIcon}>
+              <Search color={COLORS.yellow} size={15} />
+            </View>
+            <Text style={styles.searchText}>Zoeken op vtk.be</Text>
+          </Pressable>
+        </YellowHead>
         {stale ? <StaleNotice onRetry={() => void refresh()} /> : null}
-
-        <View style={styles.columns}>
-          <MarginRegister title="Doen" links={doen} style={styles.flex} />
-          <MarginRegister title="Mensen" links={mensen} style={styles.flex} />
-        </View>
-        {viewer ? (
-          <MarginRegister
-            title="Meldingen"
-            links={[{ label: 'Wat je wil weten', hint: 'Broodjes, shiften, categorieën', onPress: () => router.push('/meldingen') }]}
-          />
-        ) : null}
-        {kring.length > 0 ? <MarginRegister title="Voor de kring" links={kring} style={styles.flex} /> : null}
-
-        <View style={styles.tiles}>
-          <SectionHeading>Alles van VTK</SectionHeading>
-          {bootstrap.tabs.map((tab) => (
-            <TabTile
-              key={tab.id}
-              tab={tab}
-              expanded={open === tab.id}
-              onToggle={() => setOpen(open === tab.id ? null : tab.id)}
-              onNative={(route) => {
-                // `/studies?tab=cudi`: de query als parameter, anders komt het vraagteken in het pad.
-                const [pathname, query] = route.split('?');
-                router.push(query ? { pathname, params: Object.fromEntries(new URLSearchParams(query)) } : pathname);
-              }}
-              onCategory={() => router.push(`/categorie/${tab.slug}`)}
-              onPage={(slug) => router.push(`/pagina/${slug}`)}
-              onWeb={openOnWeb}
+        <View style={styles.content}>
+          <View style={styles.columns}>
+            <MarginRegister title="Doen" links={doen} style={styles.flex} />
+            <MarginRegister title="Mensen" links={mensen} style={styles.flex} />
+          </View>
+          {viewer ? (
+            <MarginRegister
+              title="Meldingen"
+              links={[{ label: 'Wat je wil weten', hint: 'Broodjes, shiften, categorieën', onPress: () => router.push('/meldingen') }]}
             />
-          ))}
-          {bootstrap.tabs.length === 0 ? (
-            <Text style={styles.hint}>Er staan nog geen onderdelen klaar.</Text>
           ) : null}
+          {kring.length > 0 ? <MarginRegister title="Voor de kring" links={kring} style={styles.flex} /> : null}
+
+          <View style={styles.tiles}>
+            <SectionHeading>Alles van VTK</SectionHeading>
+            {bootstrap.tabs.map((tab) => (
+              <TabTile
+                key={tab.id}
+                tab={tab}
+                expanded={open === tab.id}
+                onToggle={() => setOpen(open === tab.id ? null : tab.id)}
+                onNative={(route) => {
+                  // `/studies?tab=cudi`: de query als parameter, anders komt het vraagteken in het pad.
+                  const [pathname, query] = route.split('?');
+                  router.push(query ? { pathname, params: Object.fromEntries(new URLSearchParams(query)) } : pathname);
+                }}
+                onCategory={() => router.push(`/categorie/${tab.slug}`)}
+                onPage={(slug) => router.push(`/pagina/${slug}`)}
+                onWeb={openOnWeb}
+              />
+            ))}
+            {bootstrap.tabs.length === 0 ? (
+              <Text style={styles.hint}>Er staan nog geen onderdelen klaar.</Text>
+            ) : null}
+          </View>
         </View>
       </ScrollView>
-    </>
+    </View>
   );
 }
 
@@ -323,7 +325,17 @@ function initialsOf(name: string): string {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
-  content: { padding: SPACING.xl - 4, gap: SPACING.xl, paddingBottom: SPACING.xxl },
+  scroll: { paddingBottom: SPACING.xxl },
+  // Wat boven de kop verschijnt als je op iOS omlaag trekt: geel, zoals de kop.
+  overscroll: {
+    position: 'absolute',
+    top: -1000,
+    left: 0,
+    right: 0,
+    height: 1000,
+    backgroundColor: COLORS.yellow,
+  },
+  content: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.xl, gap: SPACING.xl },
   flex: { flex: 1 },
   pressed: { opacity: 0.6 },
   pressedDark: { opacity: 0.7 },
@@ -333,22 +345,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
-    marginTop: SPACING.lg,
     padding: SPACING.md,
     borderRadius: 20,
     backgroundColor: COLORS.surface,
     ...CARD_SHADOW,
   },
   avatar: { width: 44, height: 44, borderRadius: RADIUS.pill, backgroundColor: COLORS.yellow },
-  avatarEmpty: { alignItems: 'center', justifyContent: 'center' },
-  initials: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink },
+  // Navy en niet geel: een geel rondje verdwijnt tegen de gele kop.
+  avatarEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.navy },
+  initials: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.yellow },
   meName: { fontFamily: FONTS.bold, fontSize: 16, color: COLORS.ink },
   meHint: { ...TYPE.small, fontSize: 13, color: COLORS.muted },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    marginTop: SPACING.md,
+    marginTop: -SPACING.xs,
     paddingHorizontal: SPACING.lg,
     minHeight: 48,
     borderRadius: RADIUS.pill,
@@ -362,7 +374,7 @@ const styles = StyleSheet.create({
     height: 30,
     marginLeft: -SPACING.sm,
     borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.yellow,
+    backgroundColor: COLORS.navy,
     alignItems: 'center',
     justifyContent: 'center',
   },
