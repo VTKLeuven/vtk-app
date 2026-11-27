@@ -10,12 +10,12 @@ import { DatePin } from '../../components/DatePin';
 import { PageHead, PhotoHead } from '../../components/PageHead';
 import { Prose } from '../../components/Prose';
 import { Stepper } from '../../components/Stepper';
-import { Button, Card, Empty, ErrorState, Loading, SectionHeading } from '../../components/ui';
+import { Button, Card, CardList, Empty, ErrorState, Loading } from '../../components/ui';
 import { formatEventWhen, formatEuro } from '../../format';
 import { useApp } from '../../state/app';
 import { useTabRouter } from '../../navigation';
 import { encodeQuantities } from '../../ticketOrder';
-import { COLORS, FONTS, SPACING, TYPE } from '../../theme/tokens';
+import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 
 /**
  * Tickets kopen, stap één: welke tickets en hoeveel.
@@ -126,21 +126,22 @@ function Shop({
           </View>
         ) : null}
 
-        <View style={styles.facts}>
+        {/* Wanneer en waar in één kaart, met een haarlijn ertussen. */}
+        <CardList>
           <View style={styles.fact}>
-            <Clock color={COLORS.muted} size={16} />
+            <Clock color={COLORS.muted} size={17} />
             <Text style={styles.factText}>{formatEventWhen(event.startsAt, event.endsAt, false, locale)}</Text>
           </View>
           {event.location ? (
             <View style={styles.fact}>
-              <MapPin color={COLORS.muted} size={16} />
+              <MapPin color={COLORS.muted} size={17} />
               <Text style={styles.factText}>{event.location}</Text>
             </View>
           ) : null}
-        </View>
+        </CardList>
 
         {/* Eerst de tickets en dan de uitleg: wie hier komt, wil kopen. */}
-        {event.ticketTypes.length > 0 ? <SectionHeading>Tickets</SectionHeading> : null}
+        {event.ticketTypes.length > 0 ? <Heading>Tickets</Heading> : null}
         {event.honoraryOneTicket ? (
           <Card featured>
             <Text style={styles.body}>
@@ -158,45 +159,49 @@ function Shop({
           />
         ) : null}
 
-        {event.ticketTypes.map((type) => {
-          const quantity = quantities[type.id] ?? 0;
-          const roomInOrder = event.maxTicketsPerOrder - totals.count + quantity;
-          const max = Math.max(
-            0,
-            Math.min(type.available, type.maxPerOrder ?? Number.POSITIVE_INFINITY, roomInOrder),
-          );
+        <CardList>
+          {event.ticketTypes.map((type) => {
+            const quantity = quantities[type.id] ?? 0;
+            const roomInOrder = event.maxTicketsPerOrder - totals.count + quantity;
+            const max = Math.max(
+              0,
+              Math.min(type.available, type.maxPerOrder ?? Number.POSITIVE_INFINITY, roomInOrder),
+            );
 
-          return (
-            <Card key={type.id}>
-              <View style={styles.typeRow}>
-                <View style={styles.typeText}>
-                  <Text style={styles.title}>{type.name}</Text>
-                  {type.description ? <Text style={styles.hint}>{type.description}</Text> : null}
-                  <Text style={styles.price}>
-                    {type.priceCents === 0 ? 'Gratis' : formatEuro(type.priceCents)}
-                    {type.available === 0 ? '   uitverkocht' : `   nog ${type.available}`}
-                  </Text>
+            return (
+              <View key={type.id} style={styles.typeBlock}>
+                <View style={styles.typeRow}>
+                  <View style={styles.typeText}>
+                    <Text style={styles.title}>{type.name}</Text>
+                    {type.description ? <Text style={styles.hint}>{type.description}</Text> : null}
+                    <View style={styles.priceRow}>
+                      <Text style={styles.price}>
+                        {type.priceCents === 0 ? 'Gratis' : formatEuro(type.priceCents)}
+                      </Text>
+                      <Availability available={type.available} />
+                    </View>
+                  </View>
+                  <Stepper
+                    value={quantity}
+                    max={max}
+                    label={type.name}
+                    disabled={type.available === 0 || event.maxTicketsPerOrder === 0}
+                    onChange={(next) =>
+                      setQuantities((current) => ({ ...current, [type.id]: next }))
+                    }
+                  />
                 </View>
-                <Stepper
-                  value={quantity}
-                  max={max}
-                  label={type.name}
-                  disabled={type.available === 0 || event.maxTicketsPerOrder === 0}
-                  onChange={(next) =>
-                    setQuantities((current) => ({ ...current, [type.id]: next }))
-                  }
-                />
+                {type.minPerOrder && type.minPerOrder > 1 ? (
+                  <Text style={styles.hint}>Minstens {type.minPerOrder} per bestelling.</Text>
+                ) : null}
               </View>
-              {type.minPerOrder && type.minPerOrder > 1 ? (
-                <Text style={styles.hint}>Minstens {type.minPerOrder} per bestelling.</Text>
-              ) : null}
-            </Card>
-          );
-        })}
+            );
+          })}
+        </CardList>
 
         {event.description ? (
           <>
-            <SectionHeading>Over dit event</SectionHeading>
+            <Heading>Over dit event</Heading>
             <Card>
               <Prose>{event.description}</Prose>
             </Card>
@@ -232,19 +237,60 @@ function Shop({
   );
 }
 
+/** De kop van een deel, een titel in navy zoals op Home. */
+function Heading({ children }: { children: string }) {
+  return (
+    <Text accessibilityRole="header" style={styles.heading}>
+      {children}
+    </Text>
+  );
+}
+
+/**
+ * Hoeveel er nog zijn: uitverkocht in grijs, tien of minder in het geel van
+ * "bijna op" (zoals bij de shiften), daarboven niets. Een momentopname; de
+ * checkout telt bindend.
+ */
+function Availability({ available }: { available: number }) {
+  if (available > 10) return null;
+  const soldOut = available === 0;
+  return (
+    <View style={[styles.chip, soldOut ? styles.chipFull : styles.chipLow]}>
+      <Text style={[styles.chipLabel, soldOut ? styles.chipLabelFull : styles.chipLabelLow]}>
+        {soldOut ? 'uitverkocht' : `nog ${available}`}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
   flex: { flex: 1 },
   content: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxl },
   // De kop met de foto loopt tot tegen de randen, buiten de marge van de inhoud.
   bleed: { marginHorizontal: -SPACING.lg, marginTop: -SPACING.lg },
-  facts: { gap: SPACING.sm, paddingHorizontal: SPACING.xs },
-  fact: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  heading: {
+    fontFamily: FONTS.bold,
+    fontSize: 22,
+    letterSpacing: -0.5,
+    color: COLORS.navy,
+    marginTop: SPACING.sm,
+    paddingHorizontal: SPACING.xs,
+  },
+  fact: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 13 },
   factText: { ...TYPE.body, color: COLORS.body, flexShrink: 1 },
+  typeBlock: { paddingVertical: SPACING.lg, gap: SPACING.sm },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: 2 },
+  chip: { height: 22, justifyContent: 'center', paddingHorizontal: SPACING.sm, borderRadius: RADIUS.pill },
+  chipLow: { backgroundColor: COLORS.lowBg },
+  chipFull: { backgroundColor: COLORS.paper2 },
+  chipLabel: { fontFamily: FONTS.semibold, fontSize: 12 },
+  chipLabelLow: { color: COLORS.lowInk },
+  chipLabelFull: { color: COLORS.body },
   title: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },
   hint: { ...TYPE.small, color: COLORS.muted },
-  price: { ...TYPE.small, color: COLORS.body, marginTop: 2 },
+  price: { ...TYPE.small, fontSize: 14, color: COLORS.body, fontVariant: ['tabular-nums'] },
   typeRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   typeText: { flex: 1, gap: 2 },
   // Het totaal en de knop, zwevend boven de tabbalk zoals bij de broodjes.

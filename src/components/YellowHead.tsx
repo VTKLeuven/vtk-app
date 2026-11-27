@@ -27,7 +27,12 @@ export function YellowHead<T extends string>({
   title: string;
   /** Een regel onder de titel, zoals de code en de studiepunten van een vak. */
   subtitle?: string | null;
-  tabs?: { value: T; options: { value: T; label: string }[]; onChange: (next: T) => void };
+  tabs?: {
+    value: T;
+    /** `badge` is een aantal in een bolletje, zoals de tickets die nog komen. */
+    options: { value: T; label: string; badge?: number }[];
+    onChange: (next: T) => void;
+  };
   /** Een `YellowHeadButton`, zoals de bel van Kalender. */
   right?: React.ReactNode;
   /**
@@ -82,10 +87,21 @@ export function YellowHead<T extends string>({
               key={option.value}
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
+              accessibilityLabel={option.badge ? `${option.label}, ${option.badge}` : undefined}
               onPress={() => tabs.onChange(option.value)}
-              style={({ pressed }) => [styles.pill, active && styles.pillActive, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.pill,
+                option.badge ? styles.pillWithBadge : null,
+                active && styles.pillActive,
+                pressed && styles.pressed,
+              ]}
             >
               <Text style={[styles.pillLabel, active && styles.pillLabelActive]}>{option.label}</Text>
+              {option.badge ? (
+                <View style={[styles.badge, active && styles.badgeActive]}>
+                  <Text style={[styles.badgeLabel, active && styles.badgeLabelActive]}>{option.badge}</Text>
+                </View>
+              ) : null}
             </Pressable>
           );
         })}
@@ -211,7 +227,21 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.pill,
     backgroundColor: 'rgba(14, 26, 54, 0.08)',
   },
+  pillWithBadge: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingRight: SPACING.sm },
   pillActive: { backgroundColor: COLORS.navy },
+  // Het bolletje draait de kleuren van de pil om: navy op het waas, geel op navy.
+  badge: {
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 6,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.navy,
+  },
+  badgeActive: { backgroundColor: COLORS.yellow },
+  badgeLabel: { fontFamily: FONTS.bold, fontSize: 12, color: COLORS.yellow, fontVariant: ['tabular-nums'] },
+  badgeLabelActive: { color: COLORS.navy },
   pillLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.navy },
   pillLabelActive: { fontFamily: FONTS.bold, color: COLORS.yellow },
 

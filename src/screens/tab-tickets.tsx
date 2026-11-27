@@ -3,14 +3,15 @@ import { useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { Image } from 'expo-image';
 import { useKeepAwake } from 'expo-keep-awake';
-import { CircleCheck, Clock, MapPin, Maximize2, ScanLine, X } from 'lucide-react-native';
-import { useState } from 'react';
+import { CircleCheck, Clock, FileText, MapPin, ScanLine, Wallet, X } from 'lucide-react-native';
+import { useRef, useState } from 'react';
 import {
   Modal,
   Platform,
   Pressable,
   RefreshControl,
   ScrollView,
+  type ScrollViewInstance,
   StyleSheet,
   Text,
   View,
@@ -18,13 +19,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { AppMyOrder, AppMyTicket } from '../api/contract';
+import type { AppMyOrder, AppMyTicket, AppTicketEvent } from '../api/contract';
 import { fetchMyTickets, fetchTicketEvents } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { CARD_SHADOW } from '../components/HomeSection';
-import { HeadButton, PageHead } from '../components/PageHead';
 import { DatePin } from '../components/DatePin';
 import { VtkQr } from '../components/VtkQr';
+import { YellowHead, YellowHeadButton } from '../components/YellowHead';
 import { Button, Card, Empty, ErrorState, Loading, StaleNotice } from '../components/ui';
 import { formatDay, formatEuro, formatTime } from '../format';
 import { useApp } from '../state/app';
@@ -37,7 +38,8 @@ import { useTrackView } from '../usage';
 type Tab = 'kopen' | 'mijne';
 
 /**
- * Tickets: kopen en tonen, in één tab met twee tabbladen in de kop.
+ * Tickets: kopen en tonen, in één tab met twee tabbladen als pillen in een gele
+ * kop (`YellowHead`), zoals Kalender en Studies.
  *
  * Dat is een van de twee redenen waarom tickets een eigen plaats in de onderbalk
  * kregen. De andere is dat tonen tijdgevoelig is: aan de deur van een cantus wil
@@ -49,7 +51,7 @@ type Tab = 'kopen' | 'mijne';
  * tonen is, is geen ticket. Wat er in de leescache staat, volstaat om binnen te
  * geraken.
  *
- * **Mijn tickets staat vooraan en is het standaardsegment.** Wie hier binnenkomt
+ * **Mijn tickets staat vooraan en is het standaardtabblad.** Wie hier binnenkomt
  * heeft meestal al een ticket en wil het tonen; kopen doe je een keer, tonen doe
  * je aan elke deur. Wie niet ingelogd is, ziet wel de verkoop, want zijn eigen
  * tickets zijn dan enkel een aanmeldscherm.
@@ -82,141 +84,201 @@ export default function TicketsScreen() {
     .filter((order) => !isPast(order))
     .reduce((total, order) => total + order.tickets.length, 0);
 
+  const head = (
+    <YellowHead
+      title="Tickets"
+      tabs={{
+        value: tab,
+        onChange: setTab,
+        options: [
+          { value: 'mijne', label: 'Mijn tickets', badge: ticketCount },
+          { value: 'kopen', label: 'Kopen' },
+        ],
+      }}
+      right={
+        bootstrap?.abilities?.scanTickets ? (
+          <YellowHeadButton label="Tickets scannen" onPress={() => router.push('/deur')}>
+            <ScanLine color={COLORS.yellow} size={21} />
+          </YellowHeadButton>
+        ) : undefined
+      }
+    />
+  );
+
+  return tab === 'kopen' ? (
+    <SalesList head={head} resource={sales} locale={locale} onOpen={(slug) => router.push(`/ticket/${slug}`)} />
+  ) : (
+    <MyTickets
+      head={head}
+      resource={mine}
+      locale={locale}
+      loggedIn={Boolean(viewer)}
+      onLogin={() => router.push('/inloggen')}
+      onShop={() => setTab('kopen')}
+    />
+  );
+}
+
+/**
+ * De gele kop met daaronder het papier, in één ScrollView. Boven de kop staat
+ * geel, zodat omlaag trekken op iOS geen witte strook toont.
+ */
+function Frame({
+  head,
+  refreshing,
+  onRefresh,
+  stale,
+  children,
+}: {
+  head: React.ReactNode;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+  stale?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <>
-      <PageHead
-        title="Tickets"
-        subtitle="Voor cantussen, galabals en andere VTK-events"
-        back={false}
-        tabs={{
-          value: tab,
-          onChange: setTab,
-          options: [
-            { value: 'kopen', label: 'Kopen' },
-            { value: 'mijne', label: 'Mijn tickets', badge: ticketCount },
-          ],
-        }}
-        right={
-          bootstrap?.abilities?.scanTickets ? (
-            <HeadButton accessibilityLabel="Tickets scannen" onPress={() => router.push('/deur')}>
-              <ScanLine color={COLORS.ink} size={22} />
-            </HeadButton>
+    <View style={styles.root}>
+      <ScrollView
+        style={styles.root}
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl refreshing={Boolean(refreshing)} tintColor={COLORS.navy} onRefresh={onRefresh} />
           ) : undefined
         }
-      />
-
-      {tab === 'kopen' ? (
-        <SalesList resource={sales} locale={locale} onOpen={(slug) => router.push(`/ticket/${slug}`)} />
-      ) : (
-        <MyTickets
-          resource={mine}
-          locale={locale}
-          loggedIn={Boolean(viewer)}
-          onLogin={() => router.push('/inloggen')}
-          onShop={() => setTab('kopen')}
-        />
-      )}
-    </>
+      >
+        <View style={styles.overscroll} />
+        {head}
+        {stale && onRefresh ? <StaleNotice onRetry={onRefresh} /> : null}
+        <View style={styles.content}>{children}</View>
+      </ScrollView>
+    </View>
   );
 }
 
 // ── Kopen ───────────────────────────────────────────────────────────────────
 
 function SalesList({
+  head,
   resource,
   locale,
   onOpen,
 }: {
-  resource: ReturnType<typeof useResource<Awaited<ReturnType<typeof fetchTicketEvents>>>>;
+  head: React.ReactNode;
+  resource: ReturnType<typeof useResource<AppTicketEvent[]>>;
   locale: 'nl' | 'en';
   onOpen: (slug: string) => void;
 }) {
-  if (resource.loading) return <Loading label="Tickets ophalen" />;
-  if (!resource.data) {
+  if (resource.loading || !resource.data) {
     return (
-      <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
+      <Frame head={head}>
+        {resource.loading ? (
+          <Loading label="Tickets ophalen" />
+        ) : (
+          <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
+        )}
+      </Frame>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={styles.list}
-      refreshControl={
-        <RefreshControl refreshing={resource.refreshing} onRefresh={() => void resource.refresh()} />
-      }
+    <Frame
+      head={head}
+      refreshing={resource.refreshing}
+      onRefresh={() => void resource.refresh()}
+      stale={resource.stale}
     >
-      {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
-
       {resource.data.length === 0 ? (
         <Empty
           title="Momenteel geen ticketverkoop"
           hint="Nieuwe events verschijnen hier zodra de verkoop opengaat. Duid in de kalender aan wat je interesseert, dan krijg je een bericht."
         />
-      ) : null}
+      ) : (
+        <Text accessibilityRole="header" style={styles.heading}>
+          In verkoop
+        </Text>
+      )}
 
       {resource.data.map((event) => (
-        <Pressable
-          key={event.id}
-          accessibilityRole="button"
-          accessibilityLabel={event.title}
-          onPress={() => onOpen(event.slug)}
-          style={({ pressed }) => [styles.ticket, pressed && styles.pressed]}
-        >
-          <View style={styles.shot}>
-            {event.imageUrl ? (
-              <Image cachePolicy="memory-disk" source={{ uri: event.imageUrl }} style={styles.photo} contentFit="cover" transition={120} />
-            ) : null}
-            <View style={styles.pin}>
-              <DatePin iso={event.startsAt} locale={locale} shadow />
-            </View>
-          </View>
-          <View style={styles.ticketBody}>
-            <Text style={styles.org} numberOfLines={1}>
-              {event.ownerGroupName}
-              {event.location ? `, ${event.location}` : ''}
-            </Text>
-            <View style={styles.titleWrap}>
-              <Text style={styles.rowTitle} numberOfLines={2}>
-                {event.title}
-              </Text>
-            </View>
-            <View style={styles.buy}>
-              <View style={styles.priceCol}>
-                {event.requiresLogin ? (
-                  <Text style={styles.priceHint}>Log in om de ledentickets te zien</Text>
-                ) : event.fromPriceCents === null ? (
-                  <Text style={styles.priceHint}>Geen tickets meer beschikbaar</Text>
-                ) : (
-                  <>
-                    <Text style={styles.priceHint}>{event.fromPriceCents === 0 ? 'Prijs' : 'Vanaf'}</Text>
-                    <Text style={styles.price}>
-                      {event.fromPriceCents === 0 ? 'Gratis' : formatEuro(event.fromPriceCents)}
-                    </Text>
-                  </>
-                )}
-              </View>
-              <View style={styles.cta}>
-                <Text style={styles.ctaLabel}>Tickets</Text>
-              </View>
-            </View>
-          </View>
-        </Pressable>
+        <SaleCard key={event.id} event={event} locale={locale} onOpen={() => onOpen(event.slug)} />
       ))}
-    </ScrollView>
+
+      {resource.data.length > 0 ? (
+        <Text style={styles.footnote}>
+          Nieuwe events verschijnen hier zodra de verkoop opengaat. Duid in de kalender aan wat je
+          interesseert, dan krijg je een bericht.
+        </Text>
+      ) : null}
+    </Frame>
+  );
+}
+
+/** Eén event in de verkoop: de banner met de gele datumpin, wie en waar, de prijs. */
+function SaleCard({ event, locale, onOpen }: { event: AppTicketEvent; locale: 'nl' | 'en'; onOpen: () => void }) {
+  const soldOut = !event.requiresLogin && event.fromPriceCents === null;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={event.title}
+      onPress={onOpen}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+    >
+      <View style={styles.shot}>
+        {event.imageUrl ? (
+          <Image cachePolicy="memory-disk" source={{ uri: event.imageUrl }} style={styles.photo} contentFit="cover" transition={120} />
+        ) : null}
+        <View style={styles.pin}>
+          <DatePin iso={event.startsAt} locale={locale} shadow />
+        </View>
+      </View>
+      <View style={styles.saleBody}>
+        <Text style={styles.org} numberOfLines={1}>
+          {event.ownerGroupName}
+          {event.location ? `, ${event.location}` : ''}
+        </Text>
+        <Text style={styles.saleTitle} numberOfLines={2}>
+          {event.title}
+        </Text>
+        <View style={styles.buy}>
+          <View style={styles.flex}>
+            {event.requiresLogin ? (
+              <Text style={styles.priceHint}>Log in om de ledentickets te zien</Text>
+            ) : soldOut ? (
+              <View style={styles.soldOut}>
+                <Text style={styles.soldOutLabel}>Uitverkocht</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.priceHint}>{event.fromPriceCents === 0 ? 'Prijs' : 'Vanaf'}</Text>
+                <Text style={styles.price}>
+                  {event.fromPriceCents === 0 ? 'Gratis' : formatEuro(event.fromPriceCents ?? 0)}
+                </Text>
+              </>
+            )}
+          </View>
+          <View style={[styles.cta, soldOut && styles.ctaQuiet]}>
+            <Text style={[styles.ctaLabel, soldOut && styles.ctaLabelQuiet]}>{soldOut ? 'Bekijken' : 'Tickets'}</Text>
+          </View>
+        </View>
+      </View>
+    </Pressable>
   );
 }
 
 // ── Mijn tickets ────────────────────────────────────────────────────────────
 
+type Enlarged = { order: AppMyOrder; index: number } | null;
+
 function MyTickets({
+  head,
   resource,
   locale,
   loggedIn,
   onLogin,
   onShop,
 }: {
-  resource: ReturnType<typeof useResource<Awaited<ReturnType<typeof fetchMyTickets>>>>;
+  head: React.ReactNode;
+  resource: ReturnType<typeof useResource<AppMyOrder[]>>;
   locale: 'nl' | 'en';
   loggedIn: boolean;
   onLogin: () => void;
@@ -227,20 +289,25 @@ function MyTickets({
 
   if (!loggedIn) {
     return (
-      <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+      <Frame head={head}>
         <Card>
           <Text style={styles.cardTitle}>Log eerst in</Text>
           <Text style={styles.body}>Je tickets hangen aan je account.</Text>
           <Button label="Inloggen" onPress={onLogin} />
         </Card>
-      </ScrollView>
+      </Frame>
     );
   }
 
-  if (resource.loading) return <Loading label="Tickets ophalen" />;
-  if (!resource.data) {
+  if (resource.loading || !resource.data) {
     return (
-      <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
+      <Frame head={head}>
+        {resource.loading ? (
+          <Loading label="Tickets ophalen" />
+        ) : (
+          <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
+        )}
+      </Frame>
     );
   }
 
@@ -252,26 +319,33 @@ function MyTickets({
 
   return (
     <>
-      <ScrollView
-        style={styles.root}
-        contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={resource.refreshing} onRefresh={() => void resource.refresh()} />
-        }
+      <Frame
+        head={head}
+        refreshing={resource.refreshing}
+        onRefresh={() => void resource.refresh()}
+        stale={resource.stale}
       >
-        {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
-
         {upcoming.length === 0 ? (
           <Empty
             title={past.length > 0 ? 'Geen tickets voor wat er komt' : 'Nog geen tickets'}
             hint="Wat je koopt, komt hier te staan en blijft ook zonder netwerk zichtbaar."
             action={{ label: 'Naar de verkoop', onPress: onShop }}
           />
-        ) : null}
+        ) : (
+          <Text accessibilityRole="header" style={styles.heading}>
+            Komend
+          </Text>
+        )}
 
         {upcoming.map((order) => (
-          <Order key={order.id} order={order} locale={locale} onEnlarge={setEnlarged} />
+          <Order key={order.id} order={order} locale={locale} onEnlarge={(index) => setEnlarged({ order, index })} />
         ))}
+
+        {upcoming.length > 0 ? (
+          <Text style={styles.footnote}>
+            Tik op een code om ze over het hele scherm te tonen. Je tickets blijven zichtbaar zonder netwerk.
+          </Text>
+        ) : null}
 
         {past.length > 0 ? (
           <Button
@@ -287,16 +361,18 @@ function MyTickets({
 
         {showPast
           ? past.map((order) => (
-              <Order key={order.id} order={order} locale={locale} onEnlarge={setEnlarged} past />
+              <Order
+                key={order.id}
+                order={order}
+                locale={locale}
+                onEnlarge={(index) => setEnlarged({ order, index })}
+                past
+              />
             ))
           : null}
-      </ScrollView>
+      </Frame>
 
-      <TicketZoom
-        ticket={enlarged?.ticket ?? null}
-        title={enlarged?.title ?? ''}
-        onClose={() => setEnlarged(null)}
-      />
+      <TicketZoom enlarged={enlarged} locale={locale} onClose={() => setEnlarged(null)} />
     </>
   );
 }
@@ -312,11 +388,17 @@ function isPast(order: AppMyOrder): boolean {
   return Date.parse(order.event.startsAt) < Date.now() - PAST_AFTER_MS;
 }
 
-type Enlarged = { ticket: AppMyTicket; title: string } | null;
+/** "Woensdag 2 december, 20:00". */
+function whenLabel(iso: string, locale: 'nl' | 'en'): string {
+  const when = `${formatDay(iso, locale)}, ${formatTime(iso, locale)}`;
+  return when.charAt(0).toUpperCase() + when.slice(1);
+}
 
 /**
  * Eén bestelling als ticket: de banner van het event met de gele datumpin, de
- * titel, wanneer en waar, en daaronder elk ticket na een scheurlijn, met de QR.
+ * titel, wanneer en waar, en na een scheurlijn elk ticket als compacte strook:
+ * de QR links, het type, de naam en de code ernaast (voorstel B, november 2026).
+ * Zo past een bestelling voor twee op één scherm; een tik op de QR zet ze groot.
  */
 function Order({
   order,
@@ -326,12 +408,11 @@ function Order({
 }: {
   order: AppMyOrder;
   locale: 'nl' | 'en';
-  onEnlarge: (next: Enlarged) => void;
+  onEnlarge: (index: number) => void;
   past?: boolean;
 }) {
-  const when = `${formatDay(order.event.startsAt, locale)}, ${formatTime(order.event.startsAt, locale)}`;
   return (
-    <View style={[styles.ticket, past && styles.orderPast]}>
+    <View style={[styles.card, past && styles.orderPast]}>
       {order.event.imageUrl ? (
         <View style={styles.shot}>
           <Image cachePolicy="memory-disk" source={{ uri: order.event.imageUrl }} style={styles.photo} contentFit="cover" transition={120} />
@@ -341,14 +422,15 @@ function Order({
         </View>
       ) : null}
       <View style={styles.orderBody}>
-        <View style={[styles.titleWrap, order.event.imageUrl ? styles.besidePin : null]}>
-          <Text accessibilityRole="header" style={styles.orderTitle}>
-            {order.event.title}
-          </Text>
-        </View>
+        <Text
+          accessibilityRole="header"
+          style={[styles.orderTitle, order.event.imageUrl ? styles.besidePin : null]}
+        >
+          {order.event.title}
+        </Text>
         <View style={styles.infoRow}>
           <Clock color={COLORS.muted} size={15} />
-          <Text style={styles.infoText}>{when.charAt(0).toUpperCase() + when.slice(1)}</Text>
+          <Text style={styles.infoText}>{whenLabel(order.event.startsAt, locale)}</Text>
         </View>
         {order.event.location ? (
           <View style={styles.infoRow}>
@@ -356,13 +438,13 @@ function Order({
             <Text style={styles.infoText}>{order.event.location}</Text>
           </View>
         ) : null}
-        <Text style={styles.orderNumber}>Bestelling {order.orderNumber}</Text>
       </View>
 
-      {order.tickets.map((ticket) => (
+      <Perforation />
+      {order.tickets.map((ticket, index) => (
         <View key={ticket.id}>
-          <Perforation />
-          <TicketBlock ticket={ticket} onEnlarge={() => onEnlarge({ ticket, title: order.event.title })} />
+          {index > 0 ? <View style={styles.hairline} /> : null}
+          <TicketStub ticket={ticket} onEnlarge={() => onEnlarge(index)} />
         </View>
       ))}
     </View>
@@ -380,104 +462,130 @@ function Perforation() {
   );
 }
 
-function TicketBlock({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: () => void }) {
-  const { width } = useWindowDimensions();
-  const [open, setOpen] = useState(false);
+const STUB_QR = 112;
 
-  const size = Math.min(200, width - SPACING.lg * 6);
+function TicketStub({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: () => void }) {
   const used = Boolean(ticket.checkedInAt);
+  // Enkel de wallet van dit toestel: Apple Wallet bestaat niet op Android en
+  // Google Wallet hoort niet op een iPhone.
+  const walletUrl = Platform.OS === 'ios' ? ticket.walletAppleUrl : ticket.walletGoogleUrl;
 
   return (
-    <View style={styles.ticketBlock}>
-      <View style={styles.ticketHead}>
-        <Text style={[styles.cardTitle, styles.flex]}>{ticket.typeName}</Text>
-        {ticket.attendeeName ? <Text style={styles.hint}>{ticket.attendeeName}</Text> : null}
-      </View>
-
-      {used ? (
-        <View style={styles.usedRow}>
-          <CircleCheck color={COLORS.muted} size={16} />
-          <Text style={styles.hint}>Al gescand</Text>
-        </View>
-      ) : null}
-
+    <View style={styles.stub}>
       {/* Een tik vergroot de code tot over het hele scherm: aan een deur scant een
           camera een grote QR op wit veel sneller dan een klein vierkant in een kaart. */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Ticket vergroten om te laten scannen"
+        accessibilityLabel={`${ticket.typeName}: vergroten om te laten scannen`}
         onPress={onEnlarge}
-        style={({ pressed }) => [styles.qrWrap, pressed && styles.pressed]}
+        style={({ pressed }) => [pressed && styles.pressed, used && styles.usedQr]}
       >
-        <VtkQr value={ticket.credential} size={size} />
+        <VtkQr value={ticket.credential} size={STUB_QR} />
       </Pressable>
-      <Pressable accessibilityRole="button" onPress={onEnlarge} hitSlop={8} style={styles.zoomHint}>
-        <Maximize2 color={COLORS.muted} size={13} />
-        <Text style={styles.code}>{ticket.publicId}, tik om te vergroten</Text>
-      </Pressable>
-
-      <Button label={open ? 'Minder' : 'PDF en wallet'} variant={open ? 'ghost' : 'primary'} onPress={() => setOpen(!open)} />
-
-      {open ? (
-        <>
-          <Button
-            label="Ticket als PDF"
-            variant="ghost"
+      <View style={styles.stubText}>
+        <Text style={styles.cardTitle}>{ticket.typeName}</Text>
+        {ticket.attendeeName ? <Text style={styles.attendee}>{ticket.attendeeName}</Text> : null}
+        <Text style={styles.code}>{ticket.publicId}</Text>
+        {used ? (
+          <View style={styles.usedRow}>
+            <CircleCheck color={COLORS.muted} size={14} />
+            <Text style={styles.hint}>Al gescand</Text>
+          </View>
+        ) : null}
+        <View style={styles.stubActions}>
+          {walletUrl ? (
+            <SmallButton
+              label="Wallet"
+              accessibilityLabel={Platform.OS === 'ios' ? 'Aan Apple Wallet toevoegen' : 'Aan Google Wallet toevoegen'}
+              icon={<Wallet color={COLORS.navy} size={15} />}
+              onPress={() =>
+                void (Platform.OS === 'ios' ? addToAppleWallet(walletUrl) : addToGoogleWallet(walletUrl))
+              }
+            />
+          ) : null}
+          <SmallButton
+            label="PDF"
+            accessibilityLabel="Ticket als PDF"
+            icon={<FileText color={COLORS.navy} size={15} />}
             onPress={() => void WebBrowser.openBrowserAsync(ticket.pdfUrl)}
           />
-          {/* Enkel de wallet van dit toestel: Apple Wallet bestaat niet op Android
-              en Google Wallet hoort niet op een iPhone. */}
-          {Platform.OS === 'ios' && ticket.walletAppleUrl ? (
-            <Button
-              label="Aan Apple Wallet toevoegen"
-              variant="ghost"
-              onPress={() => void addToAppleWallet(ticket.walletAppleUrl as string)}
-            />
-          ) : null}
-          {Platform.OS === 'android' && ticket.walletGoogleUrl ? (
-            <Button
-              label="Aan Google Wallet toevoegen"
-              variant="ghost"
-              onPress={() => void addToGoogleWallet(ticket.walletGoogleUrl as string)}
-            />
-          ) : null}
-        </>
-      ) : null}
+        </View>
+      </View>
     </View>
   );
 }
 
+function SmallButton({
+  label,
+  accessibilityLabel,
+  icon,
+  onPress,
+}: {
+  label: string;
+  accessibilityLabel: string;
+  icon: React.ReactNode;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      hitSlop={4}
+      style={({ pressed }) => [styles.smallButton, pressed && styles.pressed]}
+    >
+      {icon}
+      <Text style={styles.smallButtonLabel}>{label}</Text>
+    </Pressable>
+  );
+}
+
 /**
- * Eén ticket over het hele scherm, om te laten scannen.
+ * Een bestelling over het hele scherm, om te laten scannen.
  *
- * Wit en zo groot als het scherm toelaat, met de naam en het type erbij zodat
- * wie aan de deur staat ook kan lezen wat hij scant. Het scherm blijft aan zolang
- * dit openstaat (`expo-keep-awake` zit in `expo` zelf, dus in elke build). De
- * helderheid zetten we niet hoger: daar is een native module voor nodig die niet
- * in elke APK zit.
+ * Wit en zo groot als het scherm toelaat, met het event, het type en de naam
+ * erbij zodat wie aan de deur staat ook kan lezen wat hij scant. Zitten er meer
+ * tickets in de bestelling, dan veeg je opzij naar het volgende: wie voor een
+ * groep kocht, toont ze zo na elkaar zonder terug naar de lijst te moeten. Het
+ * scherm blijft aan zolang dit openstaat (`expo-keep-awake` zit in `expo` zelf,
+ * dus in elke build). De helderheid zetten we niet hoger: daar is een native
+ * module voor nodig die niet in elke APK zit.
  */
 function TicketZoom({
-  ticket,
-  title,
+  enlarged,
+  locale,
   onClose,
 }: {
-  ticket: AppMyTicket | null;
-  title: string;
+  enlarged: Enlarged;
+  locale: 'nl' | 'en';
   onClose: () => void;
 }) {
   return (
-    <Modal visible={ticket !== null} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      {ticket ? <TicketZoomBody ticket={ticket} title={title} onClose={onClose} /> : null}
+    <Modal visible={enlarged !== null} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      {enlarged ? <TicketZoomBody {...enlarged} locale={locale} onClose={onClose} /> : null}
     </Modal>
   );
 }
 
-function TicketZoomBody({ ticket, title, onClose }: { ticket: AppMyTicket; title: string; onClose: () => void }) {
+function TicketZoomBody({
+  order,
+  index,
+  locale,
+  onClose,
+}: {
+  order: AppMyOrder;
+  index: number;
+  locale: 'nl' | 'en';
+  onClose: () => void;
+}) {
   useKeepAwake();
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const size = Math.min(width - SPACING.xl * 2, height * 0.55);
-  const used = Boolean(ticket.checkedInAt);
+  const [current, setCurrent] = useState(index);
+  const pager = useRef<ScrollViewInstance>(null);
+  const size = Math.min(width - SPACING.xl * 2, height * 0.45);
+  const count = order.tickets.length;
+  const next = order.tickets[current + 1];
 
   return (
     <Pressable
@@ -486,26 +594,73 @@ function TicketZoomBody({ ticket, title, onClose }: { ticket: AppMyTicket; title
       style={[styles.zoom, { paddingTop: insets.top + SPACING.md, paddingBottom: insets.bottom + SPACING.xl }]}
     >
       <View style={styles.zoomTop}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Sluiten" onPress={onClose} hitSlop={14}>
-          <X color={COLORS.ink} size={26} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Sluiten"
+          onPress={onClose}
+          hitSlop={8}
+          style={({ pressed }) => [styles.zoomClose, pressed && styles.pressed]}
+        >
+          <X color={COLORS.ink} size={22} />
         </Pressable>
       </View>
+
       <View style={styles.zoomBody}>
-        <Text style={styles.zoomTitle} numberOfLines={2}>
-          {title}
-        </Text>
-        <Text style={styles.zoomType}>
-          {ticket.typeName}
-          {ticket.attendeeName ? `, ${ticket.attendeeName}` : ''}
-        </Text>
-        <View style={styles.zoomQr}>
-          <VtkQr value={ticket.credential} size={size} />
+        <View style={styles.zoomHead}>
+          <Text style={styles.zoomTitle} numberOfLines={2}>
+            {order.event.title}
+          </Text>
+          <Text style={styles.zoomWhen}>
+            {whenLabel(order.event.startsAt, locale)}
+            {order.event.location ? `, ${order.event.location}` : ''}
+          </Text>
         </View>
-        <Text style={styles.zoomCode}>{ticket.publicId}</Text>
-        {used ? (
-          <View style={styles.usedRow}>
-            <CircleCheck color={COLORS.muted} size={16} />
-            <Text style={styles.hint}>Al gescand</Text>
+
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          ref={pager}
+          // Open op het ticket waarop je tikte. `contentOffset` alleen werkt
+          // enkel op iOS, dus op Android schuiven we er bij de eerste layout heen.
+          contentOffset={{ x: index * width, y: 0 }}
+          onLayout={() => {
+            if (index > 0) pager.current?.scrollTo({ x: index * width, animated: false });
+          }}
+          onMomentumScrollEnd={(event) => setCurrent(Math.round(event.nativeEvent.contentOffset.x / width))}
+          style={styles.zoomPager}
+        >
+          {order.tickets.map((ticket) => (
+            <Pressable key={ticket.id} onPress={onClose} accessibilityLabel="Sluiten" style={[styles.zoomPage, { width }]}>
+              <Text style={styles.zoomType}>
+                {ticket.typeName}
+                {ticket.attendeeName ? `, ${ticket.attendeeName}` : ''}
+              </Text>
+              <View style={styles.zoomQr}>
+                <VtkQr value={ticket.credential} size={size} />
+              </View>
+              <Text style={styles.zoomCode}>{ticket.publicId}</Text>
+              {ticket.checkedInAt ? (
+                <View style={styles.usedRow}>
+                  <CircleCheck color={COLORS.muted} size={16} />
+                  <Text style={styles.hint}>Al gescand</Text>
+                </View>
+              ) : null}
+            </Pressable>
+          ))}
+        </ScrollView>
+
+        {count > 1 ? (
+          <View style={styles.zoomPaging}>
+            <View style={styles.dots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+              {order.tickets.map((ticket, dot) => (
+                <View key={ticket.id} style={[styles.dot, dot === current && styles.dotActive]} />
+              ))}
+            </View>
+            <Text style={styles.hint}>
+              Ticket {current + 1} van {count}
+              {next ? `, veeg voor ${next.attendeeName || 'het volgende'}` : ''}
+            </Text>
           </View>
         ) : null}
       </View>
@@ -514,19 +669,38 @@ function TicketZoomBody({ ticket, title, onClose }: { ticket: AppMyTicket; title
   );
 }
 
+const SIDE = SPACING.xl - 4;
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
-  list: { padding: SPACING.xl - 4, gap: SPACING.lg, paddingBottom: SPACING.xxl },
-  content: { padding: SPACING.xl - 4, gap: SPACING.xl, paddingBottom: SPACING.xxl },
+  flex: { flex: 1 },
+  scroll: { paddingBottom: SPACING.xxl },
+  // Wat boven de kop verschijnt als je op iOS omlaag trekt: geel, zoals de kop.
+  overscroll: {
+    position: 'absolute',
+    top: -1000,
+    left: 0,
+    right: 0,
+    height: 1000,
+    backgroundColor: COLORS.yellow,
+  },
+  content: { paddingHorizontal: SIDE, paddingTop: SPACING.xl - 2, gap: SPACING.lg },
+  heading: {
+    fontFamily: FONTS.bold,
+    fontSize: 22,
+    letterSpacing: -0.5,
+    color: COLORS.navy,
+    paddingHorizontal: SPACING.xs,
+  },
+  footnote: { ...TYPE.small, color: COLORS.muted, textAlign: 'center', paddingHorizontal: SPACING.md },
 
-  // De kaart van /tickets: banner met de gele datumpin, de titel met de gele lijn,
-  // de prijs en de knop onderaan. Lager dan 16:9, zodat er meer onder elkaar past.
-  ticket: {
+  card: {
     backgroundColor: COLORS.surface,
     borderRadius: 22,
     ...CARD_SHADOW,
   },
-  pressed: { opacity: 0.92 },
+  pressed: { opacity: 0.85 },
+  // Lager dan 16:9, zodat er meer onder elkaar past.
   shot: {
     aspectRatio: 2.4,
     backgroundColor: COLORS.paper2,
@@ -535,41 +709,46 @@ const styles = StyleSheet.create({
   },
   photo: { ...StyleSheet.absoluteFill, borderTopLeftRadius: 22, borderTopRightRadius: 22 },
   pin: { position: 'absolute', right: SPACING.lg, bottom: -24 },
-  ticketBody: { paddingHorizontal: SPACING.lg, paddingTop: 10, paddingBottom: SPACING.lg, gap: 4 },
+
+  saleBody: { paddingHorizontal: SPACING.lg, paddingTop: 10, paddingBottom: SPACING.lg, gap: 4 },
   org: { fontFamily: FONTS.medium, fontSize: 12.5, color: COLORS.muted, paddingRight: 70 },
-  titleWrap: {
-    alignSelf: 'flex-start',
-    paddingBottom: 5,
-    borderBottomWidth: 3,
-    borderBottomColor: COLORS.yellow,
-  },
-  rowTitle: { fontFamily: FONTS.semibold, fontSize: 17, lineHeight: 22, color: COLORS.ink },
+  saleTitle: { fontFamily: FONTS.bold, fontSize: 18, lineHeight: 23, letterSpacing: -0.4, color: COLORS.ink },
   buy: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: SPACING.md,
     marginTop: SPACING.sm,
   },
-  priceCol: { flex: 1 },
   priceHint: { ...TYPE.small, fontSize: 12, color: COLORS.muted },
   price: { fontFamily: FONTS.semibold, fontSize: 16, color: COLORS.ink, fontVariant: ['tabular-nums'] },
+  soldOut: {
+    alignSelf: 'flex-start',
+    height: 28,
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.paper2,
+  },
+  soldOutLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.body },
   cta: {
-    backgroundColor: COLORS.ink,
+    backgroundColor: COLORS.navy,
     borderRadius: RADIUS.pill,
     paddingHorizontal: 18,
     minHeight: 40,
     justifyContent: 'center',
   },
-  ctaLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.paper },
+  ctaQuiet: { backgroundColor: COLORS.paper },
+  ctaLabel: { fontFamily: FONTS.bold, fontSize: 14, color: COLORS.yellow },
+  ctaLabelQuiet: { fontFamily: FONTS.semibold, color: COLORS.navy },
 
-  orderBody: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.md, paddingBottom: SPACING.sm, gap: 6 },
+  orderBody: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.md, paddingBottom: SPACING.xs, gap: 6 },
   besidePin: { marginRight: 70 },
   orderTitle: { fontFamily: FONTS.bold, fontSize: 21, lineHeight: 26, letterSpacing: -0.6, color: COLORS.ink },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   infoText: { ...TYPE.small, fontSize: 14, color: COLORS.body, flexShrink: 1 },
-  orderNumber: { ...TYPE.small, fontSize: 12, color: COLORS.muted },
-  flex: { flex: 1 },
-  perforation: { height: 24, flexDirection: 'row', alignItems: 'center' },
+  orderPast: { opacity: 0.7 },
+  perforation: { height: 24, flexDirection: 'row', alignItems: 'center', marginTop: SPACING.sm },
   notch: { width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.paper },
   notchLeft: { marginLeft: -12 },
   notchRight: { marginRight: -12 },
@@ -580,28 +759,68 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: COLORS.line2,
   },
-  ticketBlock: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.xs, paddingBottom: SPACING.lg, gap: SPACING.sm },
-  ticketHead: { flexDirection: 'row', alignItems: 'baseline', gap: SPACING.md },
-  orderPast: { opacity: 0.7 },
+  hairline: { height: StyleSheet.hairlineWidth, backgroundColor: COLORS.line2, marginHorizontal: SPACING.lg },
+
+  stub: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.lg,
+  },
+  usedQr: { opacity: 0.45 },
+  stubText: { flex: 1, minWidth: 0, gap: 3 },
+  attendee: { ...TYPE.small, fontSize: 13, color: COLORS.body },
+  code: { ...TYPE.small, fontSize: 12, color: COLORS.muted, letterSpacing: 1 },
+  stubActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.sm },
+  smallButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 36,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.paper,
+  },
+  smallButtonLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.navy },
+
   cardTitle: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },
-  hint: { ...TYPE.small, color: COLORS.muted },
-  usedRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  // De QR draagt zijn eigen navy kader, dus er hoeft geen tweede wit vlak omheen.
-  qrWrap: { alignSelf: 'center', marginVertical: SPACING.sm },
-  code: { ...TYPE.small, color: COLORS.muted, textAlign: 'center', letterSpacing: 1 },
-  zoomHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  hint: { ...TYPE.small, color: COLORS.muted, textAlign: 'center' },
+  usedRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
 
   zoom: {
     flex: 1,
     backgroundColor: COLORS.surface,
-    paddingHorizontal: SPACING.xl,
     alignItems: 'center',
   },
-  zoomTop: { alignSelf: 'stretch', alignItems: 'flex-end' },
-  zoomBody: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SPACING.sm },
-  zoomTitle: { ...TYPE.heading, color: COLORS.ink, textAlign: 'center' },
-  zoomType: { ...TYPE.body, color: COLORS.body, textAlign: 'center' },
-  zoomQr: { marginVertical: SPACING.lg },
+  zoomTop: { alignSelf: 'stretch', alignItems: 'flex-end', paddingHorizontal: SPACING.xl },
+  zoomClose: {
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.paper,
+  },
+  zoomBody: { flex: 1, alignSelf: 'stretch', justifyContent: 'center', gap: SPACING.lg },
+  zoomHead: { paddingHorizontal: SPACING.xl, gap: 6 },
+  zoomTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 24,
+    lineHeight: 29,
+    letterSpacing: -0.6,
+    color: COLORS.ink,
+    textAlign: 'center',
+  },
+  zoomWhen: { ...TYPE.small, fontSize: 14, color: COLORS.muted, textAlign: 'center' },
+  zoomPager: { flexGrow: 0 },
+  zoomPage: { alignItems: 'center', gap: SPACING.sm },
+  zoomType: { ...TYPE.body, color: COLORS.body, textAlign: 'center', paddingHorizontal: SPACING.xl },
+  zoomQr: { marginVertical: SPACING.md },
   zoomCode: { fontFamily: FONTS.semibold, fontSize: 16, color: COLORS.ink, letterSpacing: 2 },
+  zoomPaging: { alignItems: 'center', gap: SPACING.sm },
+  dots: { flexDirection: 'row', gap: 6 },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.line2 },
+  dotActive: { width: 20, backgroundColor: COLORS.navy },
 });

@@ -240,7 +240,12 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
   bij hen ophaalt (`lib/cudi/` en `lib/burgieclan/` op de site): reserveren en
   annuleren bij cudi gaat door dezelfde functie als de webshop daar, een document
   van Burgieclan opent als pdf in het systeemvenster. Tickets heeft twee tabbladen
-  (Kopen/Mijne) als pillen in de kop (`tabs` op `PageHead`). Kalender heeft er
+  (Mijn tickets, met het aantal als bolletje, en Kopen) als pillen in een gele
+  kop (`YellowHead`); een ticket is een compacte strook met de QR links, en in
+  het grote scherm veeg je naar het volgende ticket van de bestelling. Bestellen
+  heeft dezelfde gele kop met je bestelling erin, en daar kies je de betaalwijze
+  (Bancontact standaard in het Nederlands, Mollie in het Engels, uit
+  `paymentMethods` van de server). Kalender heeft er
   drie (Planning, Evenementen, Mijn lijst) in een gele kop (`YellowHead`) en
   opent op **Planning**, ook wie niet ingelogd is (die krijgt
   daar de vraag om in te loggen en daarna zijn lessenrooster te importeren) en voor wie die

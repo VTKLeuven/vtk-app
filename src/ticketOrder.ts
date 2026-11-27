@@ -61,3 +61,26 @@ export function checkoutErrorText(error: unknown): string {
       return error.message;
   }
 }
+
+/**
+ * De melding wanneer een betaling niet start (`POST /api/tickets/orders/<id>/pay`).
+ * `ALREADY_PAID` en `METHOD_UNAVAILABLE` vangt het bestelscherm zelf op.
+ */
+export function paymentErrorText(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return 'Geen verbinding met vtk.be. Probeer het straks opnieuw.';
+  }
+  switch (error.code) {
+    case 'RESERVATION_EXPIRED':
+      return 'Je tickets waren te lang gereserveerd en zijn weer vrijgegeven. Bestel opnieuw.';
+    case 'PAYMENT_IN_PROGRESS':
+    case 'PAYMENT_PENDING_ELSEWHERE':
+      return 'Er loopt al een betaling voor deze bestelling. Wacht even en kijk dan bij Mijn tickets.';
+    case 'ORDER_NOT_PAYABLE':
+      return 'Deze bestelling kan niet meer betaald worden. Bestel opnieuw.';
+    case 'BUSY':
+      return 'Het is heel druk. Probeer meteen opnieuw.';
+    default:
+      return 'De betaaldienst is even niet bereikbaar. Probeer het straks opnieuw.';
+  }
+}

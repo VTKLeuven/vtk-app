@@ -876,3 +876,32 @@ Studies kreeg dezelfde gele kop als Kalender (`YellowHead`, tot dan
 - **Burgieclan**: het zoekveld staat in het geel. Een vak opent met dezelfde
   kop, een terugknop en de ster rechtsboven.
 - De koppen van een deel zijn op deze schermen een titel in navy, zoals op Home.
+
+## November 2026: Tickets in het geel
+
+Tickets kreeg dezelfde gele kop als Kalender en Studies, na een canvas met zes
+schermen (voorstel B voor Mijn tickets):
+
+- **De kop**: "Tickets", de scanknop in navy voor wie mag scannen, en de pillen
+  Mijn tickets (eerst, met het aantal als bolletje; `YellowHead` kent nu `badge`)
+  en Kopen.
+- **Mijn tickets**: elke bestelling is nog altijd een ticket met de affiche, de
+  datumpin en een scheurlijn, maar elk ticket eronder is een compacte strook: de
+  QR links, het type, de naam en de code ernaast, en twee kleine knoppen Wallet
+  en PDF in plaats van "PDF en wallet" om open te klappen. Zo past een bestelling
+  voor twee op één scherm. Het bestelnummer staat er niet meer op.
+- **Groot**: een tik op de QR opent de bestelling over het hele scherm, en wie
+  voor een groep kocht, veegt naar het volgende ticket. Het gele datumblokje
+  boven de titel is weg; de datum en de plaats staan er als regel onder.
+- **Kopen**: de gele lijn onder de titel is weg, de knop is navy met gele
+  letters, en een event zonder tickets meer staat als "Uitverkocht".
+- **Ticket kopen**: wanneer en waar in één kaart, de types in één lijst, "nog 3"
+  als chip wanneer er tien of minder zijn.
+- **Bestellen**: een gele kop met terugknop en je bestelling erin. **Je kiest de
+  betaalwijze in de app**: de site stuurt `paymentMethods` mee met een
+  ticketevent (dezelfde keuze als `paymentMethodChoice` op de bestelpagina), de
+  app duidt Bancontact aan in het Nederlands en Mollie in het Engels, en start
+  na de checkout de betaling zelf via `POST /api/tickets/orders/<id>/pay`. Lukt
+  betalen niet, dan blijft de bestelling klaarstaan en betaal je opnieuw. Een
+  server zonder `paymentMethods` of een betaalwijze die intussen uit staat,
+  valt terug op de bestelpagina van de site.

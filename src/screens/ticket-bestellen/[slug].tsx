@@ -4,36 +4,47 @@ import { Check } from 'lucide-react-native';
 import { useMemo, useRef, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { baseUrl } from '../../api/client';
-import type { AppTicketEventDetail, AppTicketType } from '../../api/contract';
-import { fetchOrderStatus, fetchTicketEvent, startTicketCheckout } from '../../api/endpoints';
+import { ApiError, baseUrl } from '../../api/client';
+import type { AppPaymentMethod, AppTicketEventDetail, AppTicketType } from '../../api/contract';
+import { fetchOrderStatus, fetchTicketEvent, startOrderPayment, startTicketCheckout } from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
-import { PageHead } from '../../components/PageHead';
+import { CARD_SHADOW } from '../../components/HomeSection';
 import { WebFlow } from '../../components/WebFlow';
+import { YellowHead } from '../../components/YellowHead';
 import { QuestionField, type AnswerValue } from '../../components/QuestionField';
-import { Button, Card, CardList, ErrorState, Loading, SectionHeading } from '../../components/ui';
+import { Button, Card, CardList, ErrorState, Loading } from '../../components/ui';
 import { formatEuro } from '../../format';
 import { useApp } from '../../state/app';
 import { useTabRouter } from '../../navigation';
-import { checkoutErrorText, decodeQuantities } from '../../ticketOrder';
+import { checkoutErrorText, decodeQuantities, paymentErrorText } from '../../ticketOrder';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 
 /**
- * De tweede stap van tickets kopen: wie er komt, je gegevens en de voorwaarden.
+ * De tweede stap van tickets kopen: wie er komt, je gegevens, de voorwaarden en
+ * hoe je betaalt.
  *
  * De ticketpagina kiest enkel de aantallen en stuurt ze hierheen
  * (`?aantallen=type:2`). Zo is er geen formulier dat onderaan een lange pagina
  * wacht zonder dat je het ziet; hier staat het vooraan, met "Betalen" vast
- * onderaan.
+ * onderaan. De kop is geel, zoals een vak in Studies, met je bestelling erin.
  *
- * **Betalen gebeurt in een WebView in de app** (`WebFlow`): de bestelpagina van
- * vtk.be, waar je de betaalwijze kiest, en daarna Mollie. Niet in de
+ * **De betaalwijze kies je hier** (november 2026), uit wat de server aanzet en
+ * in zijn volgorde (`paymentMethods`). Standaard Bancontact wie de app in het
+ * Nederlands gebruikt en Mollie wie ze in het Engels gebruikt, zoals op de
+ * bestelpagina van de site: Bancontact rechtstreeks kost VTK minder, maar een
+ * internationale student kan er niet mee betalen. Na de checkout start de app de
+ * betaling zelf (`/api/tickets/orders/<id>/pay`, dezelfde route als de knoppen op
+ * de site) en opent ze meteen Mollie of de Bancontact-pagina. Een oudere server
+ * stuurt geen `paymentMethods`; dan kies je zoals vroeger op de bestelpagina.
+ *
+ * **Betalen gebeurt in een WebView in de app** (`WebFlow`), niet in de
  * systeembrowser: die heeft het toegangscookie van de bestelling niet (dat zet
- * de checkout op het antwoord aan de app) en je login evenmin, en toonde dus
- * "deze pagina bestaat niet". Mollie nabouwen doen we niet. Komt de WebView
- * terug op de bestelpagina met `?payment=`, of sluit je hem, dan vragen we de
- * server wat er van de bestelling geworden is; we gokken niet. Voorraad,
- * limieten en of een type nog te koop staat, controleert de checkout bindend.
+ * de checkout op het antwoord aan de app) en je login evenmin. Mollie nabouwen
+ * doen we niet. Komt de WebView terug op de bestelpagina, of sluit je hem, dan
+ * vragen we de server wat er van de bestelling geworden is; we gokken niet.
+ * Lukte het niet, dan blijft de bestelling hier klaarstaan en betaal je opnieuw,
+ * met dezelfde of een andere betaalwijze. Voorraad, limieten en of een type nog
+ * te koop staat, controleert de checkout bindend.
  */
 export default function TicketOrderScreen() {
   const router = useTabRouter();
@@ -62,6 +73,22 @@ export default function TicketOrderScreen() {
   );
 }
 
+const METHOD_LABEL: Record<AppPaymentMethod, { title: string; hint: string }> = {
+  bancontact: { title: 'Bancontact', hint: 'Met de app van je bank of de Bancontact-app' },
+  mollie: { title: 'Mollie', hint: 'Kaart en andere betaalwijzen, ook voor een buitenlandse rekening' },
+  mock: { title: 'Testbetaling', hint: 'Enkel op een testserver' },
+};
+
+/**
+ * Wat er standaard aangeduid staat: Bancontact in het Nederlands, Mollie in het
+ * Engels, en anders wat de server eerst zet.
+ */
+function defaultMethod(methods: AppPaymentMethod[], locale: 'nl' | 'en'): AppPaymentMethod | null {
+  const preferred: AppPaymentMethod = locale === 'nl' ? 'bancontact' : 'mollie';
+  if (methods.includes(preferred)) return preferred;
+  return methods[0] ?? null;
+}
+
 function Order({
   event,
   quantities,
@@ -77,13 +104,24 @@ function Order({
   viewerEmail: string;
   onDone: () => void;
 }) {
+  const methods = useMemo(
+    () => (event.paymentMethods ?? []).filter((method) => method in METHOD_LABEL),
+    [event.paymentMethods],
+  );
   const [buyerName, setBuyerName] = useState(viewerName);
   const [buyerEmail, setBuyerEmail] = useState(viewerEmail);
   const [attendees, setAttendees] = useState<Record<string, string>>({});
   const [answers, setAnswers] = useState<Record<string, Record<string, AnswerValue>>>({});
   const [terms, setTerms] = useState(false);
+  const [method, setMethod] = useState<AppPaymentMethod | null>(() => defaultMethod(methods, locale));
   const [busy, setBusy] = useState(false);
-  const [payment, setPayment] = useState<{ url: string; orderId: string } | null>(null);
+  /**
+   * Een bestelling die al gemaakt is maar nog niet betaald. Wie het betalen
+   * afbrak, betaalt die opnieuw in plaats van een tweede te maken; de checkout
+   * zou dat met `TOO_MANY_RESERVATIONS` ook weigeren.
+   */
+  const [pending, setPending] = useState<{ orderId: string; checkoutUrl: string } | null>(null);
+  const [payment, setPayment] = useState<{ url: string; orderId: string; onOrderPage: boolean } | null>(null);
   /** Of de WebView de bestelpagina al verliet (naar Mollie of de Bancontact-QR). */
   const leftOrder = useRef(false);
 
@@ -104,6 +142,7 @@ function Order({
 
   const lines = event.ticketTypes.filter((type) => (quantities[type.id] ?? 0) > 0);
   const totalCents = lines.reduce((sum, type) => sum + (quantities[type.id] ?? 0) * type.priceCents, 0);
+  const free = totalCents === 0;
 
   const missing = seats.find(({ key, type }) => {
     if (!(attendees[key] ?? '').trim()) return true;
@@ -116,16 +155,18 @@ function Order({
     });
   });
   const buyerOk = buyerName.trim().length >= 2 && buyerEmail.includes('@');
-  const canSubmit = seats.length > 0 && !missing && buyerOk && terms;
-  const todo = !seats.length
-    ? 'Kies eerst je tickets'
-    : missing
-      ? 'Vul alle namen en verplichte vragen in'
-      : !buyerOk
-        ? 'Vul je naam en e-mail in'
-        : !terms
-          ? 'Aanvaard de voorwaarden'
-          : null;
+  const canSubmit = pending ? !free : seats.length > 0 && !missing && buyerOk && terms;
+  const todo = pending
+    ? null
+    : !seats.length
+      ? 'Kies eerst je tickets'
+      : missing
+        ? 'Vul alle namen en verplichte vragen in'
+        : !buyerOk
+          ? 'Vul je naam en e-mail in'
+          : !terms
+            ? 'Aanvaard de voorwaarden'
+            : null;
 
   /** Wat er van de bestelling geworden is, gevraagd aan de server en niet geraden. */
   const settle = async (orderId: string) => {
@@ -134,16 +175,47 @@ function Order({
       onDone();
     } else {
       Alert.alert(
-        'Bestelling nog niet bevestigd',
-        'We zien nog geen betaling. Duurt dat langer dan een minuut, kijk dan bij Mijn tickets of in je mail.',
-        [{ text: 'Naar mijn tickets', onPress: onDone }, { text: 'Hier blijven' }],
+        'Nog niet betaald',
+        'We zien nog geen betaling. Je bestelling staat klaar: betaal opnieuw, eventueel met een andere betaalwijze. Betaalde je wel, kijk dan over een minuut bij Mijn tickets.',
+        [{ text: 'Naar mijn tickets', onPress: onDone }, { text: 'Opnieuw betalen' }],
       );
+    }
+  };
+
+  /** De betaling starten met de gekozen betaalwijze, of terugvallen op de bestelpagina. */
+  const pay = async (orderId: string, checkoutUrl: string) => {
+    if (!method) {
+      leftOrder.current = false;
+      setPayment({ url: checkoutUrl, orderId, onOrderPage: true });
+      return;
+    }
+    try {
+      const started = await startOrderPayment(orderId, method, locale);
+      leftOrder.current = true;
+      setPayment({ url: started.checkoutUrl, orderId, onOrderPage: false });
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'ALREADY_PAID') {
+        onDone();
+      } else if (error instanceof ApiError && error.code === 'METHOD_UNAVAILABLE') {
+        // De server zette die betaalwijze intussen af: kies op de bestelpagina.
+        leftOrder.current = false;
+        setPayment({ url: checkoutUrl, orderId, onOrderPage: true });
+      } else {
+        if (error instanceof ApiError && (error.code === 'RESERVATION_EXPIRED' || error.code === 'ORDER_NOT_PAYABLE')) {
+          setPending(null);
+        }
+        Alert.alert('Betalen lukte niet', paymentErrorText(error));
+      }
     }
   };
 
   const submit = async () => {
     setBusy(true);
     try {
+      if (pending) {
+        await pay(pending.orderId, pending.checkoutUrl);
+        return;
+      }
       const checkout = await startTicketCheckout({
         eventId: event.id,
         buyerName: buyerName.trim(),
@@ -158,11 +230,12 @@ function Order({
       });
       // Gratis is meteen betaald; dan valt er niets te tonen.
       const status = await fetchOrderStatus(checkout.orderId).catch(() => null);
-      if (status?.status === 'PAID') onDone();
-      else {
-        leftOrder.current = false;
-        setPayment({ url: checkout.checkoutUrl, orderId: checkout.orderId });
+      if (status?.status === 'PAID') {
+        onDone();
+        return;
       }
+      setPending({ orderId: checkout.orderId, checkoutUrl: checkout.checkoutUrl });
+      await pay(checkout.orderId, checkout.checkoutUrl);
     } catch (error) {
       Alert.alert('Bestellen lukte niet', checkoutErrorText(error));
     } finally {
@@ -178,105 +251,161 @@ function Order({
 
   return (
     <View style={styles.root}>
-      <PageHead title="Bestellen" subtitle={event.title} />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.scroll}
         style={styles.root}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
       >
-        <SectionHeading>Je bestelling</SectionHeading>
-        <CardList>
-          {lines.map((type) => (
-            <View key={type.id} style={styles.line}>
-              <Text style={styles.lineText} numberOfLines={2}>
-                {quantities[type.id]} x {type.name}
-              </Text>
-              <Text style={styles.linePrice}>
-                {type.priceCents === 0 ? 'Gratis' : formatEuro((quantities[type.id] ?? 0) * type.priceCents)}
-              </Text>
-            </View>
-          ))}
-        </CardList>
+        <View style={styles.overscroll} />
+        <YellowHead title="Bestellen" subtitle={event.title} back>
+          {/* Je bestelling, in het geel: wat je koopt en wat het kost. */}
+          <View style={styles.summary}>
+            {lines.map((type) => (
+              <View key={type.id} style={styles.line}>
+                <Text style={styles.lineText} numberOfLines={2}>
+                  {quantities[type.id]} x {type.name}
+                </Text>
+                <Text style={styles.linePrice}>
+                  {type.priceCents === 0 ? 'Gratis' : formatEuro((quantities[type.id] ?? 0) * type.priceCents)}
+                </Text>
+              </View>
+            ))}
+            {lines.length > 1 ? (
+              <>
+                <View style={styles.summaryLine} />
+                <View style={styles.line}>
+                  <Text style={[styles.lineText, styles.total]}>Totaal</Text>
+                  <Text style={[styles.linePrice, styles.total]}>{free ? 'Gratis' : formatEuro(totalCents)}</Text>
+                </View>
+              </>
+            ) : null}
+          </View>
+        </YellowHead>
 
-        <SectionHeading>Wie komt er?</SectionHeading>
-        {seats.map(({ key, type, index }) => (
-          <Card key={key}>
-            <Text style={styles.kicker}>
-              {type.name.toUpperCase()}   TICKET {index + 1}
-            </Text>
+        <View style={styles.content}>
+          {pending ? (
+            <Card featured>
+              <Text style={styles.body}>
+                Je bestelling staat klaar en je tickets blijven even voor je gereserveerd. Kies hoe je betaalt en
+                tik op Betalen.
+              </Text>
+            </Card>
+          ) : null}
+
+          <Heading>Wie komt er</Heading>
+          {seats.map(({ key, type, index }) => (
+            <Card key={key}>
+              <Text style={styles.kicker}>
+                Ticket {index + 1}, {type.name}
+              </Text>
+              <Text style={styles.label}>Naam op het ticket</Text>
+              <TextInput
+                value={attendees[key] ?? ''}
+                onChangeText={(next) => setAttendees((current) => ({ ...current, [key]: next }))}
+                style={styles.input}
+                editable={!pending}
+                autoCapitalize="words"
+                accessibilityLabel={`Naam voor ticket ${index + 1}, ${type.name}`}
+              />
+              {type.questions.map((question) => (
+                <QuestionField
+                  key={question.id}
+                  question={question}
+                  value={answers[key]?.[question.id]}
+                  onChange={(value) =>
+                    setAnswers((current) => ({
+                      ...current,
+                      [key]: { ...(current[key] ?? {}), [question.id]: value },
+                    }))
+                  }
+                />
+              ))}
+            </Card>
+          ))}
+
+          <Heading>Je gegevens</Heading>
+          <Card>
             <Text style={styles.label}>Naam</Text>
             <TextInput
-              value={attendees[key] ?? ''}
-              onChangeText={(next) => setAttendees((current) => ({ ...current, [key]: next }))}
+              value={buyerName}
+              onChangeText={setBuyerName}
               style={styles.input}
+              editable={!pending}
               autoCapitalize="words"
-              accessibilityLabel={`Naam voor ticket ${index + 1}, ${type.name}`}
+              autoComplete="name"
+              accessibilityLabel="Jouw naam"
             />
-            {type.questions.map((question) => (
-              <QuestionField
-                key={question.id}
-                question={question}
-                value={answers[key]?.[question.id]}
-                onChange={(value) =>
-                  setAnswers((current) => ({
-                    ...current,
-                    [key]: { ...(current[key] ?? {}), [question.id]: value },
-                  }))
-                }
-              />
-            ))}
+            <Text style={styles.label}>E-mail</Text>
+            <TextInput
+              value={buyerEmail}
+              onChangeText={setBuyerEmail}
+              style={styles.input}
+              editable={!pending}
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              accessibilityLabel="Jouw e-mailadres"
+            />
+            <Text style={styles.hint}>De tickets komen op dit adres toe, en staan daarna ook bij Mijn tickets.</Text>
           </Card>
-        ))}
 
-        <SectionHeading>Jouw gegevens</SectionHeading>
-        <Card>
-          <Text style={styles.label}>Naam</Text>
-          <TextInput
-            value={buyerName}
-            onChangeText={setBuyerName}
-            style={styles.input}
-            autoCapitalize="words"
-            autoComplete="name"
-            accessibilityLabel="Jouw naam"
-          />
-          <Text style={styles.label}>E-mail</Text>
-          <TextInput
-            value={buyerEmail}
-            onChangeText={setBuyerEmail}
-            style={styles.input}
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            accessibilityLabel="Jouw e-mailadres"
-          />
-          <Text style={styles.hint}>De tickets komen op dit adres toe, en staan daarna ook bij Mijn tickets.</Text>
-        </Card>
+          {!free && methods.length > 1 ? (
+            <>
+              <Heading>Betalen met</Heading>
+              <CardList inset={0}>
+                {methods.map((option) => {
+                  const selected = option === method;
+                  return (
+                    <Pressable
+                      key={option}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: selected }}
+                      accessibilityLabel={`${METHOD_LABEL[option].title}, ${METHOD_LABEL[option].hint}`}
+                      onPress={() => setMethod(option)}
+                      style={({ pressed }) => [styles.method, pressed && styles.pressed]}
+                    >
+                      <View style={[styles.radio, selected && styles.radioOn]}>
+                        {selected ? <View style={styles.radioDot} /> : null}
+                      </View>
+                      <View style={styles.flex}>
+                        <Text style={styles.methodTitle}>{METHOD_LABEL[option].title}</Text>
+                        <Text style={styles.hint}>{METHOD_LABEL[option].hint}</Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </CardList>
+            </>
+          ) : null}
 
-        <Card>
-          <Pressable
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: terms }}
-            onPress={() => setTerms(!terms)}
-            style={styles.terms}
-          >
-            <View style={[styles.box, terms && styles.boxOn]}>
-              {terms ? <Check color={COLORS.ink} size={16} strokeWidth={3} /> : null}
-            </View>
-            <Text style={[styles.body, styles.flex]}>Ik ga akkoord met de voorwaarden</Text>
-          </Pressable>
-          <Text
-            style={styles.link}
-            accessibilityRole="link"
-            onPress={() => void WebBrowser.openBrowserAsync(`${baseUrl()}${event.termsUrl}`)}
-          >
-            Lees de voorwaarden
-          </Text>
-        </Card>
+          {pending ? null : (
+            <Card>
+              <Pressable
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: terms }}
+                onPress={() => setTerms(!terms)}
+                style={styles.terms}
+              >
+                <View style={[styles.box, terms && styles.boxOn]}>
+                  {terms ? <Check color={COLORS.yellow} size={16} strokeWidth={3} /> : null}
+                </View>
+                <Text style={[styles.body, styles.flex]}>Ik ga akkoord met de voorwaarden</Text>
+              </Pressable>
+              <Text
+                style={styles.link}
+                accessibilityRole="link"
+                onPress={() => void WebBrowser.openBrowserAsync(`${baseUrl()}${event.termsUrl}`)}
+              >
+                Lees de voorwaarden
+              </Text>
+            </Card>
+          )}
+        </View>
       </ScrollView>
 
-      {/* Betalen: de bestelpagina en Mollie over het hele scherm, in de app. */}
+      {/* Betalen: Mollie of de Bancontact-pagina over het hele scherm, in de app. */}
       <Modal visible={payment !== null} animationType="slide" onRequestClose={closePayment}>
         {payment ? (
           <WebFlow
@@ -288,7 +417,9 @@ function Order({
                 leftOrder.current = true;
                 return false;
               }
-              return leftOrder.current || /[?&]payment=/.test(url);
+              // Wie op de bestelpagina begon, kiest daar eerst; wie bij Mollie of
+              // Bancontact begon, is klaar zodra hij erop terugkomt.
+              return !payment.onOrderPage || leftOrder.current || /[?&]payment=/.test(url);
             }}
             onDone={closePayment}
             onClose={closePayment}
@@ -300,13 +431,21 @@ function Order({
       <View style={styles.bar}>
         <View style={styles.flex}>
           <Text style={styles.barTotal}>
-            {seats.length} {seats.length === 1 ? 'ticket' : 'tickets'}, {totalCents === 0 ? 'gratis' : formatEuro(totalCents)}
+            {seats.length} {seats.length === 1 ? 'ticket' : 'tickets'}, {free ? 'gratis' : formatEuro(totalCents)}
           </Text>
-          {todo ? <Text style={styles.hint} numberOfLines={1}>{todo}</Text> : null}
+          {todo ? (
+            <Text style={styles.hint} numberOfLines={1}>
+              {todo}
+            </Text>
+          ) : !free && method ? (
+            <Text style={styles.hint} numberOfLines={1}>
+              Je betaalt in de app, met {METHOD_LABEL[method].title}
+            </Text>
+          ) : null}
         </View>
         <View style={styles.barButton}>
           <Button
-            label={totalCents === 0 ? 'Afronden' : 'Betalen'}
+            label={free ? 'Afronden' : 'Betalen'}
             busy={busy}
             disabled={!canSubmit}
             onPress={() => void submit()}
@@ -317,11 +456,20 @@ function Order({
   );
 }
 
+/** De kop van een deel, een titel in navy zoals op Home. */
+function Heading({ children }: { children: string }) {
+  return (
+    <Text accessibilityRole="header" style={styles.heading}>
+      {children}
+    </Text>
+  );
+}
+
 /**
- * De bestelpagina zelf, niet `/bancontact` eronder. Daar kies je de betaalwijze;
- * kom je er terug na Mollie (`?payment=return` of `?payment=cancelled`, de
- * `successUrl`/`cancelUrl` in `lib/ticketing/orders.ts` op de site) of na de
- * Bancontact-QR, dan is het betalen voorbij en sluit het scherm.
+ * De bestelpagina zelf, niet `/bancontact` eronder. Kom je er terug na Mollie
+ * (`?payment=return` of `?payment=cancelled`, de `successUrl`/`cancelUrl` in
+ * `lib/ticketing/orders.ts` op de site) of na de Bancontact-QR, dan is het
+ * betalen voorbij en sluit het scherm.
  */
 function isOrderPage(url: string, orderId: string): boolean {
   return new RegExp(`/tickets/bestelling/${orderId}/?(?:[?#]|$)`).test(url);
@@ -330,13 +478,42 @@ function isOrderPage(url: string, orderId: string): boolean {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
   flex: { flex: 1 },
-  content: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxl },
-  line: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md },
-  lineText: { ...TYPE.body, color: COLORS.ink, flex: 1 },
-  linePrice: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink, fontVariant: ['tabular-nums'] },
+  scroll: { paddingBottom: SPACING.xxl },
+  // Wat boven de kop verschijnt als je op iOS omlaag trekt: geel, zoals de kop.
+  overscroll: {
+    position: 'absolute',
+    top: -1000,
+    left: 0,
+    right: 0,
+    height: 1000,
+    backgroundColor: COLORS.yellow,
+  },
+  content: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.xl - 2, gap: SPACING.md },
+  heading: {
+    fontFamily: FONTS.bold,
+    fontSize: 22,
+    letterSpacing: -0.5,
+    color: COLORS.navy,
+    marginTop: SPACING.sm,
+    paddingHorizontal: SPACING.xs,
+  },
+  pressed: { opacity: 0.85 },
+
+  summary: {
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: SPACING.sm,
+    backgroundColor: 'rgba(14, 26, 54, 0.08)',
+  },
+  summaryLine: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(14, 26, 54, 0.2)' },
+  line: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.sm },
+  lineText: { ...TYPE.body, fontSize: 15, color: COLORS.navy, flex: 1 },
+  linePrice: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.navy, fontVariant: ['tabular-nums'] },
+  total: { fontFamily: FONTS.bold },
+
   body: { ...TYPE.body, color: COLORS.body },
   hint: { ...TYPE.small, color: COLORS.muted },
-  kicker: { ...TYPE.kicker, color: COLORS.muted },
+  kicker: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.muted },
   label: { ...TYPE.body, fontFamily: TYPE.cardTitle.fontFamily, color: COLORS.ink },
   link: { ...TYPE.small, color: COLORS.ink, textDecorationLine: 'underline', alignSelf: 'flex-start' },
   input: {
@@ -349,6 +526,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.controlBorder,
   },
+
+  method: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: 14,
+    minHeight: 64,
+  },
+  methodTitle: { ...TYPE.cardTitle, color: COLORS.ink },
+  radio: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: COLORS.controlBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioOn: { borderColor: COLORS.navy, backgroundColor: COLORS.navy },
+  radioDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: COLORS.yellow },
+
   terms: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: 44 },
   box: {
     width: 26,
@@ -360,7 +559,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  boxOn: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
+  boxOn: { backgroundColor: COLORS.navy, borderColor: COLORS.navy },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -372,7 +571,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     borderRadius: 22,
     backgroundColor: COLORS.surface,
-    shadowColor: COLORS.navy,
+    ...CARD_SHADOW,
     shadowOpacity: 0.18,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },

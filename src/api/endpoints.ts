@@ -18,6 +18,7 @@ import type {
   AppCudiTimeslotResult,
   AppCudiTimeslots,
   AppFakCheckin,
+  AppPaymentMethod,
   AppGroups,
   AppLocale,
   AppMedia,
@@ -168,6 +169,23 @@ export function startTicketCheckout(input: {
   }[];
 }): Promise<{ orderId: string; orderNumber: string; checkoutUrl: string }> {
   return apiFetch('/api/tickets/checkout', { method: 'POST', body: { source: 'app', ...input } });
+}
+
+/**
+ * De betaling van een bestelling starten met de gekozen betaalwijze; dezelfde
+ * route als de knoppen op de bestelpagina van de site. Het toegangscookie dat de
+ * checkout zette, reist mee in de cookie-opslag (zie `client.ts`). Het antwoord
+ * is de pagina van Mollie of de Bancontact-pagina op vtk.be.
+ */
+export function startOrderPayment(
+  orderId: string,
+  provider: AppPaymentMethod,
+  locale: AppLocale,
+): Promise<{ provider: AppPaymentMethod; checkoutUrl: string }> {
+  return apiFetch(`/api/tickets/orders/${encodeURIComponent(orderId)}/pay`, {
+    method: 'POST',
+    body: { provider, locale },
+  });
 }
 
 /** De stand van een bestelling, om na het betalen te weten of ze doorging. */
