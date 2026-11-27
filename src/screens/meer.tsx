@@ -74,6 +74,7 @@ export default function MeerScreen() {
     { label: 'Media', onPress: () => router.push('/media') },
     { label: 'Piano', onPress: () => router.push('/piano') },
     { label: 'Liederboek', onPress: () => router.push('/liederboek') },
+    { label: 'Wegwijzer', hint: 'Grondplan van de jobfair', onPress: () => router.push('/wegwijzer') },
     // Enkel voor wie iets te scannen heeft; de rest heeft hier niets aan.
     ...(bootstrap?.abilities?.scanTickets
       ? [{ label: 'Tickets scannen', onPress: () => router.push('/deur') }]

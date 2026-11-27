@@ -319,6 +319,14 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
   zodra je ingelogd op Home staat** (`askPushOnce`, sinds november 2026), en
   niet vóór je ingelogd bent; op iOS krijg je maar één kans. Wie toen weigerde,
   zet ze later aan via Meer -> Meldingen.
+- `src/screens/liederboek.tsx`, `src/screens/lied/[id].tsx`, `src/liederboek.ts` -
+  Meer › Liederboek: de liedjes van codex.rondgezang.be (met toestemming), in
+  de app zelf bewaard (`src/data/liederboek.json`). Zie `docs/liederboek.md`.
+- `src/screens/wegwijzer.tsx`, `src/floorplan/` - Meer › Wegwijzer: het
+  grondplan van de VTK Jobfair, overgenomen uit vtk-floorplan-app (de onderdelen
+  in `src/floorplan/` zijn bijna letterlijk die van daar, met `theme.ts` als
+  vertaling naar onze tokens). Leest `/api/events/vtk-jobfair/floorplan` op
+  career.vtk.be en bewaart het laatste plan voor in een beurshal zonder netwerk.
 - `src/scanKind.ts` - welk soort code er gescand is in **Code scannen**
   (`scannen.tsx`): uitnodiging, pas of fakbar, en een ticket dat daar niet
   meetelt en naar Tickets scannen verwijst. De prefix zegt welke. Sinds eind

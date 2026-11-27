@@ -260,3 +260,33 @@ export const CUDI_STATUS = {
   /** Geannuleerd: red-100 / red-800. */
   red: { bg: '#FEE2E2', ink: '#991B1B' },
 } as const;
+
+/**
+ * Het grondplan van de jobfair (Meer › Wegwijzer), overgenomen uit
+ * vtk-floorplan-app maar in de kleuren van de app: navy standen, geel wat je
+ * koos, grijs wat vrij is. `categories` kleurt de standen per masterrichting
+ * wanneer je erop filtert, zoals de floorplan-app dat deed.
+ */
+export const FLOORPLAN = {
+  canvas: '#E6ECF5',
+  boothFill: '#0E1A36',
+  boothStroke: '#0A0F1F',
+  boothEmptyFill: '#CBD3E1',
+  boothEmptyStroke: '#AEB8CA',
+  categories: {
+    1: '#2563EB',
+    2: '#0EA5E9',
+    3: '#4F46E5',
+    4: '#DC2626',
+    5: '#EA580C',
+    6: '#D97706',
+    7: '#7C3AED',
+    8: '#DB2777',
+    9: '#E11D48',
+    10: '#10B981',
+    11: '#0D9488',
+    12: '#475569',
+    13: '#65A30D',
+    14: '#92400E',
+  } as Record<number, string>,
+} as const;
