@@ -1,17 +1,8 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useScrollToTop } from 'expo-router';
 
 import { Check, ChevronDown, ChevronRight, Pause, Pencil, Play, Plus, Settings2, Square, Trash2, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  AppState,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { Image } from 'expo-image';
 
 import type { AppStudyGroup, AppStudyMemberState, AppStudyOverview } from '../../api/contract';
@@ -76,6 +67,9 @@ const SKYLINE_HEIGHT = 126;
  * pijltje dat een blad met je groepen opent (`GroupSheet`).
  */
 export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
+  // Een tik op de tab waar je al staat, scrolt naar boven.
+  const topRef = useRef<ScrollViewInstance>(null);
+  useScrollToTop(topRef);
   const router = useTabRouter();
   const { viewer } = useApp();
 
@@ -228,7 +222,7 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
   const yours = group?.members.find((member) => member.isYou) ?? null;
 
   return (
-    <ScrollView
+    <ScrollView ref={topRef}
       style={styles.root}
       contentContainerStyle={styles.scroll}
       refreshControl={

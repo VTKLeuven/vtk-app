@@ -1,8 +1,9 @@
+import { useScrollToTop } from 'expo-router';
 import { Image } from 'expo-image';
 import { ExternalLink, Sandwich } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
 
 import type { AppCalendarEvent, AppLocale, AppPublication } from '../api/contract';
 import { mediaUrl } from '../api/client';
@@ -60,6 +61,9 @@ const AHEAD_DAYS = 60;
  * voor dit ene scherm en geen nieuwe regel voor de rest van de app.
  */
 export default function HomeScreen() {
+  // Een tik op de tab waar je al staat, scrolt naar boven.
+  const topRef = useRef<ScrollViewInstance>(null);
+  useScrollToTop(topRef);
   const router = useTabRouter();
   const { locale, viewer, bootstrap, refresh: refreshApp } = useApp();
   const resource = useResource('vandaag', () => fetchToday(locale), locale);
@@ -139,7 +143,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView
+      <ScrollView ref={topRef}
         style={styles.scroll}
         contentContainerStyle={styles.content}
         refreshControl={

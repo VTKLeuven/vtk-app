@@ -1,6 +1,6 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Image } from 'expo-image';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useScrollToTop } from 'expo-router';
 import { CalendarClock, Check, ChevronDown, ChevronRight, Clock, ShoppingBag, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -79,6 +79,8 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
   const { locale, viewer } = useApp();
   const enabled = Boolean(viewer) && linked;
   const scroll = useRef<ScrollViewInstance>(null);
+  // Een tik op de tab waar je al staat, scrolt naar boven.
+  useScrollToTop(scroll);
 
   const overview = useResource('cudi', () => fetchCudiOverview(locale), `${locale}:${viewer?.id ?? 'anon'}`, enabled);
   const catalog = useResource(

@@ -1,17 +1,8 @@
 import * as WebBrowser from 'expo-web-browser';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useScrollToTop } from 'expo-router';
 import { ChevronRight, Star } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
 
 import type { AppBurgieclanCourse } from '../../api/contract';
 import {
@@ -42,6 +33,9 @@ import { HeadScroll } from '../HeadScroll';
  * ernaartoe.
  */
 export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean }) {
+  // Een tik op de tab waar je al staat, scrolt naar boven.
+  const topRef = useRef<ScrollViewInstance>(null);
+  useScrollToTop(topRef);
   const router = useTabRouter();
   const { locale, viewer } = useApp();
   const head = (
@@ -122,7 +116,7 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
   const favourites = (resource.data?.courses ?? []).filter((course) => overrides[course.id] ?? true);
 
   return (
-    <ScrollView
+    <ScrollView ref={topRef}
       style={styles.root}
       contentContainerStyle={styles.scroll}
       keyboardShouldPersistTaps="handled"

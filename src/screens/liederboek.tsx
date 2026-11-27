@@ -14,7 +14,7 @@ type Book = 'alle' | 'leuven' | 'kvhv';
  * Het liederboek: alle liedjes van codex.rondgezang.be, ook zonder netwerk.
  *
  * Zoeken gaat op titel én op paginanummer: tik "133" en je krijgt het lied op
- * pagina 133 van het Leuvens Liedboek (LeLi) en dat op pagina 133 van de KVHV
+ * pagina 133 van het Leuvens Liedboek (LeLie) en dat op pagina 133 van de KVHV
  * Groene Codex. Met de pillen in de kop kies je een boek; dan staat de lijst in
  * de volgorde van dat boek en zie je enkel wat erin staat, zodat je kan volgen
  * met wie het boek in handen heeft.
@@ -115,7 +115,7 @@ function SongRow({
   onPress: () => void;
 }) {
   const pages = [
-    book !== 'kvhv' && song.lp ? { key: 'LeLi', page: song.lp } : null,
+    book !== 'kvhv' && song.lp ? { key: 'LeLie', page: song.lp } : null,
     book !== 'leuven' && song.kp ? { key: 'KVHV', page: song.kp } : null,
   ].filter(Boolean) as { key: string; page: string }[];
   return (
@@ -136,7 +136,7 @@ function SongRow({
       </Text>
       <View style={styles.pages}>
         {pages.map((p) => (
-          <View key={p.key} style={[styles.page, p.key === 'LeLi' && styles.pageLeuven]}>
+          <View key={p.key} style={[styles.page, p.key === 'LeLie' && styles.pageLeuven]}>
             <Text style={styles.pageBook}>{p.key}</Text>
             <Text style={styles.pageNumber}>{p.page}</Text>
           </View>

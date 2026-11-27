@@ -1,9 +1,9 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useScrollToTop } from 'expo-router';
 
 import * as WebBrowser from 'expo-web-browser';
 import { Image } from 'expo-image';
 import { useKeepAwake } from 'expo-keep-awake';
-import { CircleCheck, Clock, FileText, MapPin, ScanLine, Wallet, X } from 'lucide-react-native';
+import { CircleCheck, Clock, FileText, MapPin, Maximize2, ScanLine, Wallet, X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import {
   Modal,
@@ -136,9 +136,12 @@ function Frame({
   stale?: boolean;
   children: React.ReactNode;
 }) {
+  // Een tik op de tab waar je al staat, scrolt naar boven.
+  const topRef = useRef<ScrollViewInstance>(null);
+  useScrollToTop(topRef);
   return (
     <View style={styles.root}>
-      <ScrollView
+      <ScrollView ref={topRef}
         style={styles.root}
         contentContainerStyle={styles.scroll}
         refreshControl={
@@ -480,9 +483,14 @@ function TicketStub({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: () 
         accessibilityRole="button"
         accessibilityLabel={`${ticket.typeName}: vergroten om te laten scannen`}
         onPress={onEnlarge}
-        style={({ pressed }) => [pressed && styles.pressed, used && styles.usedQr]}
+        style={({ pressed }) => [styles.qrButton, pressed && styles.pressed, used && styles.usedQr]}
       >
         <VtkQr value={ticket.credential} size={STUB_QR} />
+        {/* Zegt dat de code groter kan: zonder dit wist niet iedereen dat je erop kon tikken. */}
+        <View style={styles.enlarge}>
+          <Maximize2 color={COLORS.yellow} size={12} strokeWidth={2.6} />
+          <Text style={styles.enlargeLabel}>Vergroot</Text>
+        </View>
       </Pressable>
       <View style={styles.stubText}>
         <Text style={styles.cardTitle}>{ticket.typeName}</Text>
@@ -771,6 +779,17 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.lg,
   },
   usedQr: { opacity: 0.45 },
+  qrButton: { alignItems: 'center', gap: 6 },
+  enlarge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.navy,
+  },
+  enlargeLabel: { fontFamily: FONTS.bold, fontSize: 11, color: COLORS.yellow },
   stubText: { flex: 1, minWidth: 0, gap: 3 },
   attendee: { ...TYPE.small, fontSize: 13, color: COLORS.body },
   code: { ...TYPE.small, fontSize: 12, color: COLORS.muted, letterSpacing: 1 },

@@ -1,7 +1,7 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useScrollToTop } from 'expo-router';
 import { Bell, ChevronLeft, ChevronRight } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
 
 import type { AppCalendarEvent } from '../api/contract';
 import { fetchCalendar, setEventInterest } from '../api/endpoints';
@@ -59,6 +59,9 @@ const VIEW_KEY = 'kalender-weergave';
  * meldingen, waar je een hele categorie volgt.
  */
 export default function KalenderScreen() {
+  // Een tik op de tab waar je al staat, scrolt naar boven.
+  const topRef = useRef<ScrollViewInstance>(null);
+  useScrollToTop(topRef);
   const router = useTabRouter();
   const { locale, viewer, bootstrap } = useApp();
   // Enkel wanneer de server met Burgieclan gekoppeld is; zie `abilities.planning`.
@@ -344,7 +347,7 @@ export default function KalenderScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView
+      <ScrollView ref={topRef}
         style={styles.root}
         contentContainerStyle={styles.scrollContent}
         refreshControl={

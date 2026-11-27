@@ -5,7 +5,7 @@ import { WebView } from 'react-native-webview';
 
 import { HeadScroll } from '../../components/HeadScroll';
 import { PageHead } from '../../components/PageHead';
-import { Empty, MarginRegister } from '../../components/ui';
+import { Empty } from '../../components/ui';
 import { songById, type SongBlock, type SongLine } from '../../liederboek';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 
@@ -81,17 +81,6 @@ export default function LiedScreen() {
 
       {song.yt ? <Video id={song.yt} title={song.t} /> : null}
 
-      <MarginRegister
-        title="Meer"
-        links={[
-          {
-            label: 'Op codex.rondgezang.be',
-            hint: 'De bron van dit lied',
-            external: true,
-            onPress: () => void WebBrowser.openBrowserAsync(`https://codex.rondgezang.be/${song.id}`),
-          },
-        ]}
-      />
     </HeadScroll>
   );
 }

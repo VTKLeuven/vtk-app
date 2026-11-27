@@ -1,9 +1,10 @@
+import { useScrollToTop } from 'expo-router';
 import { Image } from 'expo-image';
 
 import * as WebBrowser from 'expo-web-browser';
 import { ChevronDown, ChevronRight, ExternalLink, MessageSquare, Search } from 'lucide-react-native';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
 
 import { baseUrl, mediaUrl } from '../api/client';
 import { fetchMedia } from '../api/endpoints';
@@ -44,6 +45,9 @@ import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 type Link = RegisterLink;
 
 export default function MeerScreen() {
+  // Een tik op de tab waar je al staat, scrolt naar boven.
+  const topRef = useRef<ScrollViewInstance>(null);
+  useScrollToTop(topRef);
   const router = useTabRouter();
   const { bootstrap, viewer, locale, loading, stale, error, refresh } = useApp();
   // De kaft van het nieuwste Bakske, als foto bij Media (dezelfde cache als Home).
@@ -74,7 +78,8 @@ export default function MeerScreen() {
     { label: 'Media', onPress: () => router.push('/media') },
     { label: 'Piano', onPress: () => router.push('/piano') },
     { label: 'Liederboek', onPress: () => router.push('/liederboek') },
-    { label: 'Wegwijzer', hint: 'Grondplan van de jobfair', onPress: () => router.push('/wegwijzer') },
+    // Wegwijzer (`/wegwijzer`) staat er tijdelijk niet bij: zolang Career het
+    // grondplan niet publiek zet, is er niets te zien.
     // Enkel voor wie iets te scannen heeft; de rest heeft hier niets aan.
     ...(bootstrap?.abilities?.scanTickets
       ? [{ label: 'Tickets scannen', onPress: () => router.push('/deur') }]
@@ -100,7 +105,7 @@ export default function MeerScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView contentContainerStyle={styles.scroll} style={styles.root}>
+      <ScrollView ref={topRef} contentContainerStyle={styles.scroll} style={styles.root}>
         <View style={styles.overscroll} />
         <YellowHead title="Meer">
           {/* Jij, als witte kaart in de kop. Een eigen tab was dat niet waard: je
