@@ -104,6 +104,9 @@ export const TAB_ROUTES = {
     'beheer',
     'vervoer',
     'web',
+    // Het liederboek van codex.rondgezang.be.
+    'liederboek',
+    'lied/[id]',
   ],
 } as const;
 
