@@ -157,7 +157,12 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
    Engels onder, want een international weet niet dat cudi de course shop is),
    je lessen, "Voor jou", Alma, "Ook binnenkort" (de evenementen vanaf morgen als
    schuiflijst) en "Snel naar". **Broodjes en shiften staan nooit tussen je
-   lessen.** Een scherm met een eigen beeld (een evenement, een ticket,
+   lessen.** **Kalender volgt Home** (november 2026): een geel vlak
+   (`KalenderHead`) met de titel, de bel en de tabbladen als pillen, en daarin
+   wat bij het tabblad hoort (de dagen die je ziet in de week, de voortgang per
+   vak als één balk, Lijst of Agenda). Een VTK-evenement in de planning is
+   lichtgeel met een gele rand en het logo, een eigen item papier met een
+   stippelrand; geen gekleurde rail aan één kant. Een scherm met een eigen beeld (een evenement, een ticket,
    de broodjes) opent met `PhotoHead`: de foto over de volle breedte en de titel
    op papier eronder. **De transportplanning (`vervoer.tsx`) volgt de app, maar
    haar agenda is exact die van logistiek.vtk.be** (drie dagen naast elkaar, de
@@ -234,13 +239,15 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
   annuleren bij cudi gaat door dezelfde functie als de webshop daar, een document
   van Burgieclan opent als pdf in het systeemvenster. Tickets heeft twee tabbladen
   (Kopen/Mijne) als pillen in de kop (`tabs` op `PageHead`). Kalender heeft er
-  drie (Planning, Evenementen, Mijn evenementen; tot november 2026 Agenda en
-  Mijn lijst) en opent op **Planning**, ook wie niet ingelogd is (die krijgt
+  drie (Planning, Evenementen, Mijn lijst) in een gele kop (`KalenderHead`) en
+  opent op **Planning**, ook wie niet ingelogd is (die krijgt
   daar de vraag om in te loggen en daarna zijn lessenrooster te importeren) en voor wie die
   heeft (de Burgieclan-koppeling via `src/components/planning/PlanningView.tsx`;
-  zie `docs/burgieclan-planning.md` in `vtk-website-new`); Lijst en Maand zijn
-  weergaven onder Evenementen, geen tabbladen, en er is geen filter op
-  categorie meer. Broodjes staat als snelkoppeling op
+  zie `docs/burgieclan-planning.md` in `vtk-website-new`); de weergaven van de
+  planning (Week, Per vak, Semester, Blok) staan als witte balk eronder
+  (`ModeBar`). Lijst en Agenda (vier weken: één terug, twee verder;
+  `AgendaGrid`) zijn weergaven onder Evenementen, geen tabbladen, en er is geen
+  filter op categorie meer. In de lijst is elk evenement even groot (`EventRow`). Broodjes staat als snelkoppeling op
   Home en heeft enkel Bestellen.
 - `app/_layout.tsx` draagt enkel nog de tabs plus drie modals (inloggen, de
   onboardingpoort, de serverinstelling) en de scanner aan de deur
@@ -270,7 +277,7 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
 - `src/api/useResource.ts` - het patroon van elk scherm dat gegevens ophaalt:
   cache tonen, ophalen, en het zeggen wanneer die verversing niet lukte.
 - `src/format.ts` - datums, uren en geld, altijd in `Europe/Brussels`.
-- `src/monthGrid.ts` - het maandrooster van de kalender. **Geen kopie van
+- `src/monthGrid.ts` - datumsleutels voor de kalender en de agenda. **Geen kopie van
   `calendarGrid.ts` op de site**: die rekent met de lokale tijd van de machine,
   en op een telefoon is dat niet noodzakelijk Brussel. Hier draait alles op
   datumsleutels (`YYYY-MM-DD`) en op UTC-middag, zodat geen tijdzone en geen

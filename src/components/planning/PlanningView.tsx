@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { useFocusEffect } from 'expo-router';
 import { AlertTriangle, CalendarPlus, Check, ChevronLeft, ChevronRight, Flag, GraduationCap, Settings2 } from 'lucide-react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -37,7 +38,7 @@ import {
   type Ref,
 } from '../../planning/grid';
 import { nowInLeuven } from '../../planning/now';
-import { buildSemester, defaultSemester, semesterKeys, semesterName } from '../../planning/overview';
+import { buildSemester, defaultSemester, semesterKeys, semesterName, type Totals } from '../../planning/overview';
 import { usePlanning } from '../../planning/usePlanning';
 import { getPref, setPref } from '../../storage';
 import { useTrackView } from '../../usage';
@@ -47,15 +48,9 @@ import { DetailSheet, ExportSheet, selectionOf, SettingsSheet, SetupForm, Sheet,
 import { CARD_SHADOW } from '../HomeSection';
 import { BlokView } from './BlokView';
 import { PersonalSheet, type ItemDraft, type PersonalTarget } from './PersonalSheet';
-import { CourseList, SemesterGrid, TotalsRow } from './OverviewViews';
-import {
-  PLANNING_MODES,
-  PlanningToolbar,
-  ToolbarButton,
-  ViewSheet,
-  ViewTitle,
-  type PlanningMode,
-} from './ViewPicker';
+import { CourseList, SemesterGrid } from './OverviewViews';
+import { ModeBar, PLANNING_MODES, ToolbarButton, type PlanningMode } from './ViewPicker';
+import { YellowRoundButton } from '../KalenderHead';
 
 const GUTTER = 44;
 const HOUR = 52;
@@ -88,9 +83,11 @@ const BLOCK_STYLE = {
   lecture: { backgroundColor: PLANNING.lectureBg, borderColor: PLANNING.lectureBorder, color: PLANNING.lectureText },
   practice: { backgroundColor: PLANNING.practiceBg, borderColor: PLANNING.practiceBorder, color: PLANNING.practiceText },
   other: { backgroundColor: PLANNING.otherBg, borderColor: PLANNING.otherBorder, color: PLANNING.otherText },
-  vtk: { backgroundColor: COLORS.surface, borderColor: COLORS.line2, color: COLORS.navy },
-  // Je eigen privé items: warm geel, zodat ze naast de lessen (blauw, groen, paars) opvallen.
-  personal: { backgroundColor: COLORS.lowBg, borderColor: COLORS.yellowDeep, color: COLORS.lowInk },
+  // VTK: lichtgeel met een gele rand en het logo, als een vierde soort naast de lessen
+  // (voorstel B van november 2026). Geen gekleurde rail aan één kant.
+  vtk: { backgroundColor: COLORS.lowBg, borderColor: COLORS.yellowDeep, color: COLORS.lowInk },
+  // Je eigen privé items: papier met een stippelrand, want geel is sinds dan van VTK.
+  personal: { backgroundColor: COLORS.paper, borderColor: COLORS.controlBorder, color: COLORS.body },
 } as const;
 
 /**
@@ -109,11 +106,18 @@ const BLOCK_STYLE = {
  */
 export const PlanningView = memo(function PlanningView({
   locale,
+  renderHead,
   onOpenEvent,
   onOpenCourse,
   onOpenStudies,
 }: {
   locale: AppLocale;
+  /**
+   * De gele kop van Kalender, met wat deze weergave erin zet: de dagen die je ziet
+   * in de week, de voortgang per vak. De planning tekent hem zelf, omdat de week
+   * hem vast boven het raster wil en de andere weergaven hem laten meeschuiven.
+   */
+  renderHead: (extra: React.ReactNode) => React.ReactNode;
   onOpenEvent: (id: string) => void;
   /** Een vak uit de catalogus van Burgieclan (`/vak/<id>`). */
   onOpenCourse: (id: string) => void;
@@ -123,7 +127,6 @@ export const PlanningView = memo(function PlanningView({
   const handle = usePlanning(locale);
   const { resource, data } = handle;
   const [chosenMode, setChosenMode] = useState<PlanningMode | null>(storedMode);
-  const [picking, setPicking] = useState(false);
   // Een eigen item om in te vullen: een nieuw blok dat iemand in de week neerzette door
   // lang te drukken, of een bestaand item waarop getikt werd.
   const [personal, setPersonal] = useState<PersonalTarget | null>(null);
@@ -170,8 +173,10 @@ export const PlanningView = memo(function PlanningView({
     return buildSemester(data, semester, data.today === now.date ? now.minutes : data.now);
   }, [data, semester]);
 
-  const title = (subtitle: string | null) => (
-    <ViewTitle mode={mode} subtitle={subtitle} onPress={() => setPicking(true)} />
+  const modeBar = (right?: React.ReactNode) => (
+    <ModeBar mode={mode} onChange={setMode}>
+      {right}
+    </ModeBar>
   );
   const settingsButton = data?.subscribed ? (
     <ToolbarButton label="Instellingen van de planning" onPress={() => setSettings(true)}>
@@ -180,7 +185,6 @@ export const PlanningView = memo(function PlanningView({
   ) : null;
   const sheets = data ? (
     <>
-      <ViewSheet visible={picking} mode={mode} onChange={setMode} onClose={() => setPicking(false)} />
       {data.subscribed && personal ? (
         <PersonalSheet
           key={personal.kind === 'new' ? `${personal.draft.date}-${personal.draft.startMin}` : personal.item.id}
@@ -215,18 +219,33 @@ export const PlanningView = memo(function PlanningView({
     </>
   ) : null;
 
-  if (resource.loading && !data) return <Loading label="Planning ophalen" />;
+  if (resource.loading && !data) {
+    return (
+      <View style={styles.root}>
+        {renderHead(null)}
+        <Loading label="Planning ophalen" />
+      </View>
+    );
+  }
   if (!data) {
-    return <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />;
+    return (
+      <View style={styles.root}>
+        {renderHead(null)}
+        <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
+      </View>
+    );
   }
 
   if (!data.available) {
     return (
-      <View style={styles.padded}>
-        <Empty
-          title="Planning nog niet beschikbaar"
-          hint="De koppeling met Burgieclan staat op deze server nog niet aan."
-        />
+      <View style={styles.root}>
+        {renderHead(null)}
+        <View style={styles.padded}>
+          <Empty
+            title="Planning nog niet beschikbaar"
+            hint="De koppeling met Burgieclan staat op deze server nog niet aan."
+          />
+        </View>
       </View>
     );
   }
@@ -237,11 +256,17 @@ export const PlanningView = memo(function PlanningView({
     return (
       <View style={styles.root}>
         <ScrollView style={styles.root} keyboardShouldPersistTaps="handled" refreshControl={refresh}>
-          {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
+          <View style={styles.overscroll} />
           <BlokView
             handle={handle}
             onOpenStudies={onOpenStudies}
-            header={<PlanningToolbar left={title('Examens en wat je per dag wil doen')}>{settingsButton}</PlanningToolbar>}
+            header={
+              <>
+                {renderHead(null)}
+                {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
+                {modeBar(settingsButton)}
+              </>
+            }
           />
         </ScrollView>
         {sheets}
@@ -253,7 +278,9 @@ export const PlanningView = memo(function PlanningView({
     return (
       <View style={styles.root}>
       <ScrollView keyboardShouldPersistTaps="handled" refreshControl={refresh}>
-        <PlanningToolbar left={title(null)} />
+        <View style={styles.overscroll} />
+        {renderHead(null)}
+        {modeBar()}
         <View style={styles.padded}>
         <Pressable
           accessibilityRole="button"
@@ -290,52 +317,46 @@ export const PlanningView = memo(function PlanningView({
     return (
       <View style={styles.root}>
         <ScrollView style={styles.root} refreshControl={refresh}>
+          <View style={styles.overscroll} />
+          {renderHead(
+            overview ? (
+              <Progress
+                eyebrow={eyebrow}
+                totals={overview.totals}
+                previous={keys.length > 1 ? { disabled: index <= 0, onPress: () => setSemesterChoice(keys[index - 1]) } : null}
+                next={
+                  keys.length > 1
+                    ? { disabled: index < 0 || index >= keys.length - 1, onPress: () => setSemesterChoice(keys[index + 1]) }
+                    : null
+                }
+              />
+            ) : null,
+          )}
           {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
-          <PlanningToolbar left={title(eyebrow)}>
-            {keys.length > 1 ? (
-              <>
-                <ToolbarButton label="Vorig semester" disabled={index <= 0} onPress={() => setSemesterChoice(keys[index - 1])}>
-                  <ChevronLeft size={20} color={COLORS.ink} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="Volgend semester"
-                  disabled={index < 0 || index >= keys.length - 1}
-                  onPress={() => setSemesterChoice(keys[index + 1])}
-                >
-                  <ChevronRight size={20} color={COLORS.ink} />
-                </ToolbarButton>
-              </>
-            ) : null}
-            {settingsButton}
-          </PlanningToolbar>
+          {modeBar(settingsButton)}
           <View style={styles.overview}>
             {!overview ? (
               <Empty
                 title="Nog geen lessen"
                 hint="Zodra je lessenrooster lessen bevat, zie je hier per vak wat je afvinkte en wat je nog moet inhalen."
               />
+            ) : mode === 'vak' ? (
+              <CourseList
+                data={overview}
+                open={openCourse}
+                onToggle={(key) => setOpenCourse(openCourse === key ? null : key)}
+                handle={handle}
+                onSelect={(uid) => setSelection({ kind: 'session', id: uid })}
+                onOpenCourse={onOpenCourse}
+              />
             ) : (
-              <>
-                <TotalsRow totals={overview.totals} />
-                {mode === 'vak' ? (
-                  <CourseList
-                    data={overview}
-                    open={openCourse}
-                    onToggle={(key) => setOpenCourse(openCourse === key ? null : key)}
-                    handle={handle}
-                    onSelect={(uid) => setSelection({ kind: 'session', id: uid })}
-                    onOpenCourse={onOpenCourse}
-                  />
-                ) : (
-                  <SemesterGrid
-                    data={overview}
-                    onCourse={(key) => {
-                      setOpenCourse(key);
-                      setMode('vak');
-                    }}
-                  />
-                )}
-              </>
+              <SemesterGrid
+                data={overview}
+                onCourse={(key) => {
+                  setOpenCourse(key);
+                  setMode('vak');
+                }}
+              />
             )}
           </View>
         </ScrollView>
@@ -346,18 +367,18 @@ export const PlanningView = memo(function PlanningView({
 
   return (
     <View style={styles.root}>
-      {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
-      {data.syncError ? (
-        <Pressable style={styles.warning} onPress={() => setSettings(true)} accessibilityRole="button">
-          <AlertTriangle size={16} color={COLORS.ink} />
-          <Text style={styles.warningText}>
-            Je lessenrooster kon niet bijgewerkt worden: {data.syncError} Tik om opnieuw te proberen of
-            een andere link te koppelen.
-          </Text>
-        </Pressable>
-      ) : null}
-
       <Grid
+        notice={
+          data.syncError ? (
+            <Pressable style={styles.warning} onPress={() => setSettings(true)} accessibilityRole="button">
+              <AlertTriangle size={16} color={COLORS.ink} />
+              <Text style={styles.warningText}>
+                Je lessenrooster kon niet bijgewerkt worden: {data.syncError} Tik om opnieuw te proberen of
+                een andere link te koppelen.
+              </Text>
+            </Pressable>
+          ) : null
+        }
         key={data.today}
         planningToday={data.today}
         content={content}
@@ -365,7 +386,13 @@ export const PlanningView = memo(function PlanningView({
         refreshing={resource.refreshing}
         onRefresh={() => void resource.refresh()}
         onSelect={handleSelect}
-        renderTitle={(subtitle) => title(subtitle)}
+        renderHead={(extra) => (
+          <>
+            {renderHead(extra)}
+            {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
+          </>
+        )}
+        modeBar={modeBar}
         draft={draft}
         onDraft={(next) => setPersonal({ kind: 'new', draft: next })}
         onMovePersonal={(item, date, startMin, endMin) =>
@@ -385,12 +412,12 @@ export const PlanningView = memo(function PlanningView({
         }
         toolbarRight={
           <>
-            <IconButton label="Exporteren naar je agenda" onPress={() => setExporting(true)}>
+            <ToolbarButton label="Exporteren naar je agenda" onPress={() => setExporting(true)}>
               <CalendarPlus size={19} color={COLORS.ink} />
-            </IconButton>
-            <IconButton label="Instellingen van de planning" onPress={() => setSettings(true)}>
+            </ToolbarButton>
+            <ToolbarButton label="Instellingen van de planning" onPress={() => setSettings(true)}>
               <Settings2 size={19} color={COLORS.ink} />
-            </IconButton>
+            </ToolbarButton>
           </>
         }
       />
@@ -400,20 +427,6 @@ export const PlanningView = memo(function PlanningView({
   );
 });
 
-function IconButton({ label, onPress, children }: { label: string; onPress: () => void; children: React.ReactNode }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      hitSlop={6}
-      style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-    >
-      {children}
-    </Pressable>
-  );
-}
-
 function Grid({
   planningToday,
   days,
@@ -421,13 +434,18 @@ function Grid({
   refreshing,
   onRefresh,
   onSelect,
-  renderTitle,
+  renderHead,
+  modeBar,
+  notice,
   draft,
   onDraft,
   onMovePersonal,
   toolbarRight,
 }: {
-  renderTitle: (subtitle: string) => React.ReactNode;
+  /** De gele kop, met de dagen die je ziet en de knoppen om te bladeren erin. */
+  renderHead: (extra: React.ReactNode) => React.ReactNode;
+  modeBar: (right?: React.ReactNode) => React.ReactNode;
+  notice: React.ReactNode;
   draft: ItemDraft | null;
   onDraft: (draft: ItemDraft) => void;
   onMovePersonal: (item: AppPlanningPersonal, date: string, startMin: number, endMin: number) => void;
@@ -489,29 +507,43 @@ function Grid({
   const headEnd = Math.min(days.length, first + VISIBLE_DAYS + HEAD_BUFFER);
   const headDays = days.slice(headStart, headEnd);
 
-  const goToday = () => {
-    list.current?.scrollToIndex({ index: todayIndex, animated: true });
-    setFirst(todayIndex);
+  const goTo = (index: number) => {
+    const target = Math.max(0, Math.min(Math.max(days.length - VISIBLE_DAYS, 0), index));
+    list.current?.scrollToIndex({ index: target, animated: true });
+    setFirst(target);
   };
+  const lastStart = Math.max(days.length - VISIBLE_DAYS, 0);
 
   const onSettle = (x: number) => setFirst(Math.max(0, Math.min(days.length - 1, Math.round(x / column))));
 
   return (
     <View style={styles.root}>
-      <View style={styles.toolbar}>
-        <View style={styles.toolbarLabel}>
-          {renderTitle(visible[0] ? `${shortMonth(label)} · week ${isoWeek(visible[0])}` : label)}
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ disabled: first === todayIndex }}
-          onPress={goToday}
-          style={({ pressed }) => [styles.todayButton, pressed && styles.pressed]}
-        >
-          <Text style={styles.todayLabel}>Vandaag</Text>
-        </Pressable>
-        {toolbarRight}
-      </View>
+      {renderHead(
+        <View style={styles.weekNav}>
+          <Text style={styles.weekLabel} numberOfLines={1}>
+            {visible[0] ? `Week ${isoWeek(visible[0])} · ${shortMonth(label)}` : label}
+          </Text>
+          <View style={styles.navButtons}>
+            <YellowRoundButton label="Vorige dagen" disabled={first <= 0} onPress={() => goTo(first - VISIBLE_DAYS)}>
+              <ChevronLeft size={17} color={COLORS.navy} strokeWidth={2.4} />
+            </YellowRoundButton>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: first === todayIndex }}
+              onPress={() => goTo(todayIndex)}
+              hitSlop={6}
+              style={({ pressed }) => [styles.todayPill, pressed && styles.pressed]}
+            >
+              <Text style={styles.todayPillLabel}>Vandaag</Text>
+            </Pressable>
+            <YellowRoundButton label="Volgende dagen" disabled={first >= lastStart} onPress={() => goTo(first + VISIBLE_DAYS)}>
+              <ChevronRight size={17} color={COLORS.navy} strokeWidth={2.4} />
+            </YellowRoundButton>
+          </View>
+        </View>,
+      )}
+      {notice}
+      {modeBar(toolbarRight)}
 
       <View style={styles.grid}>
       {/* De dagkoppen schuiven mee met het raster eronder, op de native thread. */}
@@ -978,6 +1010,7 @@ const DayColumn = memo(function DayColumn({
                 borderColor: look.borderColor,
               },
               block.tone === 'vtk' && styles.blockVtk,
+              block.tone === 'personal' && styles.blockPersonal,
               block.mandatory && styles.blockMandatory,
               block.done && styles.done,
               block.hidden && styles.blockHidden,
@@ -986,6 +1019,15 @@ const DayColumn = memo(function DayColumn({
             ]}
           >
             <View style={styles.blockTop}>
+              {block.tone === 'vtk' ? (
+                <Image
+                  source={require('../../../assets/vtk-logo.png')}
+                  style={styles.blockLogo}
+                  contentFit="contain"
+                  tintColor={COLORS.navy}
+                  accessible={false}
+                />
+              ) : null}
               {block.time ? <Text style={[styles.blockTime, { color: look.color }]}>{block.time}</Text> : null}
               {block.mandatory ? <Flag size={10} color={PLANNING.danger} /> : null}
               {block.done ? <Check size={11} color={look.color} /> : null}
@@ -1021,6 +1063,76 @@ const DayColumn = memo(function DayColumn({
     </View>
   );
 });
+
+/**
+ * Hoe ver je staat dit semester, in de gele kop boven Per vak en Semester
+ * (voorstel P1 van november 2026): de week, hoeveel lessen je afvinkte, en één
+ * balk met afgevinkt in navy en in te halen in roze. Tot dan stonden er vier
+ * tegels met cijfers.
+ */
+function Progress({
+  eyebrow,
+  totals,
+  previous,
+  next,
+}: {
+  eyebrow: string | null;
+  totals: Totals;
+  previous: { disabled: boolean; onPress: () => void } | null;
+  next: { disabled: boolean; onPress: () => void } | null;
+}) {
+  const total = totals.past + totals.upcoming;
+  const share = (n: number) => (total > 0 ? `${(n / total) * 100}%` : '0%') as `${number}%`;
+  return (
+    <View style={styles.progress}>
+      {eyebrow || previous || next ? (
+        <View style={styles.progressTop}>
+          <Text style={styles.progressEyebrow} numberOfLines={1}>
+            {eyebrow}
+          </Text>
+          {previous && next ? (
+            <View style={styles.navButtons}>
+              <YellowRoundButton label="Vorig semester" disabled={previous.disabled} onPress={previous.onPress}>
+                <ChevronLeft size={17} color={COLORS.navy} strokeWidth={2.4} />
+              </YellowRoundButton>
+              <YellowRoundButton label="Volgend semester" disabled={next.disabled} onPress={next.onPress}>
+                <ChevronRight size={17} color={COLORS.navy} strokeWidth={2.4} />
+              </YellowRoundButton>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+      <Text style={styles.progressTitle}>
+        {totals.done} van {total} lessen afgevinkt
+      </Text>
+      <View
+        style={styles.progressBar}
+        accessible
+        accessibilityLabel={`${totals.done} van ${total} lessen afgevinkt, ${totals.missed} in te halen`}
+      >
+        <View style={{ width: share(totals.done), backgroundColor: COLORS.navy }} />
+        <View style={{ width: share(totals.missed), backgroundColor: PLANNING.catchupFill }} />
+      </View>
+      <View style={styles.legend}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendSwatch, { backgroundColor: COLORS.navy }]} />
+          <Text style={styles.legendLabel}>Afgevinkt</Text>
+        </View>
+        {totals.missed > 0 ? (
+          <View style={styles.legendItem}>
+            <View style={[styles.legendSwatch, { backgroundColor: PLANNING.catchupFill }]} />
+            <Text style={styles.legendLabel}>{totals.missed} in te halen</Text>
+          </View>
+        ) : null}
+        {totals.mandatoryLeft > 0 ? (
+          <Text style={styles.legendLabel}>
+            {totals.mandatoryLeft} verplicht{totals.mandatoryLeft === 1 ? 'e les' : 'e lessen'} nog te komen
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
 
 const clock = (minutes: number) => {
   'worklet';
@@ -1058,42 +1170,48 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     borderRadius: RADIUS.sm,
     backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.line2,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.yellow,
+    ...CARD_SHADOW,
   },
   warningText: { ...TYPE.small, color: COLORS.ink, flex: 1 },
 
-  toolbar: {
+  // De dagen die je ziet, in de gele kop, met bladeren en Vandaag.
+  weekNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm },
+  weekLabel: { flexShrink: 1, fontFamily: FONTS.bold, fontSize: 15, color: COLORS.navy, fontVariant: ['tabular-nums'] },
+  navButtons: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  todayPill: {
+    height: 32,
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.pill,
+    backgroundColor: 'rgba(14, 26, 54, 0.08)',
+  },
+  todayPillLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.navy },
+
+  // De voortgang per vak en per semester, in de gele kop (voorstel P1).
+  progress: { gap: SPACING.sm },
+  progressTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm },
+  progressEyebrow: { flexShrink: 1, fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.navy },
+  progressTitle: { fontFamily: FONTS.bold, fontSize: 17, letterSpacing: -0.3, color: COLORS.navy },
+  progressBar: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    paddingLeft: SPACING.xl - 4,
-    paddingRight: SPACING.lg,
-    paddingTop: SPACING.sm,
-    paddingBottom: SPACING.md,
+    height: 14,
+    borderRadius: 7,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(14, 26, 54, 0.12)',
   },
-  toolbarLabel: { flex: 1 },
-  month: { fontFamily: FONTS.bold, fontSize: 18, letterSpacing: -0.4, color: COLORS.ink },
-  week: { ...TYPE.small, color: COLORS.muted, fontVariant: ['tabular-nums'] },
-  todayButton: {
-    height: 44,
-    justifyContent: 'center',
-    paddingHorizontal: SPACING.lg,
-    borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.surface,
-    ...CARD_SHADOW,
-  },
-  todayLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: RADIUS.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.surface,
-    ...CARD_SHADOW,
+  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  legendSwatch: { width: 8, height: 8, borderRadius: 2 },
+  legendLabel: { fontFamily: FONTS.semibold, fontSize: 12, color: COLORS.navy },
+
+  // Trekt de gele kop door wanneer je op iOS omlaag trekt.
+  overscroll: {
+    position: 'absolute',
+    top: -1000,
+    left: 0,
+    right: 0,
+    height: 1000,
+    backgroundColor: COLORS.yellow,
   },
 
   // Het raster als één witte kaart, zoals op het voorstel; onderaan loopt hij onder de tabbalk door.
@@ -1129,7 +1247,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.line2,
   },
-  chipVtk: { borderLeftWidth: 3, borderLeftColor: COLORS.yellow },
+  chipVtk: { backgroundColor: COLORS.lowBg, borderColor: COLORS.yellowDeep },
   chipText: { fontFamily: FONTS.medium, fontSize: 11, color: COLORS.ink },
 
   body: { flexDirection: 'row', height: DAY_HEIGHT },
@@ -1157,7 +1275,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 4,
   },
-  blockVtk: { borderLeftWidth: 4, borderLeftColor: COLORS.yellow },
+  blockVtk: { borderWidth: 1.5 },
+  blockPersonal: { borderWidth: 1.5, borderStyle: 'dashed' },
+  blockLogo: { width: 18, height: 10 },
   blockMandatory: { borderLeftWidth: 3, borderLeftColor: PLANNING.danger },
   blockHidden: { borderStyle: 'dashed', opacity: 0.5 },
   blockMoving: { opacity: 0.3 },

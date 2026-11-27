@@ -840,3 +840,23 @@ navy en geel meer laat zien. Wat er veranderde:
 
 Geel als vlak is een uitzondering voor Home, geen nieuwe regel; zie regel 8 in
 `AGENTS.md`.
+
+## November 2026: Kalender in het geel
+
+Kalender kreeg dezelfde taal als Home, na een canvas met vijf schermen:
+
+- **Een gele kop** (`KalenderHead`) met "Kalender", de bel in navy en de
+  tabbladen als pillen. Daarin staat wat bij het tabblad hoort.
+- **Planning, week**: de dagen die je ziet ("Week 49 · 30 nov - 2 dec") met
+  bladeren en Vandaag staan in het geel; de weergaven Week, Per vak, Semester en
+  Blok zijn een witte balk eronder (`ModeBar`) in plaats van een titel die een
+  blad opende. Een VTK-evenement is lichtgeel met een gele rand en het logo
+  (voorstel B), een eigen item papier met een stippelrand; de gele rail aan één
+  kant is weg.
+- **Per vak en Semester**: de vier tegels met cijfers zijn één balk in de kop
+  (voorstel P1): hoeveel lessen je afvinkte, in te halen in roze.
+- **Evenementen**: Lijst toont per dag, elk evenement even groot (`EventRow`).
+  Maand werd **Agenda**: vier weken als vierkantjes (één terug, twee verder,
+  `AgendaGrid`), bladeren per vier weken. `MonthView` en `EventTile` zijn weg.
+- **Mijn lijst**: groter, met hoe lang het nog duurt op de foto en een knop naar
+  de tickets (`MyEventCard`).

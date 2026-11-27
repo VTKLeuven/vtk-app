@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { shortDay } from '../../planning/grid';
-import type { CourseRow, OverviewSession, SemesterView, Totals } from '../../planning/overview';
+import type { CourseRow, OverviewSession, SemesterView } from '../../planning/overview';
 import type { PlanningHandle } from '../../planning/usePlanning';
 import { COLORS, FONTS, PLANNING, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW } from '../HomeSection';
@@ -37,35 +37,6 @@ const MONTHS = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', '
 const dayMonth = (date: string) => `${Number(date.slice(8, 10))} ${MONTHS[Number(date.slice(5, 7)) - 1]}`;
 
 // ── Totalen ─────────────────────────────────────────────────────────────────
-
-export function TotalsRow({ totals }: { totals: Totals }) {
-  const missed = totals.missed > 0;
-  return (
-    <View style={styles.totals}>
-      <View style={styles.tile}>
-        <Text style={styles.tileNumber}>
-          {totals.done}
-          <Text style={styles.tileOf}> / {totals.past}</Text>
-        </Text>
-        <Text style={styles.tileLabel}>voorbije lessen afgevinkt</Text>
-      </View>
-      <View style={[styles.tile, missed && styles.tileCatchup]}>
-        <Text style={[styles.tileNumber, missed && { color: PLANNING.catchupText }]}>{totals.missed}</Text>
-        <Text style={[styles.tileLabel, missed && { color: PLANNING.catchupText }]}>in te halen</Text>
-      </View>
-      <View style={styles.tile}>
-        <Text style={styles.tileNumber}>{totals.upcoming}</Text>
-        <Text style={styles.tileLabel}>nog te komen</Text>
-      </View>
-      <View style={styles.tile}>
-        <Text style={[styles.tileNumber, totals.mandatoryLeft > 0 && { color: PLANNING.dangerText }]}>
-          {totals.mandatoryLeft}
-        </Text>
-        <Text style={styles.tileLabel}>verplichte nog te komen</Text>
-      </View>
-    </View>
-  );
-}
 
 /** Afgevinkt (donker) en in te halen (roze) als deel van alle lessen van een vak. */
 function ProgressBar({ row }: { row: CourseRow }) {
@@ -405,20 +376,6 @@ const styles = StyleSheet.create({
   hint: { ...TYPE.small, color: COLORS.muted },
   intro: { ...TYPE.small, color: COLORS.body },
 
-  totals: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
-  tile: {
-    flexBasis: '47%',
-    flexGrow: 1,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    borderRadius: 18,
-    backgroundColor: COLORS.surface,
-    ...CARD_SHADOW,
-  },
-  tileCatchup: { backgroundColor: PLANNING.catchupBg, borderWidth: 1, borderColor: PLANNING.catchupBorder },
-  tileNumber: { fontFamily: FONTS.bold, fontSize: 24, letterSpacing: -0.6, color: COLORS.ink, fontVariant: ['tabular-nums'] },
-  tileOf: { fontFamily: FONTS.regular, fontSize: 15, color: COLORS.muted },
-  tileLabel: { ...TYPE.small, color: COLORS.muted },
 
   card: { backgroundColor: COLORS.surface, borderRadius: 20, overflow: 'hidden', ...CARD_SHADOW },
   cardLine: { borderTopWidth: 1, borderTopColor: COLORS.line },
