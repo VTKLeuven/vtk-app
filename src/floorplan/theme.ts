@@ -1,4 +1,5 @@
 import { CARD_SHADOW } from '../components/HomeSection';
+import { IS_DARK } from '../theme/mode';
 import { COLORS as APP, FLOORPLAN, FONTS as APP_FONTS, RADIUS as APP_RADIUS, SPACING as APP_SPACING } from '../theme/tokens';
 
 /**
@@ -8,7 +9,7 @@ import { COLORS as APP, FLOORPLAN, FONTS as APP_FONTS, RADIUS as APP_RADIUS, SPA
  * nieuwe kleuren hier: die staan in `src/theme/tokens.ts` (`FLOORPLAN`).
  */
 export const COLORS = {
-  primary: APP.navy,
+  primary: APP.selected,
   primaryDark: APP.ink,
   accent: APP.yellow,
   accentDark: APP.yellowDeep,
@@ -18,7 +19,8 @@ export const COLORS = {
   border: APP.line,
   text: APP.ink,
   textMuted: APP.muted,
-  textInverse: APP.surface,
+  // Op `primary`: in het licht wit op navy, in het donker zwart op geel.
+  textInverse: IS_DARK ? APP.onSelected : APP.surface,
   floorplan: {
     canvas: FLOORPLAN.canvas,
     boothDefaultFill: FLOORPLAN.boothFill,

@@ -199,7 +199,7 @@ export default function VakScreen() {
                       ]}
                     >
                       <View style={styles.icon}>
-                        <FileText size={18} color={COLORS.navy} />
+                        <FileText size={18} color={COLORS.strong} />
                       </View>
                       <View style={styles.flex}>
                         <Text style={styles.name} numberOfLines={2}>
@@ -216,7 +216,7 @@ export default function VakScreen() {
                         ) : null}
                       </View>
                       {opening === document.id ? (
-                        <ActivityIndicator color={COLORS.navy} />
+                        <ActivityIndicator color={COLORS.strong} />
                       ) : (
                         <ChevronRight color={COLORS.muted} size={18} />
                       )}
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chevronOpen: { backgroundColor: COLORS.ink, transform: [{ rotate: '180deg' }] },
+  chevronOpen: { backgroundColor: COLORS.band, transform: [{ rotate: '180deg' }] },
   rowDivider: { borderTopWidth: 1, borderTopColor: COLORS.line },
   kicker: {
     fontFamily: FONTS.bold,

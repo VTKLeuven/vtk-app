@@ -249,7 +249,7 @@ export function CampusMap({
                   cy={projection.project(routePoints[routePoints.length - 1]).y}
                   r={8}
                   fill={COLORS.yellow}
-                  stroke={COLORS.ink}
+                  stroke={COLORS.onYellow}
                   strokeWidth={1.8}
                 />
               </>
@@ -261,14 +261,14 @@ export function CampusMap({
                   cx={projection.project(here).x}
                   cy={projection.project(here).y}
                   r={14}
-                  fill={COLORS.navy}
+                  fill={COLORS.strong}
                   opacity={0.16}
                 />
                 <Circle
                   cx={projection.project(here).x}
                   cy={projection.project(here).y}
                   r={6}
-                  fill={COLORS.navy}
+                  fill={COLORS.strong}
                   stroke={COLORS.surface}
                   strokeWidth={2.4}
                 />

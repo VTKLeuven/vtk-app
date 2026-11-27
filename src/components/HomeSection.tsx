@@ -66,6 +66,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xs,
   },
   headBleed: { paddingHorizontal: SPACING.lg + SPACING.xs },
-  title: { fontFamily: FONTS.bold, fontSize: 22, letterSpacing: -0.5, color: COLORS.navy },
-  link: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.navy },
+  title: { fontFamily: FONTS.bold, fontSize: 22, letterSpacing: -0.5, color: COLORS.strong },
+  link: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.strong },
 });

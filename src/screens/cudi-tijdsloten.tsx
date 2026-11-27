@@ -125,7 +125,7 @@ export default function CudiTijdslotenScreen() {
                 style={({ pressed }) => [styles.release, pressed && styles.pressed]}
               >
                 {busy === mine.registrationId ? (
-                  <ActivityIndicator size="small" color={COLORS.navy} />
+                  <ActivityIndicator size="small" color={COLORS.strong} />
                 ) : (
                   <Text style={styles.releaseLabel}>Verwijderen</Text>
                 )}
@@ -157,7 +157,7 @@ export default function CudiTijdslotenScreen() {
         refreshControl={
           <RefreshControl
             refreshing={resource.refreshing}
-            tintColor={COLORS.navy}
+            tintColor={COLORS.strong}
             onRefresh={() => void resource.refresh().then(() => setState(null))}
           />
         }
@@ -210,7 +210,7 @@ export default function CudiTijdslotenScreen() {
                           </Text>
                         </View>
                         {busy === slot.id ? (
-                          <ActivityIndicator size="small" color={COLORS.navy} />
+                          <ActivityIndicator size="small" color={COLORS.strong} />
                         ) : slot.mine ? (
                           <View style={[styles.choose, styles.chooseMine]}>
                             <Text style={[styles.chooseLabel, styles.chooseLabelMine]}>Jouw slot</Text>
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1000,
-    backgroundColor: COLORS.yellow,
+    backgroundColor: COLORS.head,
   },
   content: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.xl - 2, gap: SPACING.xl },
   flex: { flex: 1 },
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   title: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },
   hint: { ...TYPE.small, color: COLORS.muted },
-  headHint: { fontFamily: FONTS.semibold, fontSize: 14, lineHeight: 20, color: COLORS.navy },
+  headHint: { fontFamily: FONTS.semibold, fontSize: 14, lineHeight: 20, color: COLORS.strong },
 
   // Je tijdslot: een witte kaart in het geel.
   mine: { backgroundColor: COLORS.surface, borderRadius: 20, padding: SPACING.lg, gap: SPACING.sm, ...CARD_SHADOW },
@@ -290,14 +290,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     backgroundColor: COLORS.paper,
   },
-  releaseLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.navy },
+  releaseLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.strong },
 
   day: { gap: SPACING.sm },
   dayName: {
     fontFamily: FONTS.bold,
     fontSize: 20,
     letterSpacing: -0.4,
-    color: COLORS.navy,
+    color: COLORS.strong,
     textTransform: 'capitalize',
     paddingHorizontal: SPACING.xs,
   },
@@ -312,9 +312,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.band,
   },
   chooseMine: { backgroundColor: COLORS.yellow },
   chooseLabel: { fontFamily: FONTS.bold, fontSize: 13, color: COLORS.yellow },
-  chooseLabelMine: { color: COLORS.navy },
+  chooseLabelMine: { color: COLORS.onYellow },
 });

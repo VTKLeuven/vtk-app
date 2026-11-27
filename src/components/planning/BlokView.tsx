@@ -108,7 +108,7 @@ export function BlokView({
               onPress={() => void handle.run({ op: 'catchUp', date: view.today }).then((ok) => ok && select(view.today))}
               style={({ pressed }) => [styles.catchupButton, pressed && styles.pressed]}
             >
-              <ArrowRight size={15} color={COLORS.surface} />
+              <ArrowRight size={15} color={COLORS.plate} />
               <Text style={styles.catchupButtonText}>Naar vandaag</Text>
             </Pressable>
           </View>
@@ -215,7 +215,7 @@ function LinkCard({
       style={({ pressed }) => [styles.linkCard, pressed && styles.pressed]}
     >
       <View style={styles.linkIcon}>
-        <Icon size={19} color={COLORS.ink} />
+        <Icon size={19} color={COLORS.onYellow} />
       </View>
       <View style={styles.flex}>
         <Text style={styles.linkTitle}>{title}</Text>
@@ -382,13 +382,13 @@ function DayDetails({
           <Text style={styles.label}>Examens</Text>
           {day.exams.map((exam) => (
             <View key={exam.id} style={[styles.exam, { backgroundColor: colourOf(view.course(exam.subject)?.colour ?? 0) }]}>
-              <GraduationCap size={17} color={COLORS.surface} />
+              <GraduationCap size={17} color={COLORS.plate} />
               <Text style={styles.examText} numberOfLines={2}>
                 {view.course(exam.subject)?.label ?? exam.subjectLabel}
                 {exam.time ? <Text style={styles.examTime}>  {exam.time}</Text> : null}
               </Text>
               <Pressable accessibilityRole="button" accessibilityLabel="Examen wijzigen" hitSlop={8} onPress={() => onEditExam(exam)} style={styles.examAction}>
-                <Pencil size={15} color={COLORS.surface} />
+                <Pencil size={15} color={COLORS.plate} />
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -398,7 +398,7 @@ function DayDetails({
                 onPress={() => deleteExam(exam)}
                 style={styles.examAction}
               >
-                <Trash2 size={15} color={COLORS.surface} />
+                <Trash2 size={15} color={COLORS.plate} />
               </Pressable>
             </View>
           ))}
@@ -772,7 +772,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.pill,
     backgroundColor: PLANNING.catchupText,
   },
-  catchupButtonText: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.surface },
+  catchupButtonText: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.plate },
 
   monthHead: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.md, paddingTop: SPACING.md, paddingBottom: SPACING.xs },
   monthTitle: { fontFamily: FONTS.bold, fontSize: 17, color: COLORS.ink, flex: 1, textTransform: 'capitalize' },
@@ -795,7 +795,7 @@ const styles = StyleSheet.create({
   dayNumber: { minWidth: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   dayToday: { backgroundColor: COLORS.yellow },
   dayText: { fontFamily: FONTS.semibold, fontSize: 13.5, color: COLORS.ink, fontVariant: ['tabular-nums'] },
-  dayTextToday: { color: COLORS.ink },
+  dayTextToday: { color: COLORS.onYellow },
   dayOutside: { color: COLORS.line2 },
   examBar: { width: '72%', height: 5, borderRadius: 3 },
   dots: { flexDirection: 'row', gap: 3 },
@@ -826,7 +826,7 @@ const styles = StyleSheet.create({
   freeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   freeText: { ...TYPE.body, color: COLORS.body },
   exam: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingHorizontal: SPACING.md, paddingVertical: 10, borderRadius: 12 },
-  examText: { flex: 1, fontFamily: FONTS.semibold, fontSize: 14.5, color: COLORS.surface },
+  examText: { flex: 1, fontFamily: FONTS.semibold, fontSize: 14.5, color: COLORS.plate },
   examTime: { fontFamily: FONTS.regular, opacity: 0.85 },
   examAction: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
 

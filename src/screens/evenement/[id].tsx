@@ -253,11 +253,11 @@ export function EventView({ id }: { id: string }) {
                 ]}
               >
                 <Star
-                  color={event.interested ? COLORS.ink : COLORS.paper}
-                  fill={event.interested ? COLORS.ink : 'transparent'}
+                  color={event.interested ? COLORS.onYellow : COLORS.paper}
+                  fill={event.interested ? COLORS.onYellow : 'transparent'}
                   size={17}
                 />
-                <Text style={[styles.actionLabel, !event.interested && styles.actionLabelPrimary]}>
+                <Text style={[styles.actionLabel, event.interested ? styles.onYellowText : styles.actionLabelPrimary]}>
                   {event.interested ? 'In mijn lijst' : 'Ik ga misschien'}
                 </Text>
               </Pressable>
@@ -359,8 +359,8 @@ export function EventView({ id }: { id: string }) {
                     (pressed || planning.busy) && styles.actionPressed,
                   ]}
                 >
-                  {inPlanning ? <CalendarCheck color={COLORS.ink} size={18} /> : <CalendarPlus color={COLORS.ink} size={18} />}
-                  <Text style={styles.saveButtonLabel} numberOfLines={1}>
+                  {inPlanning ? <CalendarCheck color={COLORS.onYellow} size={18} /> : <CalendarPlus color={COLORS.ink} size={18} />}
+                  <Text style={[styles.saveButtonLabel, inPlanning && styles.onYellowText]} numberOfLines={1}>
                     {inPlanning ? 'In je planning' : 'In planning'}
                   </Text>
                 </Pressable>
@@ -464,13 +464,13 @@ function SaveRow({
       onPress={onPress}
       style={({ pressed }) => [styles.save, (pressed || busy) && styles.actionPressed]}
     >
-      <Icon color={COLORS.navy} size={20} />
+      <Icon color={COLORS.strong} size={20} />
       <View style={styles.saveText}>
         <Text style={styles.saveLabel}>{label}</Text>
         <Text style={styles.saveHint}>{hint}</Text>
       </View>
       <View style={[styles.saveAction, active && styles.saveActionActive]}>
-        <Text style={styles.saveActionLabel}>{action}</Text>
+        <Text style={[styles.saveActionLabel, active && styles.onYellowText]}>{action}</Text>
       </View>
     </Pressable>
   );
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   momentText: { flex: 1 },
   momentTime: { ...TYPE.body, color: COLORS.ink },
   momentPlace: { ...TYPE.small, color: COLORS.muted },
-  momentsToggle: { ...TYPE.small, color: COLORS.navy, textDecorationLine: 'underline' },
+  momentsToggle: { ...TYPE.small, color: COLORS.strong, textDecorationLine: 'underline' },
 
   actions: { flexDirection: 'row', gap: SPACING.sm },
   action: {
@@ -535,6 +535,8 @@ const styles = StyleSheet.create({
   actionPressed: { opacity: 0.8 },
   actionLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink },
   actionLabelPrimary: { color: COLORS.paper },
+  // Tekst op een geel vlak blijft navy, ook in het donkere thema.
+  onYellowText: { color: COLORS.onYellow },
   note: { ...TYPE.small, color: COLORS.muted },
 
 
@@ -546,7 +548,7 @@ const styles = StyleSheet.create({
   },
   saveText: { flex: 1, gap: 2 },
   gotIt: { alignSelf: 'flex-start', paddingVertical: SPACING.md },
-  gotItLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.navy, textDecorationLine: 'underline' },
+  gotItLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.strong, textDecorationLine: 'underline' },
   saveButtons: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   saveButton: {
     flex: 1,

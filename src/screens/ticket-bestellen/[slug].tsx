@@ -17,6 +17,7 @@ import { formatEuro } from '../../format';
 import { useApp } from '../../state/app';
 import { useTabRouter } from '../../navigation';
 import { checkoutErrorText, decodeQuantities, paymentErrorText } from '../../ticketOrder';
+import { IS_DARK } from '../../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 
 /**
@@ -389,7 +390,7 @@ function Order({
                 style={styles.terms}
               >
                 <View style={[styles.box, terms && styles.boxOn]}>
-                  {terms ? <Check color={COLORS.yellow} size={16} strokeWidth={3} /> : null}
+                  {terms ? <Check color={COLORS.onSelectedAccent} size={16} strokeWidth={3} /> : null}
                 </View>
                 <Text style={[styles.body, styles.flex]}>Ik ga akkoord met de voorwaarden</Text>
               </Pressable>
@@ -486,14 +487,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1000,
-    backgroundColor: COLORS.yellow,
+    backgroundColor: COLORS.head,
   },
   content: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.xl - 2, gap: SPACING.md },
   heading: {
     fontFamily: FONTS.bold,
     fontSize: 22,
     letterSpacing: -0.5,
-    color: COLORS.navy,
+    color: COLORS.strong,
     marginTop: SPACING.sm,
     paddingHorizontal: SPACING.xs,
   },
@@ -503,12 +504,12 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: SPACING.sm,
-    backgroundColor: 'rgba(14, 26, 54, 0.08)',
+    backgroundColor: COLORS.wash,
   },
-  summaryLine: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(14, 26, 54, 0.2)' },
+  summaryLine: { height: StyleSheet.hairlineWidth, backgroundColor: IS_DARK ? COLORS.line2 : 'rgba(14, 26, 54, 0.2)' },
   line: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.sm },
-  lineText: { ...TYPE.body, fontSize: 15, color: COLORS.navy, flex: 1 },
-  linePrice: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.navy, fontVariant: ['tabular-nums'] },
+  lineText: { ...TYPE.body, fontSize: 15, color: COLORS.strong, flex: 1 },
+  linePrice: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.strong, fontVariant: ['tabular-nums'] },
   total: { fontFamily: FONTS.bold },
 
   body: { ...TYPE.body, color: COLORS.body },
@@ -545,8 +546,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radioOn: { borderColor: COLORS.navy, backgroundColor: COLORS.navy },
-  radioDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: COLORS.yellow },
+  radioOn: { borderColor: COLORS.selected, backgroundColor: COLORS.selected },
+  radioDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: COLORS.onSelectedAccent },
 
   terms: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: 44 },
   box: {
@@ -559,7 +560,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  boxOn: { backgroundColor: COLORS.navy, borderColor: COLORS.navy },
+  boxOn: { backgroundColor: COLORS.selected, borderColor: COLORS.selected },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',

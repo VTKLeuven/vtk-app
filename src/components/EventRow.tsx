@@ -106,8 +106,8 @@ function StarButton({
     >
       <Star
         size={20}
-        color={COLORS.navy}
-        fill={event.interested ? COLORS.navy : 'transparent'}
+        color={event.interested ? COLORS.onYellow : COLORS.strong}
+        fill={event.interested ? COLORS.onYellow : 'transparent'}
         strokeWidth={event.interested ? 1.6 : 1.8}
       />
     </Pressable>
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   },
   photo: { width: 118, backgroundColor: COLORS.paper2, overflow: 'hidden' },
   text: { flex: 1, justifyContent: 'center', gap: 2, paddingVertical: SPACING.md, paddingLeft: 14, paddingRight: SPACING.sm },
-  when: { fontFamily: FONTS.bold, fontSize: 12, color: COLORS.navy, fontVariant: ['tabular-nums'] },
+  when: { fontFamily: FONTS.bold, fontSize: 12, color: COLORS.strong, fontVariant: ['tabular-nums'] },
   title: { fontFamily: FONTS.semibold, fontSize: 15, lineHeight: 20, color: COLORS.ink },
   meta: { ...TYPE.small, color: COLORS.muted },
   star: {
@@ -236,8 +236,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: COLORS.yellow,
   },
-  badgeSoon: { backgroundColor: COLORS.navy },
-  badgeText: { fontFamily: FONTS.bold, fontSize: 12, letterSpacing: 0.3, color: COLORS.navy },
+  badgeSoon: { backgroundColor: COLORS.band },
+  badgeText: { fontFamily: FONTS.bold, fontSize: 12, letterSpacing: 0.3, color: COLORS.onYellow },
   badgeTextSoon: { color: COLORS.yellow },
   cardBody: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingRight: 4 },
   cardTitle: { fontFamily: FONTS.semibold, fontSize: 16, lineHeight: 21, color: COLORS.ink },
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: RADIUS.pill,
     borderWidth: 1.5,
-    borderColor: COLORS.navy,
+    borderColor: COLORS.strong,
   },
-  ticketsLabel: { fontFamily: FONTS.bold, fontSize: 13, color: COLORS.navy },
+  ticketsLabel: { fontFamily: FONTS.bold, fontSize: 13, color: COLORS.strong },
 });

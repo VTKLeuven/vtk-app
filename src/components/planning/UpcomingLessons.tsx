@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   title: { ...TYPE.cardTitle, fontSize: 15, lineHeight: 20, color: COLORS.ink },
   struck: { textDecorationLine: 'line-through' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  now: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: RADIUS.pill, backgroundColor: COLORS.ink },
+  now: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: RADIUS.pill, backgroundColor: COLORS.band },
   nowText: { fontFamily: FONTS.bold, fontSize: 11, color: COLORS.yellow },
   detail: { ...TYPE.small, flexShrink: 1, color: COLORS.muted },
 });

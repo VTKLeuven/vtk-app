@@ -821,7 +821,7 @@ function OpenAlert() {
   return (
     <View style={styles.alertRow}>
       <View style={styles.alertIcon}>
-        <Bell size={18} color={COLORS.navy} />
+        <Bell size={18} color={COLORS.onYellow} />
       </View>
       <View style={styles.flex}>
         <Text style={styles.stepTitle}>Meld het als het opent</Text>
@@ -832,7 +832,7 @@ function OpenAlert() {
         disabled={busy}
         onValueChange={(next) => void toggle(next)}
         trackColor={{ true: COLORS.yellow, false: COLORS.line2 }}
-        thumbColor={COLORS.surface}
+        thumbColor={COLORS.plate}
         accessibilityLabel="Melding wanneer het bestellen opent"
       />
     </View>
@@ -895,7 +895,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1000,
-    backgroundColor: COLORS.yellow,
+    backgroundColor: COLORS.head,
   },
   content: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxl },
   flex: { flex: 1 },
@@ -911,7 +911,7 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
   },
   rowIcon: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  link: { color: COLORS.navy, textDecorationLine: 'underline' },
+  link: { color: COLORS.strong, textDecorationLine: 'underline' },
 
   // De dagen lopen tot tegen de rand van het scherm, met lucht boven en onder:
   // anders knipte de rand van de scrollstrook de schaduw van de vakjes af, en dat
@@ -924,7 +924,7 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 3,
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.strong,
     marginTop: 4,
   },
   when: { ...TYPE.small, fontSize: 14, lineHeight: 20, color: COLORS.body },
@@ -944,7 +944,7 @@ const styles = StyleSheet.create({
     fontSize: 44,
     lineHeight: 50,
     letterSpacing: -1.6,
-    color: COLORS.navy,
+    color: COLORS.strong,
     fontVariant: ['tabular-nums'],
   },
   countdownUnit: { fontFamily: FONTS.semibold, fontSize: 16, color: COLORS.body },
@@ -959,7 +959,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
   },
   // Het eerstvolgende moment: geel met een navy rand.
-  stepDotFirst: { borderWidth: 3, borderColor: COLORS.navy, backgroundColor: COLORS.yellow },
+  stepDotFirst: { borderWidth: 3, borderColor: COLORS.strong, backgroundColor: COLORS.yellow },
   stepLine: { flex: 1, width: 2, backgroundColor: COLORS.line2 },
   stepText: { flex: 1, gap: 1, marginTop: -2 },
   stepTextGap: { paddingBottom: SPACING.md },
@@ -1029,7 +1029,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bold,
     fontSize: 11,
     letterSpacing: 1.2,
-    color: COLORS.ink,
+    color: COLORS.onYellow,
     backgroundColor: COLORS.yellow,
     borderRadius: RADIUS.pill,
     overflow: 'hidden',

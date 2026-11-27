@@ -43,7 +43,7 @@ function ProgressBar({ row }: { row: CourseRow }) {
   const total = row.sessions.length || 1;
   return (
     <View style={styles.bar} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <View style={{ width: `${(row.done / total) * 100}%`, backgroundColor: COLORS.navy }} />
+      <View style={{ width: `${(row.done / total) * 100}%`, backgroundColor: COLORS.strong }} />
       <View style={{ width: `${(row.missed / total) * 100}%`, backgroundColor: PLANNING.catchupFill }} />
     </View>
   );
@@ -208,7 +208,7 @@ function SessionRow({
                 : styles.checkUpcoming,
           ]}
         >
-          {done ? <Check size={13} color={COLORS.surface} strokeWidth={3} /> : null}
+          {done ? <Check size={13} color={COLORS.plate} strokeWidth={3} /> : null}
         </View>
       </Pressable>
       <Pressable

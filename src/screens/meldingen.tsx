@@ -154,7 +154,7 @@ export default function MeldingenScreen() {
       <HeadScroll head={<PageHead title="Meldingen" subtitle="Waarvoor je telefoon afgaat" />} contentContainerStyle={styles.content} style={styles.root}>
         <Card featured={!pushOn}>
           <View style={styles.headRow}>
-            <Bell color={COLORS.navy} size={20} />
+            <Bell color={COLORS.strong} size={20} />
             <Text style={styles.title}>Pushberichten</Text>
           </View>
           <Text style={styles.body}>
@@ -185,7 +185,7 @@ export default function MeldingenScreen() {
                   value={enabledFor(entry.topic)}
                   onValueChange={(next) => toggleTopic(entry.topic, next)}
                   trackColor={{ true: COLORS.yellow, false: COLORS.line2 }}
-                  thumbColor={COLORS.surface}
+                  thumbColor={COLORS.plate}
                 />
               </View>
             );
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   },
   chipActive: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
   chipLabel: { ...TYPE.small, color: COLORS.body },
-  chipLabelActive: { color: COLORS.ink, fontFamily: TYPE.cardTitle.fontFamily },
+  chipLabelActive: { color: COLORS.onYellow, fontFamily: TYPE.cardTitle.fontFamily },
 
   title: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },

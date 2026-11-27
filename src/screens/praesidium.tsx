@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   },
   yearActive: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
   yearLabel: { ...TYPE.small, color: COLORS.body },
-  yearLabelActive: { color: COLORS.ink, fontFamily: TYPE.cardTitle.fontFamily },
+  yearLabelActive: { color: COLORS.onYellow, fontFamily: TYPE.cardTitle.fontFamily },
   groupName: { ...TYPE.sectionTitle, color: COLORS.ink },
   people: { gap: SPACING.md, marginTop: SPACING.sm },
   person: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },

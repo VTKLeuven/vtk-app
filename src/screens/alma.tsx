@@ -167,7 +167,7 @@ export default function AlmaScreen() {
       refreshControl={
         <RefreshControl
           refreshing={base.refreshing}
-          tintColor={COLORS.navy}
+          tintColor={COLORS.strong}
           onRefresh={() => {
             void base.refresh();
             setRefreshNonce((n) => n + 1);
@@ -601,7 +601,7 @@ function WeekHours({
           onPress={onToggle}
           style={({ pressed }) => [styles.hoursHead, pressed && styles.pressed]}
         >
-          <Clock color={COLORS.navy} size={18} />
+          <Clock color={COLORS.strong} size={18} />
           <View style={styles.flex}>
             <Text style={styles.hoursTitle}>Openingsuren</Text>
             {!open ? (
@@ -610,7 +610,7 @@ function WeekHours({
               </Text>
             ) : null}
           </View>
-          <ChevronDown color={COLORS.navy} size={20} style={open ? styles.chevronOpen : undefined} />
+          <ChevronDown color={COLORS.strong} size={20} style={open ? styles.chevronOpen : undefined} />
         </Pressable>
 
         {open ? (
@@ -670,22 +670,22 @@ const styles = StyleSheet.create({
     gap: 1,
     backgroundColor: COLORS.surface,
   },
-  squareOff: { backgroundColor: 'rgba(14, 26, 54, 0.08)' },
-  squareActive: { backgroundColor: COLORS.navy },
+  squareOff: { backgroundColor: COLORS.wash },
+  squareActive: { backgroundColor: COLORS.selected },
   squareWeekday: {
     fontFamily: FONTS.semibold,
     fontSize: 10,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    color: COLORS.navy,
+    color: COLORS.strong,
   },
-  squareDay: { fontFamily: FONTS.bold, fontSize: 18, color: COLORS.navy, fontVariant: ['tabular-nums'] },
-  squareTextActive: { color: COLORS.yellow },
+  squareDay: { fontFamily: FONTS.bold, fontSize: 18, color: COLORS.strong, fontVariant: ['tabular-nums'] },
+  squareTextActive: { color: COLORS.onSelectedAccent },
   dayHeading: {
     fontFamily: FONTS.bold,
     fontSize: 22,
     letterSpacing: -0.5,
-    color: COLORS.navy,
+    color: COLORS.strong,
     paddingHorizontal: SPACING.lg + SPACING.xs,
     // De eerste categorie van het menu brengt haar eigen lucht mee.
     marginBottom: -SPACING.xl,
@@ -693,7 +693,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
   outer: { paddingBottom: SPACING.xxl },
   // Wat boven de kop verschijnt als je op iOS omlaag trekt: geel, zoals de kop.
-  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
+  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.head },
   content: { paddingTop: SPACING.sm, paddingBottom: SPACING.xxl * 2, gap: SPACING.xl },
   // Open in het groen, dicht in het grijs; geen geel bolletje meer.
   menu: {},
@@ -747,7 +747,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   more: { paddingVertical: SPACING.sm },
-  moreText: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.navy },
+  moreText: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.strong },
   hoursCard: { backgroundColor: COLORS.surface, borderRadius: 20, ...CARD_SHADOW },
   hoursHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.lg },
   hoursTitle: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink },

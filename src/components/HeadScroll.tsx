@@ -34,6 +34,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1000,
-    backgroundColor: COLORS.yellow,
+    backgroundColor: COLORS.head,
   },
 });

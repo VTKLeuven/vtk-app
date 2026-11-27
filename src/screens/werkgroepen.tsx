@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   },
   yearActive: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
   yearLabel: { ...TYPE.small, color: COLORS.body },
-  yearLabelActive: { color: COLORS.ink, fontFamily: TYPE.cardTitle.fontFamily },
+  yearLabelActive: { color: COLORS.onYellow, fontFamily: TYPE.cardTitle.fontFamily },
   photo: { width: '100%', height: 140, borderRadius: RADIUS.sm, backgroundColor: COLORS.paper2 },
   groupName: { ...TYPE.sectionTitle, color: COLORS.ink },
   hint: { ...TYPE.small, color: COLORS.muted },

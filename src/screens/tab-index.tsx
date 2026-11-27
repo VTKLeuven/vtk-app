@@ -149,7 +149,7 @@ export default function HomeScreen() {
         refreshControl={
           <RefreshControl
             refreshing={resource.refreshing}
-            tintColor={COLORS.navy}
+            tintColor={COLORS.strong}
             onRefresh={() => {
               void resource.refresh();
               void week.reload();
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1000,
-    backgroundColor: COLORS.yellow,
+    backgroundColor: COLORS.head,
   },
 
   headActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
     paddingRight: 12,
     borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.band,
   },
   pressedHead: { opacity: 0.7 },
 
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     backgroundColor: COLORS.yellow,
   },
-  laterBadgeText: { fontFamily: FONTS.bold, fontSize: 11, letterSpacing: 0.3, color: COLORS.navy },
+  laterBadgeText: { fontFamily: FONTS.bold, fontSize: 11, letterSpacing: 0.3, color: COLORS.onYellow },
   laterTitle: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink, paddingHorizontal: 2 },
   laterMeta: { ...TYPE.small, color: COLORS.muted, paddingHorizontal: 2 },
 

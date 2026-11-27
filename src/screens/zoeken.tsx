@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
   list: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxl },
   headWrap: { marginHorizontal: -SPACING.lg, marginTop: -SPACING.lg },
-  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
+  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.head },
 
   row: {
     flexDirection: 'row',

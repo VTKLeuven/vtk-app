@@ -117,7 +117,7 @@ const markdownStyles = StyleSheet.create({
   paragraph: { marginTop: 0, marginBottom: SPACING.md },
   strong: { fontFamily: FONTS.semibold, color: COLORS.ink },
   em: { fontStyle: 'italic' },
-  link: { color: COLORS.navy, textDecorationLine: 'underline' },
+  link: { color: COLORS.strong, textDecorationLine: 'underline' },
 
   bullet_list: { marginBottom: SPACING.md },
   ordered_list: { marginBottom: SPACING.md },

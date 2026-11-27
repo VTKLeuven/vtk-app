@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { AppLocale } from '../api/contract';
+import { IS_DARK } from '../theme/mode';
 import { COLORS, FONTS } from '../theme/tokens';
 
 const TZ = 'Europe/Brussels';
@@ -60,6 +61,8 @@ export const DatePin = memo(function DatePin({
   const monthLabel = month ? fmt.month.format(date).replace('.', '') : '';
 
   const box = size === 'sm' ? styles.sm : styles.md;
+  // Op papier of wit (en niet op geel) volgt de tekst het thema.
+  const onPaper = tone === 'quiet' || tone === 'plain';
   return (
     <View
       style={[
@@ -71,9 +74,13 @@ export const DatePin = memo(function DatePin({
         shadow && styles.shadow,
       ]}
     >
-      <Text style={[styles.small, tone === 'ink' && styles.smallInk]}>{weekday}</Text>
-      <Text style={[styles.day, size === 'sm' && styles.daySm, tone === 'ink' && styles.dayInk]}>{day}</Text>
-      {month ? <Text style={[styles.small, tone === 'ink' && styles.smallInk]}>{monthLabel}</Text> : null}
+      <Text style={[styles.small, onPaper && styles.smallOnPaper, tone === 'ink' && styles.smallInk]}>{weekday}</Text>
+      <Text style={[styles.day, size === 'sm' && styles.daySm, onPaper && styles.dayOnPaper, tone === 'ink' && styles.dayInk]}>
+        {day}
+      </Text>
+      {month ? (
+        <Text style={[styles.small, onPaper && styles.smallOnPaper, tone === 'ink' && styles.smallInk]}>{monthLabel}</Text>
+      ) : null}
     </View>
   );
 });
@@ -91,9 +98,9 @@ const styles = StyleSheet.create({
   // schaduw. Vier schaduwen naast elkaar liepen in elkaar over tot een grijze band.
   plain: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.line2 },
   // De gekozen dag: inkt, met de weekdag in het geel.
-  ink: { backgroundColor: COLORS.ink },
+  ink: { backgroundColor: COLORS.band },
   smallInk: { color: COLORS.yellow },
-  dayInk: { color: COLORS.paper },
+  dayInk: { color: COLORS.onDark },
   shadow: {
     shadowColor: '#080D1C',
     shadowOpacity: 0.45,
@@ -109,12 +116,14 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: 'rgba(10,15,31,0.62)',
   },
+  smallOnPaper: { color: IS_DARK ? COLORS.muted : 'rgba(10,15,31,0.62)' },
   day: {
     fontFamily: FONTS.semibold,
     fontSize: 19,
     lineHeight: 22,
-    color: COLORS.ink,
+    color: COLORS.onYellow,
     fontVariant: ['tabular-nums'],
   },
+  dayOnPaper: { color: COLORS.ink },
   daySm: { fontSize: 16, lineHeight: 19 },
 });

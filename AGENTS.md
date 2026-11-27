@@ -160,6 +160,20 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
      kapitalen, gedempt, zonder gele lijn. Op Home is `HomeSection` een korte
      titel in navy ("Voor jou", "Ook binnenkort").
    - De statusbalk staat donker, ook op Home.
+   - **Er is een donker thema** (eind november 2026, richting D "OLED zwart"),
+     te kiezen onder Meer naast Feedback App. **Standaard licht, en het volgt
+     het toestel niet.** `src/theme/mode.ts` leest de keuze bij de start en
+     `tokens.ts` geeft dan `DARK` in plaats van `LIGHT`; wisselen herstart de
+     app, omdat elke `StyleSheet.create` zijn kleuren al bij het laden koos. In
+     het donker valt het gele vlak van de kop weg (zwart, met de titel in het
+     geel), is wat gekozen is geel met zwart erop, en blijft een QR-code donker
+     op wit. **Gebruik daarom de rollen in `COLORS` en niet `navy` voor tekst**:
+     `strong` (navy als tekst, rand of indicator), `onYellow` (alles op een geel
+     vlak), `selected`/`onSelected`/`onSelectedAccent` (wat gekozen of primair
+     is), `band` (een vlak dat donker blijft, met geel of `onDark` erop), `wash`,
+     `head`/`headTitle`, `raised` en `plate`. In het licht zijn ze precies de
+     kleuren van de site. Tekst op een geel vlak met `ink` of `strong` is in het
+     donker licht op geel: dat is de fout die je het makkelijkst maakt.
    **Home is de uitzondering op "geel enkel als accent"** (voorstel G.1, november
    2026): het opent met een geel vlak (`WeekHero`) met het logo en je naam, je
    bonnetjes als muntjes, "Deze week bij VTK", een strook met de komende zeven
@@ -281,8 +295,9 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
 - `src/auth/` - wie er ingelogd is (er wordt geen token bewaard; zie
   `src/api/client.ts`) en de twee poorten uit `proxy.ts`.
 - `src/state/` - `AppProvider`, de schil: viewer, tabs, aankondiging.
-- `src/components/`, `src/theme/tokens.ts` - UI en tokens. `src/theme/tokens.ts`
-  volgt `:root` in `vtk-base.css` op de site, inclusief de WCAG 2.2 AA
+- `src/components/`, `src/theme/tokens.ts` - UI en tokens. `LIGHT` in
+  `src/theme/tokens.ts` volgt `:root` in `vtk-base.css` op de site (`DARK` en
+  de rollen bestaan enkel in de app; zie regel 8), inclusief de WCAG 2.2 AA
   contrasttokens (`controlBorder`, `onDarkControlBorder`, `dangerLine`,
   `coinRim`). `Prose` rendert alle Markdown (pagina's, aankondigingen,
   evenement- en ticketbeschrijvingen).
@@ -378,7 +393,7 @@ contract aan in vtk-website-new en haal het met `npm run contract:sync`.
 |---|---|
 | `src/api/contract.ts` | `apps/web/lib/app-api/contract.ts` |
 | de prefixen in `src/scanKind.ts` | `apps/web/lib/ticketing/crypto.ts` + `apps/web/lib/app-api/tokens.ts` |
-| `src/theme/tokens.ts` | `apps/web/app/design/vtk-base.css` (`:root`) |
+| `LIGHT` in `src/theme/tokens.ts` | `apps/web/app/design/vtk-base.css` (`:root`) |
 | `TICKET_COLORS` en de oordeelkleuren in `SCANNER` (`src/theme/tokens.ts`) | `apps/web/app/design/vtk-ticket-colors.css` + `vtk-tickets.css` (`.scanner-*`) |
 | `src/scanner/types.ts` | `apps/web/components/ticketing/scanner/types.ts` |
 | `src/scanner/offline.ts` | `apps/web/components/ticketing/scanner/offline.ts` (de beslislogica) |

@@ -117,27 +117,27 @@ export default function ProfielScreen() {
         ) : null}
 
         <Row
-          icon={<TicketCheck color={COLORS.navy} size={20} />}
+          icon={<TicketCheck color={COLORS.strong} size={20} />}
           label="Mijn tickets"
           onPress={() => router.push('/tickets?tab=mijne')}
         />
         <Row
-          icon={<Sandwich color={COLORS.navy} size={20} />}
+          icon={<Sandwich color={COLORS.strong} size={20} />}
           label="Mijn broodjes"
           onPress={() => router.push('/broodjes')}
         />
         <Row
-          icon={<Coins color={COLORS.navy} size={20} />}
+          icon={<Coins color={COLORS.strong} size={20} />}
           label="Mijn bonnetjes"
           onPress={() => router.push('/bonnetjes')}
         />
         <Row
-          icon={<Wrench color={COLORS.navy} size={20} />}
+          icon={<Wrench color={COLORS.strong} size={20} />}
           label="Shiften"
           onPress={() => router.push('/shiften')}
         />
         <Row
-          icon={<Bell color={COLORS.navy} size={20} />}
+          icon={<Bell color={COLORS.strong} size={20} />}
           label="Meldingen"
           onPress={() => router.push('/meldingen')}
         />
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   personText: { flex: 1, gap: SPACING.xs },
   avatar: { width: 56, height: 56, borderRadius: RADIUS.pill, backgroundColor: COLORS.paper2 },
   avatarEmpty: { alignItems: 'center', justifyContent: 'center' },
-  initials: { ...TYPE.cardTitle, color: COLORS.navy },
+  initials: { ...TYPE.cardTitle, color: COLORS.strong },
   title: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },
   hint: { ...TYPE.small, color: COLORS.muted },

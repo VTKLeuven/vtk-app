@@ -307,7 +307,7 @@ function PassResult({
   return (
     <Card style={styles.resultCard}>
       <View style={styles.resultHead}>
-        <Coins color={COLORS.navy} size={18} />
+        <Coins color={COLORS.strong} size={18} />
         <Text style={styles.title}>{holder.name}</Text>
       </View>
       {holder.rNumber ? <Text style={styles.hint}>{holder.rNumber}</Text> : null}

@@ -954,3 +954,25 @@ Na een canvas met vier opties voor elk scherm:
 - **Cudi**: de knop naar de tijdsloten staat niet meer ook in de kop, "je vorige
   bestellingen" is weg (rechtsboven staan al je bestellingen), en de
   tijdsloten zijn per dag een witte kaart met de momenten als rijen.
+
+## Eind november 2026: een donker thema
+
+- **Richting D ("OLED zwart")** uit de vijf darkmode-ontwerpen: echt zwart als
+  grond, kaarten een tint erboven, geen geel kopvlak maar een gele titel, de
+  gekozen dag en de actieve tab vol geel met zwart erop. De andere vier (geel
+  blijft, gedimd geel, navy nacht, amber gloed) vielen af.
+- **Te kiezen onder Meer**, in de rij van Feedback App: die rij is nu twee
+  kolommen, links feedback en rechts Licht of Donker. Standaard licht, en niet
+  de instelling van het toestel.
+- **Gekozen bij de start, wisselen herstart de app** (`src/theme/mode.ts`,
+  `Updates.reloadAsync`). De honderd stijlbladen omschrijven naar hooks om dat
+  zonder herstart te kunnen, was het niet waard.
+- **`COLORS` kreeg rollen** naast de kleuren van de site (`strong`, `onYellow`,
+  `selected`, `band`, ...): in het licht precies wat er stond, in het donker
+  iets anders. Navy deed vier dingen tegelijk (tekst, knop, band, tekst op
+  geel), en in het donker kan één kleur dat niet. Zie regel 8 in AGENTS.md.
+- **Wat licht blijft**: een QR-code (donker op wit, voor de scanner), de
+  vulkleuren van de ritten in Transport (die komen van logistiek; de tekst erop
+  blijft navy), en de pagina's van de site in een WebView. De logo's van de
+  diensten worden in het donker eentonig. Het toetsenbord en de systeemvensters
+  volgen het thema nog niet (`userInterfaceStyle` staat op `light`).

@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.pill,
     backgroundColor: COLORS.surface,
   },
-  pageNumber: { fontFamily: FONTS.bold, fontSize: 17, color: COLORS.navy, fontVariant: ['tabular-nums'] },
+  pageNumber: { fontFamily: FONTS.bold, fontSize: 17, color: COLORS.strong, fontVariant: ['tabular-nums'] },
   pageBook: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.muted },
   credit: { ...TYPE.small, color: COLORS.body },
   creditLabel: { fontFamily: FONTS.semibold, color: COLORS.muted },
@@ -195,8 +195,8 @@ const styles = StyleSheet.create({
 
   source: { ...TYPE.small, fontSize: 12, color: COLORS.muted },
   video: { gap: SPACING.sm },
-  videoTitle: { fontFamily: FONTS.bold, fontSize: 20, letterSpacing: -0.4, color: COLORS.navy },
-  player: { borderRadius: 16, overflow: 'hidden', backgroundColor: COLORS.navy },
-  web: { flex: 1, backgroundColor: COLORS.navy },
-  videoLink: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.navy, textDecorationLine: 'underline' },
+  videoTitle: { fontFamily: FONTS.bold, fontSize: 20, letterSpacing: -0.4, color: COLORS.strong },
+  player: { borderRadius: 16, overflow: 'hidden', backgroundColor: COLORS.band },
+  web: { flex: 1, backgroundColor: COLORS.band },
+  videoLink: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.strong, textDecorationLine: 'underline' },
 });

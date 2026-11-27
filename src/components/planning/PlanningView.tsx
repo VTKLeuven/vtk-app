@@ -40,6 +40,7 @@ import { buildSemester, defaultSemester, semesterKeys, semesterName, type Totals
 import { usePlanning } from '../../planning/usePlanning';
 import { getPref, setPref } from '../../storage';
 import { useTrackView } from '../../usage';
+import { IS_DARK } from '../../theme/mode';
 import { COLORS, FONTS, PLANNING, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { Empty, ErrorState, Loading, StaleNotice } from '../ui';
 import { DetailSheet, ExportSheet, selectionOf, SettingsSheet, SetupForm, Sheet, type Selection } from './PlanningSheets';
@@ -1012,7 +1013,7 @@ const DayColumn = memo(function DayColumn({
                   source={require('../../../assets/vtk-logo.png')}
                   style={styles.blockLogo}
                   contentFit="contain"
-                  tintColor={COLORS.navy}
+                  tintColor={COLORS.strong}
                   accessible={false}
                 />
               ) : null}
@@ -1081,10 +1082,10 @@ function Progress({
           {previous && next ? (
             <View style={styles.navButtons}>
               <YellowRoundButton label="Vorig semester" disabled={previous.disabled} onPress={previous.onPress}>
-                <ChevronLeft size={17} color={COLORS.navy} strokeWidth={2.4} />
+                <ChevronLeft size={17} color={COLORS.strong} strokeWidth={2.4} />
               </YellowRoundButton>
               <YellowRoundButton label="Volgend semester" disabled={next.disabled} onPress={next.onPress}>
-                <ChevronRight size={17} color={COLORS.navy} strokeWidth={2.4} />
+                <ChevronRight size={17} color={COLORS.strong} strokeWidth={2.4} />
               </YellowRoundButton>
             </View>
           ) : null}
@@ -1098,12 +1099,12 @@ function Progress({
         accessible
         accessibilityLabel={`${totals.done} van ${total} lessen afgevinkt, ${totals.missed} in te halen`}
       >
-        <View style={{ width: share(totals.done), backgroundColor: COLORS.navy }} />
+        <View style={{ width: share(totals.done), backgroundColor: COLORS.strong }} />
         <View style={{ width: share(totals.missed), backgroundColor: PLANNING.catchupFill }} />
       </View>
       <View style={styles.legend}>
         <View style={styles.legendItem}>
-          <View style={[styles.legendSwatch, { backgroundColor: COLORS.navy }]} />
+          <View style={[styles.legendSwatch, { backgroundColor: COLORS.strong }]} />
           <Text style={styles.legendLabel}>Afgevinkt</Text>
         </View>
         {totals.missed > 0 ? (
@@ -1170,13 +1171,13 @@ const styles = StyleSheet.create({
   progress: { gap: SPACING.sm, paddingHorizontal: 4, paddingTop: SPACING.xs, paddingBottom: SPACING.sm },
   progressTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm },
   progressEyebrow: { flexShrink: 1, fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.muted },
-  progressTitle: { fontFamily: FONTS.bold, fontSize: 17, letterSpacing: -0.3, color: COLORS.navy },
+  progressTitle: { fontFamily: FONTS.bold, fontSize: 17, letterSpacing: -0.3, color: COLORS.strong },
   progressBar: {
     flexDirection: 'row',
     height: 14,
     borderRadius: 7,
     overflow: 'hidden',
-    backgroundColor: 'rgba(14, 26, 54, 0.12)',
+    backgroundColor: IS_DARK ? 'rgba(255, 255, 255, 0.14)' : 'rgba(14, 26, 54, 0.12)',
   },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -1190,7 +1191,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1000,
-    backgroundColor: COLORS.yellow,
+    backgroundColor: COLORS.head,
   },
 
   // Het raster als één witte kaart, zoals op het voorstel; onderaan loopt hij onder de tabbalk door.
@@ -1216,7 +1217,7 @@ const styles = StyleSheet.create({
   dayNumber: { minWidth: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   dayNumberToday: { backgroundColor: COLORS.yellow },
   dayNumberText: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink, fontVariant: ['tabular-nums'] },
-  dayNumberTextToday: { color: COLORS.ink },
+  dayNumberTextToday: { color: COLORS.onYellow },
   chip: {
     height: CHIP_ROW - 2,
     justifyContent: 'center',
@@ -1242,7 +1243,7 @@ const styles = StyleSheet.create({
   columns: { flex: 1 },
   hourLine: { position: 'absolute', left: 0, right: 0, height: 1, backgroundColor: COLORS.line },
   column: { height: DAY_HEIGHT, borderLeftWidth: 1, borderLeftColor: COLORS.line },
-  weekend: { backgroundColor: 'rgba(14, 26, 54, 0.03)' },
+  weekend: { backgroundColor: IS_DARK ? 'rgba(255, 255, 255, 0.03)' : 'rgba(14, 26, 54, 0.03)' },
 
   // Getinte blokken met een rand van 1 px in de kleur van de soort, zodat een les
   // ook op de witte kaart duidelijk afsteekt; de kleur zegt de soort.
@@ -1275,7 +1276,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: COLORS.ink,
+    borderColor: COLORS.onYellow,
     backgroundColor: COLORS.yellow,
     paddingHorizontal: 6,
     paddingVertical: 4,
@@ -1287,8 +1288,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
   },
-  draftTime: { fontFamily: FONTS.semibold, fontSize: 10.5, color: COLORS.ink, fontVariant: ['tabular-nums'] },
-  draftTitle: { fontFamily: FONTS.semibold, fontSize: 12, color: COLORS.ink },
+  draftTime: { fontFamily: FONTS.semibold, fontSize: 10.5, color: COLORS.onYellow, fontVariant: ['tabular-nums'] },
+  draftTitle: { fontFamily: FONTS.semibold, fontSize: 12, color: COLORS.onYellow },
   nowLine: { position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: PLANNING.danger },
   nowDot: {
     position: 'absolute',

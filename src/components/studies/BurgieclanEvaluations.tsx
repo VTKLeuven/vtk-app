@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chevronOpen: { backgroundColor: COLORS.ink, transform: [{ rotate: '180deg' }] },
+  chevronOpen: { backgroundColor: COLORS.band, transform: [{ rotate: '180deg' }] },
   body: {
     gap: SPACING.md,
     paddingHorizontal: SPACING.lg,
@@ -281,5 +281,5 @@ const styles = StyleSheet.create({
 
   comment: { gap: 4, paddingTop: SPACING.md, borderTopWidth: 1, borderTopColor: COLORS.line },
   commentText: { ...TYPE.body, color: COLORS.ink },
-  more: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.navy },
+  more: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.strong },
 });

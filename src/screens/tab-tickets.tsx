@@ -146,7 +146,7 @@ function Frame({
         contentContainerStyle={styles.scroll}
         refreshControl={
           onRefresh ? (
-            <RefreshControl refreshing={Boolean(refreshing)} tintColor={COLORS.navy} onRefresh={onRefresh} />
+            <RefreshControl refreshing={Boolean(refreshing)} tintColor={COLORS.strong} onRefresh={onRefresh} />
           ) : undefined
         }
       >
@@ -507,7 +507,7 @@ function TicketStub({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: () 
             <SmallButton
               label="Wallet"
               accessibilityLabel={Platform.OS === 'ios' ? 'Aan Apple Wallet toevoegen' : 'Aan Google Wallet toevoegen'}
-              icon={<Wallet color={COLORS.navy} size={15} />}
+              icon={<Wallet color={COLORS.strong} size={15} />}
               onPress={() =>
                 void (Platform.OS === 'ios' ? addToAppleWallet(walletUrl) : addToGoogleWallet(walletUrl))
               }
@@ -516,7 +516,7 @@ function TicketStub({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: () 
           <SmallButton
             label="PDF"
             accessibilityLabel="Ticket als PDF"
-            icon={<FileText color={COLORS.navy} size={15} />}
+            icon={<FileText color={COLORS.strong} size={15} />}
             onPress={() => void WebBrowser.openBrowserAsync(ticket.pdfUrl)}
           />
         </View>
@@ -692,14 +692,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1000,
-    backgroundColor: COLORS.yellow,
+    backgroundColor: COLORS.head,
   },
   content: { paddingHorizontal: SIDE, paddingTop: SPACING.xl - 2, gap: SPACING.lg },
   heading: {
     fontFamily: FONTS.bold,
     fontSize: 22,
     letterSpacing: -0.5,
-    color: COLORS.navy,
+    color: COLORS.strong,
     paddingHorizontal: SPACING.xs,
   },
   footnote: { ...TYPE.small, color: COLORS.muted, textAlign: 'center', paddingHorizontal: SPACING.md },
@@ -742,15 +742,15 @@ const styles = StyleSheet.create({
   },
   soldOutLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.body },
   cta: {
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.selected,
     borderRadius: RADIUS.pill,
     paddingHorizontal: 18,
     minHeight: 40,
     justifyContent: 'center',
   },
   ctaQuiet: { backgroundColor: COLORS.paper },
-  ctaLabel: { fontFamily: FONTS.bold, fontSize: 14, color: COLORS.yellow },
-  ctaLabelQuiet: { fontFamily: FONTS.semibold, color: COLORS.navy },
+  ctaLabel: { fontFamily: FONTS.bold, fontSize: 14, color: COLORS.onSelectedAccent },
+  ctaLabelQuiet: { fontFamily: FONTS.semibold, color: COLORS.strong },
 
   orderBody: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.md, paddingBottom: SPACING.xs, gap: 6 },
   besidePin: { marginRight: 70 },
@@ -787,7 +787,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.band,
   },
   enlargeLabel: { fontFamily: FONTS.bold, fontSize: 11, color: COLORS.yellow },
   stubText: { flex: 1, minWidth: 0, gap: 3 },
@@ -803,7 +803,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.pill,
     backgroundColor: COLORS.paper,
   },
-  smallButtonLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.navy },
+  smallButtonLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.strong },
 
   cardTitle: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },
@@ -843,5 +843,5 @@ const styles = StyleSheet.create({
   zoomPaging: { alignItems: 'center', gap: SPACING.sm },
   dots: { flexDirection: 'row', gap: 6 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.line2 },
-  dotActive: { width: 20, backgroundColor: COLORS.navy },
+  dotActive: { width: 20, backgroundColor: COLORS.strong },
 });

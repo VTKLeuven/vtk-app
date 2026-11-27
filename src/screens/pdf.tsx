@@ -115,7 +115,7 @@ export default function PdfScreen() {
       ) : null}
       {!rendered ? (
         <View style={styles.loading} pointerEvents="none">
-          <ActivityIndicator color={COLORS.navy} size="large" />
+          <ActivityIndicator color={COLORS.strong} size="large" />
         </View>
       ) : null}
     </View>

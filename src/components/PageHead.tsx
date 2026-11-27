@@ -6,6 +6,7 @@ import { useCallback } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { IS_DARK } from '../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING } from '../theme/tokens';
 import type { AppImageCrop } from '../api/contract';
 import { CroppedPhoto } from './CroppedPhoto';
@@ -248,7 +249,8 @@ export function PageHead<T extends string = string>({
 export function useStatusBar(style: 'light' | 'dark') {
   useFocusEffect(
     useCallback(() => {
-      setStatusBarStyle(style);
+      // In het donkere thema is elke kop donker, dus de statusbalk altijd licht.
+      setStatusBarStyle(IS_DARK ? 'light' : style);
     }, [style]),
   );
 }
@@ -389,7 +391,7 @@ function TabPill<T extends string>({
 
 const styles = StyleSheet.create({
   head: {
-    backgroundColor: COLORS.yellow,
+    backgroundColor: COLORS.head,
     paddingHorizontal: SPACING.xl - 4,
     paddingBottom: SPACING.xl - 4,
     borderBottomLeftRadius: 32,
@@ -414,7 +416,7 @@ const styles = StyleSheet.create({
     height: 44,
     marginBottom: SPACING.md,
     borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.band,
   },
   backWithLabel: { width: undefined, paddingLeft: 10, paddingRight: 16 },
   backLabel: { fontFamily: FONTS.bold, fontSize: 14, color: COLORS.yellow },
@@ -426,11 +428,11 @@ const styles = StyleSheet.create({
   rowCompact: { alignItems: 'center' },
   right: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingBottom: 2 },
   rightCompact: { paddingBottom: 0 },
-  kicker: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.navy },
-  title: { fontFamily: FONTS.bold, fontSize: 32, lineHeight: 36, letterSpacing: -1.1, color: COLORS.navy },
+  kicker: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.strong },
+  title: { fontFamily: FONTS.bold, fontSize: 32, lineHeight: 36, letterSpacing: -1.1, color: COLORS.headTitle },
   titleCompact: { fontSize: 24, lineHeight: 28, letterSpacing: -0.7 },
   titleLong: { fontSize: 24, lineHeight: 28, letterSpacing: -0.6 },
-  subtitle: { fontFamily: FONTS.semibold, fontSize: 14, lineHeight: 20, color: COLORS.navy },
+  subtitle: { fontFamily: FONTS.semibold, fontSize: 14, lineHeight: 20, color: COLORS.strong },
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.lg },
   tabsCompact: { marginTop: SPACING.md },
   // Tot tegen de rand van het scherm, zodat de laatste pil zichtbaar doorloopt.
@@ -445,30 +447,30 @@ const styles = StyleSheet.create({
     minHeight: 38,
     paddingHorizontal: 16,
     borderRadius: RADIUS.pill,
-    backgroundColor: 'rgba(14, 26, 54, 0.08)',
+    backgroundColor: COLORS.wash,
   },
-  tabActive: { backgroundColor: COLORS.navy },
-  tabLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.navy },
-  tabLabelActive: { color: COLORS.yellow, fontFamily: FONTS.bold },
-  tabCount: { fontFamily: FONTS.medium, fontSize: 13, color: COLORS.navy, opacity: 0.6 },
-  tabCountActive: { color: COLORS.yellow, opacity: 0.8 },
+  tabActive: { backgroundColor: COLORS.selected },
+  tabLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.strong },
+  tabLabelActive: { color: COLORS.onSelectedAccent, fontFamily: FONTS.bold },
+  tabCount: { fontFamily: FONTS.medium, fontSize: 13, color: COLORS.strong, opacity: 0.6 },
+  tabCountActive: { color: COLORS.onSelectedAccent, opacity: 0.8 },
   badge: {
     minWidth: 22,
     height: 22,
     paddingHorizontal: 6,
     borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.selected,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeActive: { backgroundColor: COLORS.yellow },
-  badgeText: { fontFamily: FONTS.bold, fontSize: 12, color: COLORS.yellow },
-  badgeTextActive: { color: COLORS.navy },
+  badgeActive: { backgroundColor: COLORS.onSelectedAccent },
+  badgeText: { fontFamily: FONTS.bold, fontSize: 12, color: COLORS.onSelectedAccent },
+  badgeTextActive: { color: COLORS.selected },
   headButton: {
     width: 44,
     height: 44,
     borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.raised,
     alignItems: 'center',
     justifyContent: 'center',
     ...CARD_SHADOW,
@@ -476,7 +478,7 @@ const styles = StyleSheet.create({
 });
 
 const photo = StyleSheet.create({
-  frame: { backgroundColor: COLORS.navy, overflow: 'hidden' },
+  frame: { backgroundColor: COLORS.band, overflow: 'hidden' },
   back: {
     position: 'absolute',
     left: SPACING.lg,

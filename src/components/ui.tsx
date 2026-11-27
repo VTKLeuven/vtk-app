@@ -9,6 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
+import { IS_DARK } from '../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from './HomeSection';
 
@@ -140,7 +141,10 @@ export function Button({
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={primary && !onDark && !accent ? COLORS.paper : COLORS.ink} size="small" />
+        <ActivityIndicator
+          color={accent || (primary && onDark && IS_DARK) ? COLORS.onYellow : primary && !onDark ? COLORS.paper : COLORS.ink}
+          size="small"
+        />
       ) : (
         <Text
           style={[
@@ -217,7 +221,7 @@ export function ErrorState({
 export function Loading({ label = 'Bezig met laden' }: { label?: string }) {
   return (
     <View style={styles.loading} accessible accessibilityRole="progressbar" accessibilityLabel={label}>
-      <ActivityIndicator size="large" color={COLORS.navy} />
+      <ActivityIndicator size="large" color={COLORS.strong} />
     </View>
   );
 }
@@ -386,17 +390,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
   },
-  buttonPrimary: { backgroundColor: COLORS.ink, borderColor: COLORS.ink },
-  buttonPrimaryOnDark: { backgroundColor: COLORS.surface, borderColor: COLORS.surface },
+  // In het donker is de primaire knop geel: een lichte knop op zwart riep te hard.
+  buttonPrimary: IS_DARK
+    ? { backgroundColor: COLORS.selected, borderColor: COLORS.selected }
+    : { backgroundColor: COLORS.ink, borderColor: COLORS.ink },
+  buttonPrimaryOnDark: { backgroundColor: COLORS.plate, borderColor: COLORS.plate },
   buttonAccent: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
-  buttonLabelAccent: { color: COLORS.ink, fontFamily: FONTS.bold },
+  buttonLabelAccent: { color: COLORS.onYellow, fontFamily: FONTS.bold },
   buttonGhost: { backgroundColor: COLORS.surface, borderColor: COLORS.controlBorder },
   buttonGhostOnDark: { borderColor: 'rgba(255,255,255,0.28)' },
   buttonPressed: { opacity: 0.85 },
   buttonDisabled: { opacity: 0.45 },
   buttonLabel: { ...TYPE.body, fontFamily: TYPE.cardTitle.fontFamily },
   buttonLabelPrimary: { color: COLORS.paper },
-  buttonLabelOnDarkPrimary: { color: COLORS.ink },
+  buttonLabelOnDarkPrimary: { color: IS_DARK ? COLORS.onYellow : COLORS.ink },
   buttonLabelGhost: { color: COLORS.ink },
   buttonLabelOnDarkGhost: { color: COLORS.onDark },
 

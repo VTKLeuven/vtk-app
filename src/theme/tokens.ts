@@ -1,16 +1,35 @@
+import { IS_DARK } from './mode';
+
 /**
  * De kleuren en maten van de site, als waarden.
  *
- * Letterlijke port van `:root` in `apps/web/app/design/vtk-base.css` in
- * vtk-website-new. **Wijzigt daar een kleur, dan wijzigt ze hier mee**; dit
+ * `LIGHT` is een letterlijke port van `:root` in `apps/web/app/design/vtk-base.css`
+ * in vtk-website-new. **Wijzigt daar een kleur, dan wijzigt ze hier mee**; dit
  * bestand staat daarom in de "Gekopieerd uit"-tabel in AGENTS.md.
  *
- * De site is bewust light mode ("cool paper"), en deze app volgt de site. Eén
- * scherm is de uitzondering: de scanner aan de deur (`SCANNER` onderaan), die in
- * het donker op armlengte gebruikt wordt.
+ * De site is bewust light mode ("cool paper"), en de app volgt de site. Sinds eind
+ * november 2026 is er ook een donker thema (richting D, "OLED zwart"), dat je
+ * kiest onder Meer. Dat bestaat enkel in de app: `DARK` heeft dezelfde sleutels,
+ * met echt zwart als grond. Welke van de twee geldt, ligt vast bij de start
+ * (`IS_DARK` in `./mode`); wisselen herstart de app, omdat elke stijl met
+ * `StyleSheet.create` bij het laden zijn kleuren al gekozen heeft.
+ *
+ * De sleutels onder "Rollen" bestaan enkel in de app. In het licht zijn ze een
+ * kleur van de site (zodat er daar niets verandert), in het donker iets anders:
+ * - `strong`: navy als tekst, rand of indicator op papier; in het donker bijna-wit.
+ * - `onYellow`: tekst en iconen op een geel vlak; altijd navy, want geel blijft geel.
+ * - `selected`, `onSelected`, `onSelectedAccent`: wat gekozen of primair is. In
+ *   het licht navy met papier of geel erop, in het donker geel met zwart erop.
+ * - `band`: een donker vlak dat donker blijft (een navy band, een ronde navy knop
+ *   met een geel icoon); in het donker een tint boven zwart.
+ * - `wash`: het navy waas achter een pil of een leeg vakje.
+ * - `head`, `headTitle`: het gele vlak bovenaan elk scherm en de titel erop. In
+ *   het donker valt het vlak weg en draagt de gele titel de kop.
+ * - `raised`: wat boven een kaart of een waas uitsteekt (een witte ronde knop in
+ *   de kop, het gekozen segment); in het licht wit, in het donker een tint lichter.
+ * - `plate`: wit dat wit blijft, achter een QR-code en de logo's van de diensten.
  */
-
-export const COLORS = {
+const LIGHT = {
   /** Tekst en donkere vlakken. */
   ink: '#0A0F1F',
   /** De donkere banden, de header en de voettekst. */
@@ -51,7 +70,68 @@ export const COLORS = {
   okInk: '#16663F',
   lowBg: '#FFF2C7',
   lowInk: '#7A4E05',
-} as const;
+
+  // Rollen (enkel in de app; zie hierboven).
+  strong: '#0E1A36',
+  onYellow: '#0E1A36',
+  selected: '#0E1A36',
+  onSelected: '#EFF2F8',
+  onSelectedAccent: '#FFD23F',
+  band: '#0E1A36',
+  wash: 'rgba(14, 26, 54, 0.08)',
+  head: '#FFD23F',
+  headTitle: '#0E1A36',
+  raised: '#FFFFFF',
+  plate: '#FFFFFF',
+};
+
+/** Het donkere thema: richting D ("OLED zwart") uit de ontwerpronde van november 2026. */
+const DARK: typeof LIGHT = {
+  ink: '#F5F5F7',
+  // Wat nog navy heet, is een vlak; tekst in navy heet `strong`.
+  navy: '#1C1C1F',
+  paper: '#000000',
+  paper2: '#1C1C1F',
+  surface: '#121214',
+  line: 'rgba(255, 255, 255, 0.10)',
+  line2: 'rgba(255, 255, 255, 0.16)',
+  controlBorder: 'rgba(255, 255, 255, 0.45)',
+  onDarkControlBorder: 'rgba(239, 242, 248, 0.48)',
+  yellow: '#FFD23F',
+  yellowDeep: '#EDBD22',
+  coinRim: '#805B00',
+  muted: '#9A9AA2',
+  body: '#D1D1D6',
+  onDarkMuted: '#B7C0DC',
+  onDark: '#EFF2F8',
+  dangerBg: '#3A1411',
+  dangerInk: '#FF9B8F',
+  dangerLine: '#F04438',
+  okBg: '#0E2A1B',
+  okInk: '#6FD39A',
+  lowBg: '#33280A',
+  lowInk: '#FFD36B',
+
+  strong: '#F5F5F7',
+  onYellow: '#0E1A36',
+  selected: '#FFD23F',
+  onSelected: '#000000',
+  onSelectedAccent: '#000000',
+  band: '#1C1C1F',
+  wash: 'rgba(255, 255, 255, 0.10)',
+  head: '#000000',
+  headTitle: '#FFD23F',
+  raised: '#2C2C31',
+  plate: '#FFFFFF',
+};
+
+export const COLORS = IS_DARK ? DARK : LIGHT;
+
+/**
+ * Een QR-code is in elk thema donker op wit: een scanner aan een deur leest een
+ * omgekeerde code niet altijd.
+ */
+export const QR = { background: '#FFFFFF', modules: '#0A0F1F' } as const;
 
 /**
  * De transportplanning (Meer › Transport), zoals logistiek.vtk.be ze tekent
@@ -60,7 +140,7 @@ export const COLORS = {
  * rest: de arcering per voertuig, de rand zonder chauffeur, de streep van een
  * aanvraag en de nu-lijn.
  */
-export const TRANSPORT = {
+const TRANSPORT_LIGHT = {
   pattern: 'rgba(14, 26, 54, 0.13)',
   patternStrong: 'rgba(14, 26, 54, 0.2)',
   patternFaint: 'rgba(14, 26, 54, 0.11)',
@@ -75,6 +155,20 @@ export const TRANSPORT = {
   /** De lijn van nu, `--now-line`. */
   now: '#D64545',
 } as const;
+
+/** In het donker: dezelfde lagen, als wit waas op een donkere kaart. */
+const TRANSPORT_DARK: { [K in keyof typeof TRANSPORT_LIGHT]: string } = {
+  pattern: 'rgba(255, 255, 255, 0.12)',
+  patternStrong: 'rgba(255, 255, 255, 0.2)',
+  patternFaint: 'rgba(255, 255, 255, 0.08)',
+  edge: 'rgba(255, 255, 255, 0.45)',
+  border: 'rgba(255, 255, 255, 0.15)',
+  emphasis: '#F5F5F7',
+  today: '#17140A',
+  now: '#F26B6B',
+};
+
+export const TRANSPORT = IS_DARK ? TRANSPORT_DARK : TRANSPORT_LIGHT;
 
 /**
  * Op een donkere band zijn panelen "dark glass": een lichte vulling met een
@@ -98,7 +192,7 @@ export const DARK_GLASS = {
  * raster op een witte kaart, en daar vielen de lichtste tinten bijna weg. De
  * randen en de tekst zijn die van Burgieclan.
  */
-export const PLANNING = {
+const PLANNING_LIGHT = {
   // Hoorcolleges hemelsblauw, practica en oefenzittingen teal, de rest lavendel.
   lectureBg: '#dbeafb',
   lectureBorder: '#a9cdf3',
@@ -123,6 +217,33 @@ export const PLANNING = {
   catchupText: '#a3245a',
   catchupFill: '#d6407a',
 } as const;
+
+/**
+ * In het donker: dezelfde drie soorten, als donkere tint met een lichte tekst in
+ * dezelfde kleur. Afgevinkt blijft de volle kleur, die leest op zwart even goed.
+ */
+const PLANNING_DARK: { [K in keyof typeof PLANNING_LIGHT]: string } = {
+  lectureBg: '#0F2740',
+  lectureBorder: '#1F4D7A',
+  lectureText: '#9CCBF7',
+  practiceBg: '#0C2A24',
+  practiceBorder: '#1C5C4E',
+  practiceText: '#8EDCC6',
+  otherBg: '#1E1B3A',
+  otherBorder: '#3D3778',
+  otherText: '#C3BDF6',
+  danger: '#F05252',
+  dangerText: '#FF9B8F',
+  lectureFill: '#2F86DB',
+  practiceFill: '#17A589',
+  otherFill: '#7C70E6',
+  catchupBg: '#33121F',
+  catchupBorder: '#7A2A4B',
+  catchupText: '#F7A6C7',
+  catchupFill: '#E0538A',
+};
+
+export const PLANNING = IS_DARK ? PLANNING_DARK : PLANNING_LIGHT;
 
 /**
  * De kleur van een vak in de blokkalender, in de volgorde waarin de vakken er
@@ -194,8 +315,8 @@ export const SCANNER = {
   text: COLORS.ink,
   textMuted: COLORS.muted,
   /** Wat je aantikt: navy, met papier erop, zoals een primaire knop in de app. */
-  accent: COLORS.navy,
-  accentInk: COLORS.paper,
+  accent: COLORS.selected,
+  accentInk: COLORS.onSelected,
   /** Het geel van het richtkader in het camerabeeld. */
   reticle: COLORS.yellow,
   /** Tekst en iconen op het camerabeeld en op een feedbackvlak. */
@@ -248,7 +369,7 @@ export const HIT_TARGET = 48;
  * van de cursusdienst): de Tailwind-tinten `*-100` als vlak en `*-800` als tekst.
  * Zo heeft elke stand bij een bestelling in de app dezelfde kleur als op cudi.
  */
-export const CUDI_STATUS = {
+const CUDI_STATUS_LIGHT = {
   /** Afgehaald, of ligt klaar: green-100 / green-800. */
   green: { bg: '#DCFCE7', ink: '#166534' },
   /** Online betaald: blue-100 / blue-800. */
@@ -261,6 +382,17 @@ export const CUDI_STATUS = {
   red: { bg: '#FEE2E2', ink: '#991B1B' },
 } as const;
 
+/** In het donker: dezelfde vijf kleuren, als donkere tint met lichte tekst. */
+const CUDI_STATUS_DARK: { [K in keyof typeof CUDI_STATUS_LIGHT]: { bg: string; ink: string } } = {
+  green: { bg: '#0E2A1B', ink: '#86EFAC' },
+  blue: { bg: '#10203F', ink: '#93C5FD' },
+  yellow: { bg: '#2E2A0A', ink: '#FDE68A' },
+  amber: { bg: '#33220A', ink: '#FCD34D' },
+  red: { bg: '#3A1411', ink: '#FCA5A5' },
+};
+
+export const CUDI_STATUS = IS_DARK ? CUDI_STATUS_DARK : CUDI_STATUS_LIGHT;
+
 /**
  * Het grondplan van de jobfair (Meer › Wegwijzer), overgenomen uit
  * vtk-floorplan-app maar in de kleuren van de app: navy standen, geel wat je
@@ -268,11 +400,11 @@ export const CUDI_STATUS = {
  * wanneer je erop filtert, zoals de floorplan-app dat deed.
  */
 export const FLOORPLAN = {
-  canvas: '#E6ECF5',
-  boothFill: '#0E1A36',
-  boothStroke: '#0A0F1F',
-  boothEmptyFill: '#CBD3E1',
-  boothEmptyStroke: '#AEB8CA',
+  canvas: IS_DARK ? '#121214' : '#E6ECF5',
+  boothFill: IS_DARK ? '#2A3556' : '#0E1A36',
+  boothStroke: IS_DARK ? '#45507A' : '#0A0F1F',
+  boothEmptyFill: IS_DARK ? '#26262A' : '#CBD3E1',
+  boothEmptyStroke: IS_DARK ? '#3A3A40' : '#AEB8CA',
   categories: {
     1: '#2563EB',
     2: '#0EA5E9',

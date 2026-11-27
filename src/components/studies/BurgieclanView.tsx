@@ -121,7 +121,7 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
       contentContainerStyle={styles.scroll}
       keyboardShouldPersistTaps="handled"
       refreshControl={
-        <RefreshControl refreshing={resource.refreshing} tintColor={COLORS.navy} onRefresh={() => void resource.refresh()} />
+        <RefreshControl refreshing={resource.refreshing} tintColor={COLORS.strong} onRefresh={() => void resource.refresh()} />
       }
     >
       <View style={styles.overscroll} />
@@ -143,7 +143,7 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
           <View style={styles.block}>
             <Text accessibilityRole="header" style={styles.heading}>Gevonden</Text>
             {search.loading && search.courses.length === 0 ? (
-              <ActivityIndicator color={COLORS.navy} style={styles.spinner} />
+              <ActivityIndicator color={COLORS.strong} style={styles.spinner} />
             ) : search.error ? (
               <Text style={styles.hint}>{search.error}</Text>
             ) : search.courses.length === 0 ? (
@@ -317,10 +317,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1000,
-    backgroundColor: COLORS.yellow,
+    backgroundColor: COLORS.head,
   },
-  headLine: { fontFamily: FONTS.bold, fontSize: 17, color: COLORS.navy },
-  heading: { fontFamily: FONTS.bold, fontSize: 22, letterSpacing: -0.5, color: COLORS.navy },
+  headLine: { fontFamily: FONTS.bold, fontSize: 17, color: COLORS.strong },
+  heading: { fontFamily: FONTS.bold, fontSize: 22, letterSpacing: -0.5, color: COLORS.strong },
   flex: { flex: 1 },
   block: { gap: SPACING.md },
   pressed: { opacity: 0.6 },

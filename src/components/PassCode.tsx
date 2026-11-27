@@ -72,7 +72,7 @@ export function PassCode({ caption }: { caption?: string }) {
         ) : (
           <View style={[styles.placeholder, { width: size, height: size }]}>
             {busy ? (
-              <ActivityIndicator color={COLORS.navy} />
+              <ActivityIndicator color={COLORS.strong} />
             ) : (
               <Text style={styles.error}>{error ?? 'Geen code'}</Text>
             )}

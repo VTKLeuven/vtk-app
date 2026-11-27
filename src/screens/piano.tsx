@@ -13,6 +13,7 @@ import { YellowHead } from '../components/YellowHead';
 import { formatDay, formatTime } from '../format';
 import { useTabRouter } from '../navigation';
 import { useApp } from '../state/app';
+import { IS_DARK } from '../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 
 /**
@@ -129,7 +130,7 @@ export default function PianoScreen() {
       style={styles.root}
       contentContainerStyle={styles.scroll}
       refreshControl={
-        <RefreshControl refreshing={resource.refreshing} tintColor={COLORS.navy} onRefresh={() => void resource.refresh()} />
+        <RefreshControl refreshing={resource.refreshing} tintColor={COLORS.strong} onRefresh={() => void resource.refresh()} />
       }
     >
       <View style={styles.overscroll} />
@@ -146,7 +147,7 @@ export default function PianoScreen() {
               {mine.map((slot, index) => (
                 <View key={slot.startsAt} style={[styles.row, index > 0 && styles.divider]}>
                   <View style={styles.mineMark}>
-                    <Music size={16} color={COLORS.navy} />
+                    <Music size={16} color={COLORS.onYellow} />
                   </View>
                   <View style={styles.flex}>
                     <Text style={styles.rowTitle}>{capitalize(formatDay(slot.startsAt, locale))}</Text>
@@ -208,7 +209,7 @@ export default function PianoScreen() {
               style={({ pressed }) => [styles.row, pressed && styles.pressed]}
             >
               <Text style={[styles.rowTitle, styles.flex]}>Afspraken bij de piano</Text>
-              <ChevronDown color={COLORS.navy} size={20} style={infoOpen ? styles.chevronOpen : undefined} />
+              <ChevronDown color={COLORS.strong} size={20} style={infoOpen ? styles.chevronOpen : undefined} />
             </Pressable>
             {infoOpen ? (
               <View style={styles.info}>
@@ -407,7 +408,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
   scroll: { paddingBottom: SPACING.xxl },
   // Wat boven de kop verschijnt als je op iOS omlaag trekt: geel, zoals de kop.
-  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
+  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.head },
   content: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.xl - 2, gap: SPACING.xl },
   flex: { flex: 1 },
   pressed: { opacity: 0.7 },
@@ -417,9 +418,9 @@ const styles = StyleSheet.create({
 
   quota: { gap: SPACING.sm },
   pips: { flexDirection: 'row', gap: 6 },
-  pip: { flex: 1, maxWidth: 56, height: 8, borderRadius: 4, backgroundColor: 'rgba(14, 26, 54, 0.12)' },
-  pipUsed: { backgroundColor: COLORS.navy },
-  quotaText: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.navy },
+  pip: { flex: 1, maxWidth: 56, height: 8, borderRadius: 4, backgroundColor: IS_DARK ? 'rgba(255, 255, 255, 0.14)' : 'rgba(14, 26, 54, 0.12)' },
+  pipUsed: { backgroundColor: COLORS.strong },
+  quotaText: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.strong },
 
   strip: { flexGrow: 0, flexShrink: 0, marginHorizontal: -SIDE },
   squares: { gap: 6, paddingHorizontal: SIDE },
@@ -433,25 +434,25 @@ const styles = StyleSheet.create({
     gap: 1,
     backgroundColor: COLORS.surface,
   },
-  squareOff: { backgroundColor: 'rgba(14, 26, 54, 0.08)' },
-  squareActive: { backgroundColor: COLORS.navy },
+  squareOff: { backgroundColor: COLORS.wash },
+  squareActive: { backgroundColor: COLORS.selected },
   squareWeekday: {
     fontFamily: FONTS.semibold,
     fontSize: 10,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    color: COLORS.navy,
+    color: COLORS.strong,
   },
-  squareDay: { fontFamily: FONTS.bold, fontSize: 18, color: COLORS.navy, fontVariant: ['tabular-nums'] },
-  squareTextActive: { color: COLORS.yellow },
+  squareDay: { fontFamily: FONTS.bold, fontSize: 18, color: COLORS.strong, fontVariant: ['tabular-nums'] },
+  squareTextActive: { color: COLORS.onSelectedAccent },
   squareDot: { position: 'absolute', bottom: 6, width: 5, height: 5, borderRadius: 3 },
-  squareDotOwn: { backgroundColor: COLORS.navy },
-  squareDotActive: { backgroundColor: COLORS.yellow },
+  squareDotOwn: { backgroundColor: COLORS.strong },
+  squareDotActive: { backgroundColor: COLORS.onSelectedAccent },
 
   section: { gap: SPACING.md },
-  sectionTitle: { fontFamily: FONTS.bold, fontSize: 20, letterSpacing: -0.4, color: COLORS.navy, paddingHorizontal: 4 },
+  sectionTitle: { fontFamily: FONTS.bold, fontSize: 20, letterSpacing: -0.4, color: COLORS.strong, paddingHorizontal: 4 },
   dayHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACING.sm, paddingHorizontal: 4 },
-  dayTitle: { flexShrink: 1, fontFamily: FONTS.bold, fontSize: 20, letterSpacing: -0.4, color: COLORS.navy },
+  dayTitle: { flexShrink: 1, fontFamily: FONTS.bold, fontSize: 20, letterSpacing: -0.4, color: COLORS.strong },
   dayCount: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.muted },
 
   card: { backgroundColor: COLORS.surface, borderRadius: 20, overflow: 'hidden', ...CARD_SHADOW },
@@ -480,14 +481,14 @@ const styles = StyleSheet.create({
   timeStart: { fontFamily: FONTS.bold, fontSize: 16, color: COLORS.ink, fontVariant: ['tabular-nums'] },
   timeEnd: { ...TYPE.small, fontSize: 12, color: COLORS.muted, fontVariant: ['tabular-nums'] },
   status: { flex: 1, fontFamily: FONTS.medium, fontSize: 15, color: COLORS.body },
-  statusMine: { fontFamily: FONTS.bold, color: COLORS.navy },
+  statusMine: { fontFamily: FONTS.bold, color: COLORS.strong },
   dim: { color: COLORS.muted },
 
   action: { height: 34, paddingHorizontal: 16, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
-  actionPrimary: { backgroundColor: COLORS.navy },
-  actionQuiet: { backgroundColor: 'rgba(14, 26, 54, 0.08)' },
-  actionLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.navy },
-  actionLabelPrimary: { color: COLORS.yellow, fontFamily: FONTS.bold },
+  actionPrimary: { backgroundColor: COLORS.selected },
+  actionQuiet: { backgroundColor: COLORS.wash },
+  actionLabel: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.strong },
+  actionLabelPrimary: { color: COLORS.onSelectedAccent, fontFamily: FONTS.bold },
 
   info: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.lg },
   chevronOpen: { transform: [{ rotate: '180deg' }] },

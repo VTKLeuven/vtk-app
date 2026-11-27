@@ -306,10 +306,10 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   choiceSquare: { minWidth: 44, paddingHorizontal: SPACING.md },
-  choiceSelected: { backgroundColor: COLORS.navy, borderColor: COLORS.navy },
+  choiceSelected: { backgroundColor: COLORS.selected, borderColor: COLORS.selected },
   choicePressed: { opacity: 0.7 },
   choiceLabel: { ...TYPE.body, color: COLORS.ink },
-  choiceLabelSelected: { color: COLORS.paper },
+  choiceLabelSelected: { color: COLORS.onSelected },
   scale: { flexDirection: 'row', justifyContent: 'space-between', gap: SPACING.md },
   input: {
     ...TYPE.body,

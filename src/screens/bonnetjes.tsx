@@ -231,7 +231,7 @@ function Hero({ year, locale }: { year: AppShiftYear; locale: 'nl' | 'en' }) {
                   state === 'next' && styles.nodeNext,
                 ]}
               >
-                {state === 'done' ? <Check color={COLORS.ink} size={12} strokeWidth={3} /> : null}
+                {state === 'done' ? <Check color={COLORS.onYellow} size={12} strokeWidth={3} /> : null}
               </View>
               <Text style={styles.stepMin}>{row.min}</Text>
               <Text style={[styles.stepName, state !== 'todo' && styles.stepNameOn]} numberOfLines={1}>

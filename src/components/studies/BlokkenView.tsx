@@ -226,7 +226,7 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
       style={styles.root}
       contentContainerStyle={styles.scroll}
       refreshControl={
-        <RefreshControl refreshing={resource.refreshing} tintColor={COLORS.navy} onRefresh={() => void resource.refresh()} />
+        <RefreshControl refreshing={resource.refreshing} tintColor={COLORS.strong} onRefresh={() => void resource.refresh()} />
       }
     >
       <View style={styles.overscroll} />
@@ -278,7 +278,7 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
                 {group.name}
               </Text>
               <View style={styles.groupTitleChevron}>
-                <ChevronDown color={COLORS.navy} size={16} strokeWidth={2.4} />
+                <ChevronDown color={COLORS.strong} size={16} strokeWidth={2.4} />
               </View>
             </Pressable>
             <Room group={group} onOpen={() => router.push(`/studiegroep/${group.id}`)} />
@@ -415,7 +415,7 @@ function SessionPanel({
               pressed && styles.controlPressed,
             ]}
           >
-            <Square color={COLORS.ink} size={15} />
+            <Square color={COLORS.onYellow} size={15} />
             <Text style={[styles.controlLabel, styles.controlStopLabel]}>Stoppen</Text>
           </Pressable>
         </View>
@@ -839,7 +839,7 @@ function GroupSheet({
                     : `${item.memberCount} ${item.memberCount === 1 ? 'lid' : 'leden'}`}
                 </Text>
               </View>
-              {active ? <Check color={COLORS.navy} size={18} /> : null}
+              {active ? <Check color={COLORS.strong} size={18} /> : null}
             </Pressable>
           );
         })}
@@ -854,7 +854,7 @@ function NoGroups({ onNew }: { onNew: () => void }) {
     <Card>
       <View style={styles.cardHead}>
         <View style={styles.cardIcon}>
-          <Users color={COLORS.ink} size={21} />
+          <Users color={COLORS.onYellow} size={21} />
         </View>
         <Text style={styles.cardHeadTitle}>Blok samen</Text>
       </View>
@@ -878,11 +878,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1000,
-    backgroundColor: COLORS.yellow,
+    backgroundColor: COLORS.head,
   },
-  headLine: { fontFamily: FONTS.bold, fontSize: 17, color: COLORS.navy },
+  headLine: { fontFamily: FONTS.bold, fontSize: 17, color: COLORS.strong },
   section: { gap: SPACING.md },
-  sectionTitle: { flexShrink: 1, fontFamily: FONTS.bold, fontSize: 22, letterSpacing: -0.5, color: COLORS.navy },
+  sectionTitle: { flexShrink: 1, fontFamily: FONTS.bold, fontSize: 22, letterSpacing: -0.5, color: COLORS.strong },
   groupTitle: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, alignSelf: 'flex-start', paddingHorizontal: SPACING.xs },
   groupTitleChevron: {
     width: 26,
@@ -900,7 +900,7 @@ const styles = StyleSheet.create({
   sheetSub: { ...TYPE.small, color: COLORS.muted },
 
   panel: {
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.band,
     borderRadius: 26,
     overflow: 'hidden',
   },
@@ -940,7 +940,7 @@ const styles = StyleSheet.create({
   controlPressed: { opacity: 0.75 },
   controlLabel: { ...TYPE.body, fontFamily: TYPE.cardTitle.fontFamily, color: COLORS.onDark },
   controlStop: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
-  controlStopLabel: { color: COLORS.ink },
+  controlStopLabel: { color: COLORS.onYellow },
 
   subject: { gap: SPACING.sm },
   subjectInput: {
@@ -981,7 +981,7 @@ const styles = StyleSheet.create({
   sheetDelete: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   disabled: { opacity: 0.4 },
   chipText: { ...TYPE.small, color: COLORS.onDarkMuted },
-  chipTextOn: { color: COLORS.ink, fontFamily: TYPE.cardTitle.fontFamily },
+  chipTextOn: { color: COLORS.onYellow, fontFamily: TYPE.cardTitle.fontFamily },
 
 
   label: {
@@ -1009,7 +1009,7 @@ const styles = StyleSheet.create({
   avatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: COLORS.paper2 },
   avatarEmpty: { alignItems: 'center', justifyContent: 'center' },
   avatarLive: { borderWidth: 2, borderColor: COLORS.yellow },
-  initials: { ...TYPE.small, fontFamily: TYPE.cardTitle.fontFamily, color: COLORS.navy },
+  initials: { ...TYPE.small, fontFamily: TYPE.cardTitle.fontFamily, color: COLORS.strong },
 
   groupLink: {
     flexDirection: 'row',
@@ -1044,7 +1044,7 @@ const styles = StyleSheet.create({
   rankText: { flex: 1, minWidth: 0, gap: 5 },
   rankName: { ...TYPE.small, fontFamily: TYPE.cardTitle.fontFamily, color: COLORS.ink },
   bar: { height: 4, borderRadius: RADIUS.pill, backgroundColor: COLORS.paper2, overflow: 'hidden' },
-  barFill: { height: '100%', backgroundColor: COLORS.navy, borderRadius: RADIUS.pill },
+  barFill: { height: '100%', backgroundColor: COLORS.strong, borderRadius: RADIUS.pill },
   barFillMine: { backgroundColor: COLORS.yellowDeep },
   rankTime: {
     ...TYPE.small,
@@ -1079,7 +1079,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
-  weekFill: { backgroundColor: COLORS.navy, borderRadius: 5 },
+  weekFill: { backgroundColor: COLORS.strong, borderRadius: 5 },
   weekFillMet: { backgroundColor: COLORS.yellowDeep },
   weekLabel: { ...TYPE.small, fontSize: 10, color: COLORS.muted, textAlign: 'center' },
 });

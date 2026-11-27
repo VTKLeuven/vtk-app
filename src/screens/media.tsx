@@ -126,7 +126,7 @@ function Aftermovies({ movies }: { movies: AppAftermovie[] }) {
                 />
               ) : null}
               <View style={styles.play}>
-                <Play color={COLORS.ink} fill={COLORS.ink} size={22} style={styles.playIcon} />
+                <Play color={COLORS.onYellow} fill={COLORS.onYellow} size={22} style={styles.playIcon} />
               </View>
             </View>
             <Text style={styles.movieTitle} numberOfLines={2}>
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   strip: { gap: SPACING.md, paddingHorizontal: SPACING.lg },
 
   band: {
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.band,
     paddingVertical: SPACING.xl + 4,
     gap: SPACING.lg,
     overflow: 'hidden',

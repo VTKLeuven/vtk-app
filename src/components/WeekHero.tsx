@@ -9,6 +9,7 @@ import { formatDay, formatTime } from '../format';
 import { dayKeyOf } from '../monthGrid';
 import { eventDayKeys } from '../moments';
 import { addDays } from '../planning/grid';
+import { IS_DARK } from '../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING } from '../theme/tokens';
 import { CroppedPhoto } from './CroppedPhoto';
 import { useStatusBar } from './PageHead';
@@ -97,7 +98,7 @@ export function WeekHero({
             source={require('../../assets/vtk-logo.png')}
             style={styles.logo}
             contentFit="contain"
-            tintColor={COLORS.navy}
+            tintColor={COLORS.headTitle}
             accessibilityLabel="VTK"
           />
           <Text style={styles.greeting} numberOfLines={1}>
@@ -238,7 +239,7 @@ function EventCard({
         </View>
         {event.ticketSlug ? (
           <View style={styles.ticket}>
-            <Ticket color={COLORS.navy} size={20} />
+            <Ticket color={COLORS.onYellow} size={20} />
           </View>
         ) : null}
       </View>
@@ -273,15 +274,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: SIDE,
     paddingBottom: SIDE + 2,
     gap: SPACING.lg,
-    backgroundColor: COLORS.yellow,
+    backgroundColor: COLORS.head,
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
   },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm },
   brand: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   logo: { width: 52, height: 30 },
-  greeting: { flexShrink: 1, fontFamily: FONTS.bold, fontSize: 19, letterSpacing: -0.3, color: COLORS.navy },
-  title: { fontFamily: FONTS.bold, fontSize: 34, lineHeight: 38, letterSpacing: -1.3, color: COLORS.navy },
+  greeting: { flexShrink: 1, fontFamily: FONTS.bold, fontSize: 19, letterSpacing: -0.3, color: COLORS.strong },
+  title: { fontFamily: FONTS.bold, fontSize: 34, lineHeight: 38, letterSpacing: -1.3, color: COLORS.headTitle },
 
   strip: { flexDirection: 'row', gap: 6 },
   day: {
@@ -291,28 +292,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 1,
     borderRadius: 12,
+    // In het donker staat er geen geel vlak achter: een rand houdt de dagen vierkant.
+    borderWidth: IS_DARK ? 1 : 0,
+    borderColor: COLORS.line2,
   },
-  dayBusy: { backgroundColor: 'rgba(14, 26, 54, 0.08)' },
-  dayActive: { backgroundColor: COLORS.navy },
+  dayBusy: { backgroundColor: COLORS.wash },
+  dayActive: { backgroundColor: COLORS.selected, borderColor: COLORS.selected },
   pressed: { opacity: 0.7 },
-  dayName: { fontFamily: FONTS.bold, fontSize: 9, letterSpacing: 0.4, color: COLORS.navy },
-  dayNameActive: { color: COLORS.yellow },
+  dayName: { fontFamily: FONTS.bold, fontSize: 9, letterSpacing: 0.4, color: COLORS.strong },
+  dayNameActive: { color: COLORS.onSelectedAccent },
   dayNumber: {
     fontFamily: FONTS.bold,
     fontSize: 16,
     lineHeight: 19,
-    color: COLORS.navy,
+    color: COLORS.strong,
     fontVariant: ['tabular-nums'],
   },
-  dayNumberActive: { color: COLORS.onDark },
+  dayNumberActive: { color: COLORS.onSelected },
   dayQuiet: { opacity: 0.55 },
   dots: { flexDirection: 'row', gap: 2, height: 4 },
-  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.navy },
-  dotActive: { backgroundColor: COLORS.yellow },
+  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.strong },
+  dotActive: { backgroundColor: COLORS.onSelectedAccent },
 
   dayHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: -6 },
-  dayTitle: { fontFamily: FONTS.bold, fontSize: 15, color: COLORS.navy },
-  dayCount: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.navy },
+  dayTitle: { fontFamily: FONTS.bold, fontSize: 15, color: COLORS.strong },
+  dayCount: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.strong },
 
   empty: {
     paddingVertical: SPACING.xl,
@@ -320,10 +324,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: 'rgba(14, 26, 54, 0.3)',
+    borderColor: COLORS.line2,
     alignItems: 'center',
   },
-  emptyText: { fontFamily: FONTS.medium, fontSize: 14, color: COLORS.navy },
+  emptyText: { fontFamily: FONTS.medium, fontSize: 14, color: COLORS.strong },
 
   // Tot tegen de rand van het scherm, zodat de volgende kaart eronder uit piept.
   pager: { marginHorizontal: -SIDE },
@@ -339,7 +343,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
   },
   cardText: { flex: 1, gap: 2 },
-  cardWhen: { fontFamily: FONTS.bold, fontSize: 12, color: COLORS.navy, fontVariant: ['tabular-nums'] },
+  cardWhen: { fontFamily: FONTS.bold, fontSize: 12, color: COLORS.strong, fontVariant: ['tabular-nums'] },
   cardTitle: { fontFamily: FONTS.semibold, fontSize: 16, color: COLORS.ink },
   cardMeta: { fontFamily: FONTS.regular, fontSize: 13, color: COLORS.muted },
   ticket: {

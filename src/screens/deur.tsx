@@ -151,5 +151,5 @@ const styles = StyleSheet.create({
   kicker: { ...TYPE.kicker, color: COLORS.muted },
   title: { ...TYPE.cardTitle, color: COLORS.ink },
   detail: { ...TYPE.small, color: COLORS.muted },
-  pending: { ...TYPE.small, fontFamily: TYPE.cardTitle.fontFamily, color: COLORS.navy },
+  pending: { ...TYPE.small, fontFamily: TYPE.cardTitle.fontFamily, color: COLORS.strong },
 });

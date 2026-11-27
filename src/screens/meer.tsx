@@ -2,9 +2,9 @@ import { useScrollToTop } from 'expo-router';
 import { Image } from 'expo-image';
 
 import * as WebBrowser from 'expo-web-browser';
-import { ChevronDown, ChevronRight, ExternalLink, MessageSquare, Search } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, ExternalLink, MessageSquare, Moon, Search, Sun } from 'lucide-react-native';
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
 
 import { baseUrl, mediaUrl } from '../api/client';
 import { fetchMedia } from '../api/endpoints';
@@ -16,6 +16,7 @@ import { ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice, type 
 import { nativeRouteFor, pageSlugFor } from '../nativeRoute';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
+import { applyTheme, THEME, type ThemeMode } from '../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 
 /**
@@ -134,22 +135,27 @@ export default function MeerScreen() {
             <ChevronRight color={COLORS.muted} size={18} />
           </Pressable>
 
-          {/* Feedback op de app gaat naar Dopl, het formulier zonder zijn eigen kop,
-              in je taal en met je naam en e-mail al ingevuld als je ingelogd bent. */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Feedback over de app geven"
-            onPress={() =>
-              router.push({ pathname: '/web', params: { url: feedbackUrl(locale, viewer), title: 'Feedback App' } })
-            }
-            style={({ pressed }) => [styles.search, pressed && styles.pressedDark]}
-          >
-            <View style={styles.searchIcon}>
-              <MessageSquare color={COLORS.yellow} size={15} />
-            </View>
-            <Text style={[styles.feedbackText, styles.flex]}>Feedback App</Text>
-            <ChevronRight color={COLORS.muted} size={18} />
-          </Pressable>
+          {/* Twee kolommen: links feedback, rechts het thema. Feedback op de app gaat
+              naar Dopl, het formulier zonder zijn eigen kop, in je taal en met je naam
+              en e-mail al ingevuld als je ingelogd bent. */}
+          <View style={styles.pair}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Feedback over de app geven"
+              onPress={() =>
+                router.push({ pathname: '/web', params: { url: feedbackUrl(locale, viewer), title: 'Feedback App' } })
+              }
+              style={({ pressed }) => [styles.search, styles.flex, styles.pairItem, pressed && styles.pressedDark]}
+            >
+              <View style={styles.searchIcon}>
+                <MessageSquare color={COLORS.yellow} size={15} />
+              </View>
+              <Text style={[styles.feedbackText, styles.flex]} numberOfLines={1}>
+                Feedback App
+              </Text>
+            </Pressable>
+            <ThemePicker />
+          </View>
 
           <Pressable
             accessibilityRole="search"
@@ -291,11 +297,11 @@ function TabTile({
         {/* Een geel rondje met de pijl: het accent van de tegel. */}
         <View style={[styles.go, expanded && styles.goOpen]}>
           {external ? (
-            <ExternalLink color={COLORS.ink} size={15} />
+            <ExternalLink color={COLORS.onYellow} size={15} />
           ) : expandable ? (
-            <ChevronDown color={expanded ? COLORS.yellow : COLORS.ink} size={17} style={expanded ? styles.chevronOpen : undefined} />
+            <ChevronDown color={expanded ? COLORS.yellow : COLORS.onYellow} size={17} style={expanded ? styles.chevronOpen : undefined} />
           ) : (
-            <ChevronRight color={COLORS.ink} size={17} />
+            <ChevronRight color={COLORS.onYellow} size={17} />
           )}
         </View>
       </Pressable>
@@ -336,6 +342,49 @@ function TabTile({
   );
 }
 
+/**
+ * Licht of donker. Standaard licht, en bewust niet de instelling van het toestel:
+ * de app volgt de site. Wisselen herstart de app (zie `src/theme/mode.ts`), dus
+ * dat zeggen we eerst.
+ */
+function ThemePicker() {
+  const choose = (next: ThemeMode) => {
+    if (next === THEME) return;
+    Alert.alert(
+      next === 'dark' ? 'Donker thema' : 'Licht thema',
+      'De app herstart om de nieuwe kleuren toe te passen.',
+      [
+        { text: 'Annuleren', style: 'cancel' },
+        { text: 'Herstarten', onPress: () => void applyTheme(next) },
+      ],
+    );
+  };
+  const options: { value: ThemeMode; label: string; Icon: typeof Sun }[] = [
+    { value: 'light', label: 'Licht', Icon: Sun },
+    { value: 'dark', label: 'Donker', Icon: Moon },
+  ];
+  return (
+    <View style={[styles.search, styles.flex, styles.theme]} accessibilityRole="radiogroup" accessibilityLabel="Thema">
+      {options.map(({ value, label, Icon }) => {
+        const active = value === THEME;
+        return (
+          <Pressable
+            key={value}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={`${label} thema`}
+            onPress={() => choose(value)}
+            style={({ pressed }) => [styles.themeOption, active && styles.themeOptionActive, pressed && styles.pressed]}
+          >
+            <Icon color={active ? COLORS.onSelectedAccent : COLORS.muted} size={15} />
+            <Text style={[styles.themeLabel, active && styles.themeLabelActive]}>{label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 /** Het feedbackformulier van de app op Dopl (`?embed=1` laat zijn eigen kop weg). */
 const FEEDBACK_FORM = 'https://dopl.vtk.be/f/dopl-app-feedback';
 
@@ -365,7 +414,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1000,
-    backgroundColor: COLORS.yellow,
+    backgroundColor: COLORS.head,
   },
   content: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.xl, gap: SPACING.xl },
   flex: { flex: 1 },
@@ -384,7 +433,7 @@ const styles = StyleSheet.create({
   },
   avatar: { width: 44, height: 44, borderRadius: RADIUS.pill, backgroundColor: COLORS.yellow },
   // Navy en niet geel: een geel rondje verdwijnt tegen de gele kop.
-  avatarEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.navy },
+  avatarEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.band },
   initials: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.yellow },
   meName: { fontFamily: FONTS.bold, fontSize: 16, color: COLORS.ink },
   meHint: { ...TYPE.small, fontSize: 13, color: COLORS.muted },
@@ -400,13 +449,29 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   searchText: { ...TYPE.small, fontSize: 14, color: COLORS.muted },
+  pair: { flexDirection: 'row', gap: SPACING.sm, marginTop: -SPACING.xs },
+  // De kiezer: twee helften in dezelfde witte pil als de knop ernaast.
+  pairItem: { marginTop: 0 },
+  theme: { marginTop: 0, paddingHorizontal: 4, gap: 4 },
+  themeOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    height: 40,
+    borderRadius: RADIUS.pill,
+  },
+  themeOptionActive: { backgroundColor: COLORS.selected },
+  themeLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.muted },
+  themeLabelActive: { color: COLORS.onSelectedAccent },
   feedbackText: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink },
   searchIcon: {
     width: 30,
     height: 30,
     marginLeft: -SPACING.sm,
     borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.band,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -448,7 +513,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  goOpen: { backgroundColor: COLORS.ink },
+  goOpen: { backgroundColor: COLORS.band },
   children: { borderTopWidth: 1, borderTopColor: COLORS.line },
   child: {
     flexDirection: 'row',

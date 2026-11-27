@@ -16,6 +16,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppProvider, useApp } from '../src/state/app';
 import { trackEvent, UsageTracker } from '../src/usage';
+import { IS_DARK } from '../src/theme/mode';
 import { COLORS, SCANNER } from '../src/theme/tokens';
 
 void SplashScreen.preventAutoHideAsync();
@@ -77,8 +78,8 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <AppProvider>
           {/* De schermkop is licht, dus de statusbalk staat donker. Ook op het
-              gele vlak bovenaan Home (`WeekHero`). */}
-          <StatusBar style="dark" />
+              gele vlak bovenaan Home (`WeekHero`). In het donkere thema omgekeerd. */}
+          <StatusBar style={IS_DARK ? 'light' : 'dark'} />
           <Usage />
           <Stack
             screenOptions={{

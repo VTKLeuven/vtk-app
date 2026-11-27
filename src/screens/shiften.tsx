@@ -161,7 +161,7 @@ export default function ShiftenScreen() {
           jumping.current = false;
         }}
         refreshControl={
-          <RefreshControl refreshing={resource.refreshing} tintColor={COLORS.navy} onRefresh={() => void resource.refresh()} />
+          <RefreshControl refreshing={resource.refreshing} tintColor={COLORS.strong} onRefresh={() => void resource.refresh()} />
         }
       >
         {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
@@ -415,7 +415,7 @@ function ShiftRow({
         </View>
         {shift.registered ? (
           <View style={styles.mineTag}>
-            <Check size={14} color={COLORS.navy} strokeWidth={2.8} />
+            <Check size={14} color={COLORS.onYellow} strokeWidth={2.8} />
             <Text style={styles.mineTagText}>Jij</Text>
           </View>
         ) : (
@@ -430,7 +430,7 @@ function ShiftRow({
                 hitSlop={6}
                 style={({ pressed }) => [styles.go, (busy || pressed) && styles.pressed]}
               >
-                <Plus size={18} color={COLORS.yellow} strokeWidth={2.6} />
+                <Plus size={18} color={COLORS.onSelectedAccent} strokeWidth={2.6} />
               </Pressable>
             ) : (
               <Text style={styles.closed}>{full ? 'Volzet' : 'Gesloten'}</Text>
@@ -510,7 +510,7 @@ function ShiftRow({
                   shift.registered ? void toggleReplaceable(next) : setReplaceable(next)
                 }
                 trackColor={{ true: COLORS.yellow, false: COLORS.line2 }}
-                thumbColor={COLORS.surface}
+                thumbColor={COLORS.plate}
                 accessibilityLabel="Een student mag mijn plaats innemen"
               />
             </View>
@@ -581,28 +581,28 @@ const styles = StyleSheet.create({
     gap: 1,
     backgroundColor: COLORS.surface,
   },
-  squareOff: { backgroundColor: 'rgba(14, 26, 54, 0.08)' },
-  squareActive: { backgroundColor: COLORS.navy },
+  squareOff: { backgroundColor: COLORS.wash },
+  squareActive: { backgroundColor: COLORS.selected },
   squareWeekday: {
     fontFamily: FONTS.semibold,
     fontSize: 10,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    color: COLORS.navy,
+    color: COLORS.strong,
   },
-  squareDay: { fontFamily: FONTS.bold, fontSize: 18, color: COLORS.navy, fontVariant: ['tabular-nums'] },
-  squareTextActive: { color: COLORS.yellow },
+  squareDay: { fontFamily: FONTS.bold, fontSize: 18, color: COLORS.strong, fontVariant: ['tabular-nums'] },
+  squareTextActive: { color: COLORS.onSelectedAccent },
   // Een stip waar je zelf op een shift staat; anders blijft de plek leeg, zodat
   // alle vierkantjes even hoog zijn.
   squareDot: { position: 'absolute', bottom: 6, width: 6, height: 6, borderRadius: 3 },
-  squareDotMine: { backgroundColor: COLORS.navy },
-  squareDotActive: { backgroundColor: COLORS.yellow },
+  squareDotMine: { backgroundColor: COLORS.strong },
+  squareDotActive: { backgroundColor: COLORS.onSelectedAccent },
 
   // Een dag: de datum in de marge, de shiften achter de gele lijn.
   day: { flexDirection: 'row', gap: 14 },
   margin: { width: 46, paddingTop: 2 },
   marginWeekday: { fontFamily: FONTS.bold, fontSize: 11, letterSpacing: 1.2, color: COLORS.muted },
-  marginDay: { fontFamily: FONTS.bold, fontSize: 26, lineHeight: 30, color: COLORS.navy, fontVariant: ['tabular-nums'] },
+  marginDay: { fontFamily: FONTS.bold, fontSize: 26, lineHeight: 30, color: COLORS.strong, fontVariant: ['tabular-nums'] },
   marginMonth: { fontFamily: FONTS.semibold, fontSize: 11, color: COLORS.muted },
   dayRows: { flex: 1, borderLeftWidth: 3, borderLeftColor: COLORS.yellow, paddingLeft: 14 },
 
@@ -611,12 +611,12 @@ const styles = StyleSheet.create({
   shiftRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   time: { fontFamily: FONTS.semibold, fontSize: 12.5, color: COLORS.body, fontVariant: ['tabular-nums'] },
   shiftName: { fontFamily: FONTS.semibold, fontSize: 16, lineHeight: 21, color: COLORS.ink, marginTop: 1 },
-  shiftNameMine: { fontFamily: FONTS.bold, color: COLORS.navy },
+  shiftNameMine: { fontFamily: FONTS.bold, color: COLORS.strong },
   meta: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: 2 },
   metaText: { flexShrink: 1 },
   pips: { flexDirection: 'row', gap: 3 },
-  pip: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.5, borderColor: COLORS.navy },
-  pipTaken: { backgroundColor: COLORS.navy },
+  pip: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.5, borderColor: COLORS.strong },
+  pipTaken: { backgroundColor: COLORS.strong },
   spotsText: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.body, fontVariant: ['tabular-nums'] },
   go: {
     width: 36,
@@ -624,7 +624,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.selected,
   },
   closed: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.muted },
   mineTag: {
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.pill,
     backgroundColor: COLORS.yellow,
   },
-  mineTagText: { fontFamily: FONTS.bold, fontSize: 12.5, color: COLORS.navy },
+  mineTagText: { fontFamily: FONTS.bold, fontSize: 12.5, color: COLORS.onYellow },
   details: { paddingBottom: SPACING.md, gap: SPACING.sm },
   factRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   factLabel: { ...TYPE.kicker, color: COLORS.muted, textTransform: 'uppercase' },

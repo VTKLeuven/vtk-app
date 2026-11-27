@@ -75,7 +75,7 @@ export function TaskCard({ task }: { task: AppTodayTask }) {
         <Image cachePolicy="memory-disk" source={THEOKOT_PHOTO} style={styles.photo} contentFit="cover" contentPosition={{ top: '60%', left: '50%' }} />
       ) : (
         <View style={[styles.icon, task.highlight && styles.iconHighlight]}>
-          <Icon color={COLORS.ink} size={20} />
+          <Icon color={task.highlight ? COLORS.onYellow : COLORS.ink} size={20} />
         </View>
       )}
       <View style={[styles.text, photo && styles.textPhoto]}>
@@ -199,5 +199,5 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.yellow,
   },
   actionSide: { alignSelf: 'center', marginTop: 0 },
-  actionText: { fontFamily: FONTS.bold, fontSize: 13, color: COLORS.ink },
+  actionText: { fontFamily: FONTS.bold, fontSize: 13, color: COLORS.onYellow },
 });

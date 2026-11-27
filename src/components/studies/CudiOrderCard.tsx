@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import type { AppCudiOrder, AppCudiOrdering, AppLocale } from '../../api/contract';
 import { formatDayShort, formatEuro, formatShortDate, formatTime } from '../../format';
+import { IS_DARK } from '../../theme/mode';
 import { COLORS, CUDI_STATUS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW } from '../HomeSection';
 import { Button } from '../ui';
@@ -48,7 +49,7 @@ export function CudiOrderCard({
     <View style={[styles.card, !order.open && styles.cardDone]}>
       <View style={[styles.band, { backgroundColor: look.tone.bg }]}>
         <View style={[styles.badge, { backgroundColor: look.tone.ink }]}>
-          <Icon size={17} color={COLORS.surface} />
+          <Icon size={17} color={IS_DARK ? COLORS.paper : COLORS.surface} />
         </View>
         <View style={styles.flex}>
           <Text style={[styles.title, { color: look.tone.ink }]}>{ORDER_STATUS[order.status]}</Text>
@@ -88,7 +89,7 @@ export function CudiOrderCard({
                   style={({ pressed }) => [styles.cancel, pressed && styles.pressed]}
                 >
                   {busy === line.id ? (
-                    <ActivityIndicator size="small" color={COLORS.navy} style={styles.cancelBusy} />
+                    <ActivityIndicator size="small" color={COLORS.strong} style={styles.cancelBusy} />
                   ) : (
                     <Text style={styles.cancelLabel}>Annuleren</Text>
                   )}
@@ -130,7 +131,7 @@ type Tone = { bg: string; ink: string };
 export const TONES = {
   ok: { bg: COLORS.okBg, ink: COLORS.okInk },
   waiting: { bg: COLORS.lowBg, ink: COLORS.lowInk },
-  info: { bg: COLORS.paper2, ink: COLORS.navy },
+  info: { bg: COLORS.paper2, ink: COLORS.strong },
   danger: { bg: COLORS.dangerBg, ink: COLORS.dangerInk },
   quiet: { bg: COLORS.paper2, ink: COLORS.muted },
 } as const satisfies Record<string, Tone>;

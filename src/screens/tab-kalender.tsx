@@ -242,13 +242,13 @@ export default function KalenderScreen() {
       <View style={styles.headRow}>
         <View style={styles.headNav}>
           <YellowRoundButton label="Vorige weken" onPress={() => setPage(page - 1)}>
-            <ChevronLeft size={17} color={COLORS.navy} strokeWidth={2.4} />
+            <ChevronLeft size={17} color={COLORS.strong} strokeWidth={2.4} />
           </YellowRoundButton>
           <Text style={styles.headLabel} numberOfLines={1}>
             {shortRange(agendaStart, agendaEnd, locale)}
           </Text>
           <YellowRoundButton label="Volgende weken" onPress={() => setPage(page + 1)}>
-            <ChevronRight size={17} color={COLORS.navy} strokeWidth={2.4} />
+            <ChevronRight size={17} color={COLORS.strong} strokeWidth={2.4} />
           </YellowRoundButton>
         </View>
         {switcher}
@@ -353,7 +353,7 @@ export default function KalenderScreen() {
         refreshControl={
           <RefreshControl
             refreshing={resource.refreshing}
-            tintColor={COLORS.navy}
+            tintColor={COLORS.strong}
             onRefresh={() => void resource.refresh()}
           />
         }
@@ -424,17 +424,17 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1000,
-    backgroundColor: COLORS.yellow,
+    backgroundColor: COLORS.head,
   },
   content: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.xl - 2, gap: SPACING.md },
   group: { gap: 10, marginBottom: SPACING.md },
 
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm },
   headNav: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
-  headLabel: { flexShrink: 1, fontFamily: FONTS.bold, fontSize: 15, color: COLORS.navy },
+  headLabel: { flexShrink: 1, fontFamily: FONTS.bold, fontSize: 15, color: COLORS.strong },
 
   dayTitle: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACING.sm },
-  dayTitleText: { fontFamily: FONTS.bold, fontSize: 22, letterSpacing: -0.5, color: COLORS.navy },
+  dayTitleText: { fontFamily: FONTS.bold, fontSize: 22, letterSpacing: -0.5, color: COLORS.strong },
   dayTitleDetail: { flexShrink: 1, fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.muted, textAlign: 'right' },
   hint: { ...TYPE.small, color: COLORS.muted },
   loginTitle: { ...TYPE.cardTitle, color: COLORS.ink },

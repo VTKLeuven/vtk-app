@@ -53,7 +53,7 @@ export default function TabsLayout() {
       backBehavior="history"
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: COLORS.navy,
+        tabBarActiveTintColor: COLORS.strong,
         tabBarInactiveTintColor: COLORS.muted,
         tabBarStyle: {
           backgroundColor: COLORS.paper,
@@ -117,7 +117,7 @@ function tabIcon(Icon: LucideIcon) {
   return function TabIcon({ focused, color, size }: { focused: boolean; color: ColorValue; size: number }) {
     return (
       <View style={[styles.pill, focused && styles.pillActive]}>
-        <Icon color={focused ? COLORS.navy : typeof color === 'string' ? color : COLORS.muted} size={size} strokeWidth={focused ? 2.2 : 2} />
+        <Icon color={focused ? COLORS.onYellow : typeof color === 'string' ? color : COLORS.muted} size={size} strokeWidth={focused ? 2.2 : 2} />
       </View>
     );
   };

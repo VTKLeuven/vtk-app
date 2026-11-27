@@ -114,7 +114,7 @@ function Toggle({
       style={({ pressed }) => [styles.toggle, pressed && styles.togglePressed]}
     >
       <View style={[styles.box, checked && styles.boxChecked]}>
-        {checked ? <Check color={COLORS.ink} size={14} /> : null}
+        {checked ? <Check color={COLORS.onYellow} size={14} /> : null}
       </View>
       <Text style={styles.toggleLabel}>{label}</Text>
     </Pressable>

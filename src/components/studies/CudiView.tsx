@@ -37,6 +37,7 @@ import { messageFor, useResource } from '../../api/useResource';
 import { formatDayShort, formatTime } from '../../format';
 import { useTabRouter } from '../../navigation';
 import { useApp } from '../../state/app';
+import { IS_DARK } from '../../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { SearchField } from '../SearchField';
 import { Stepper } from '../Stepper';
@@ -157,6 +158,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
         <Image
           source={require('../../../assets/openingsuren/cursusdienst.png')}
           style={styles.headLogo}
+          tintColor={IS_DARK ? COLORS.ink : undefined}
           contentFit="contain"
           accessibilityLabel="Cursusdienst"
         />
@@ -383,7 +385,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
             />
             {searching ? (
               search.loading && !search.catalog ? (
-                <ActivityIndicator color={COLORS.navy} style={styles.spinner} />
+                <ActivityIndicator color={COLORS.strong} style={styles.spinner} />
               ) : search.error ? (
                 <Text style={styles.hint}>{search.error}</Text>
               ) : search.catalog ? (
@@ -585,7 +587,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
                         style={[styles.choice, active && styles.choiceActive]}
                       >
                         <View style={[styles.radio, active && styles.radioActive]}>
-                          {active ? <Check size={12} color={COLORS.paper} /> : null}
+                          {active ? <Check size={12} color={COLORS.onSelected} /> : null}
                         </View>
                         <View style={styles.flex}>
                           <Text style={styles.name}>{choice.label}</Text>
@@ -739,7 +741,7 @@ function TimeslotCard({
       style={({ pressed }) => [styles.slotCard, pressed && styles.pressed]}
     >
       <View style={styles.slotIcon}>
-        <CalendarClock size={20} color={COLORS.ink} />
+        <CalendarClock size={20} color={COLORS.onYellow} />
       </View>
       <View style={styles.flex}>
         <Text style={styles.title}>{next ? 'Je tijdslot' : 'Tijdslot reserveren'}</Text>
@@ -968,12 +970,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1000,
-    backgroundColor: COLORS.yellow,
+    backgroundColor: COLORS.head,
   },
-  heading: { fontFamily: FONTS.bold, fontSize: 22, letterSpacing: -0.5, color: COLORS.navy },
+  heading: { fontFamily: FONTS.bold, fontSize: 22, letterSpacing: -0.5, color: COLORS.strong },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   headLogo: { width: 53, height: 38 },
-  headStatus: { flex: 1, fontFamily: FONTS.bold, fontSize: 15, color: COLORS.navy },
+  headStatus: { flex: 1, fontFamily: FONTS.bold, fontSize: 15, color: COLORS.strong },
   flex: { flex: 1 },
   block: { gap: SPACING.md },
   pressed: { opacity: 0.6 },
@@ -1042,7 +1044,7 @@ const styles = StyleSheet.create({
   pillOk: { backgroundColor: COLORS.okBg, color: COLORS.okInk },
   pillLow: { backgroundColor: COLORS.lowBg, color: COLORS.lowInk },
   pillDanger: { backgroundColor: COLORS.dangerBg, color: COLORS.dangerInk },
-  pillMine: { backgroundColor: COLORS.yellow, color: COLORS.ink },
+  pillMine: { backgroundColor: COLORS.yellow, color: COLORS.onYellow },
   pillFull: { backgroundColor: COLORS.paper2, color: COLORS.muted },
 
   hoursCard: { backgroundColor: COLORS.surface, borderRadius: 20, ...CARD_SHADOW },
@@ -1075,7 +1077,7 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.line2,
   },
   barTotal: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink, fontVariant: ['tabular-nums'] },
-  barLink: { ...TYPE.small, color: COLORS.navy, textDecorationLine: 'underline' },
+  barLink: { ...TYPE.small, color: COLORS.strong, textDecorationLine: 'underline' },
   barButton: { minWidth: 132 },
 
   sheetRoot: { flex: 1, justifyContent: 'flex-end' },
@@ -1114,7 +1116,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     ...CARD_SHADOW,
   },
-  choiceActive: { borderColor: COLORS.navy },
+  choiceActive: { borderColor: COLORS.strong },
   radio: {
     width: 20,
     height: 20,
@@ -1124,7 +1126,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radioActive: { backgroundColor: COLORS.navy, borderColor: COLORS.navy },
+  radioActive: { backgroundColor: COLORS.selected, borderColor: COLORS.selected },
   sheetButtons: { paddingHorizontal: SPACING.xl - 4, paddingTop: SPACING.sm },
 });
 
@@ -1156,7 +1158,7 @@ function HoursCard({
         onPress={onToggle}
         style={({ pressed }) => [styles.hoursHead, pressed && styles.pressed]}
       >
-        <Clock color={COLORS.navy} size={18} />
+        <Clock color={COLORS.strong} size={18} />
         <View style={styles.flex}>
           <Text style={styles.hoursTitle}>Openingsuren</Text>
           {!open ? (
@@ -1165,7 +1167,7 @@ function HoursCard({
             </Text>
           ) : null}
         </View>
-        <ChevronDown color={COLORS.navy} size={20} style={open ? styles.chevronOpen : undefined} />
+        <ChevronDown color={COLORS.strong} size={20} style={open ? styles.chevronOpen : undefined} />
       </Pressable>
       {open ? (
         <View style={styles.hoursBody}>

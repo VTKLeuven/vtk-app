@@ -181,7 +181,7 @@ export default function AlbumScreen() {
                 ) : justSaved ? (
                   // Het vinkje zit in de knop zelf en niet enkel in een melding:
                   // zo zie je aan de knop dat deze foto binnen is.
-                  <Check color={COLORS.ink} size={22} />
+                  <Check color={COLORS.onYellow} size={22} />
                 ) : (
                   <Download color={COLORS.onDark} size={22} />
                 )}
@@ -195,7 +195,7 @@ export default function AlbumScreen() {
 }
 
 const styles = StyleSheet.create({
-  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
+  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.head },
 
   actions: { flexDirection: 'row', gap: SPACING.sm },
   button: {

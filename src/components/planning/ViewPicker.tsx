@@ -104,9 +104,9 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   tab: { flex: 1, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: RADIUS.pill },
-  tabActive: { backgroundColor: COLORS.navy },
+  tabActive: { backgroundColor: COLORS.selected },
   tabLabel: { fontFamily: FONTS.semibold, fontSize: 12.5, color: COLORS.body },
-  tabLabelActive: { fontFamily: FONTS.bold, color: COLORS.onDark },
+  tabLabelActive: { fontFamily: FONTS.bold, color: COLORS.onSelected },
   button: {
     width: 44,
     height: 44,

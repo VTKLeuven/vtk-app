@@ -451,11 +451,11 @@ function Toggle({
         (pressed || disabled) && styles.pressed,
       ]}
     >
-      <Icon size={18} color={COLORS.ink} />
-      <Text style={styles.toggleLabel} numberOfLines={1}>
+      <Icon size={18} color={active ? COLORS.onYellow : COLORS.ink} />
+      <Text style={[styles.toggleLabel, active && styles.toggleTextActive]} numberOfLines={1}>
         {label}
       </Text>
-      {note ? <Text style={styles.toggleNote}>{note}</Text> : null}
+      {note ? <Text style={[styles.toggleNote, active && styles.toggleTextActive]}>{note}</Text> : null}
     </Pressable>
   );
 }
@@ -696,6 +696,7 @@ const styles = StyleSheet.create({
   toggleActive: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
   toggleLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.ink },
   toggleNote: { fontFamily: FONTS.medium, fontSize: 11, color: COLORS.ink, opacity: 0.7 },
+  toggleTextActive: { color: COLORS.onYellow },
   disclosure: { alignItems: 'center' },
   nested: { paddingLeft: SPACING.xl, paddingTop: SPACING.sm },
   row: {

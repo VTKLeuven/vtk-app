@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   },
   list: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xxl },
   headWrap: { marginHorizontal: -SPACING.lg },
-  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
+  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.head },
   count: { ...TYPE.small, color: COLORS.muted, marginTop: SPACING.md },
   sectionHeader: {
     backgroundColor: COLORS.paper,

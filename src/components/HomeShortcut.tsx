@@ -112,10 +112,10 @@ export function HomeShortcut() {
                 style={({ pressed }) => [styles.row, index > 0 && styles.divider, pressed && styles.rowPressed]}
               >
                 <View style={[styles.icon, active && styles.iconActive]}>
-                  <ChoiceIcon color={active ? COLORS.yellow : COLORS.navy} size={18} />
+                  <ChoiceIcon color={active ? COLORS.yellow : COLORS.strong} size={18} />
                 </View>
                 <Text style={[styles.label, active && styles.labelActive]}>{choice.label}</Text>
-                {active ? <Check color={COLORS.navy} size={18} strokeWidth={2.6} /> : null}
+                {active ? <Check color={COLORS.strong} size={18} strokeWidth={2.6} /> : null}
               </Pressable>
             );
           })}
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.band,
   },
   pressed: { opacity: 0.7 },
   hint: { ...TYPE.small, color: COLORS.muted },
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: COLORS.paper2,
   },
-  iconActive: { backgroundColor: COLORS.navy },
+  iconActive: { backgroundColor: COLORS.band },
   label: { flex: 1, fontFamily: FONTS.medium, fontSize: 15, color: COLORS.ink },
   labelActive: { fontFamily: FONTS.bold },
 });

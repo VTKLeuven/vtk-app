@@ -25,6 +25,7 @@ import { ErrorState, Loading, StaleNotice } from '../components/ui';
 import { formatTime } from '../format';
 import { dayKeyOf, todayKey } from '../monthGrid';
 import { useApp } from '../state/app';
+import { IS_DARK } from '../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING, TRANSPORT, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
 
@@ -468,6 +469,8 @@ function TripBlock({
 }) {
   const { trip } = block;
   const awaitsDriver = !trip.driver && (vehicle?.needsDriver ?? true);
+  // De vulkleur komt van logistiek en is licht; in het donkere thema blijft de tekst erop navy.
+  const onFill = IS_DARK && trip.fill ? styles.onFill : null;
   const continuesBefore = dayKeyOf(trip.start) !== dayKey;
   const continuesAfter = endKey(trip) !== dayKey;
   // Een smalle kolom gedeeld door twee of meer: enkel het beginuur, zoals daar.
@@ -516,7 +519,7 @@ function TripBlock({
       >
         {vehicle?.pattern ? <Hatch pattern={vehicle.pattern} id={`trip-${trip.id}-${dayKey}`} /> : null}
         <View style={styles.blockTime}>
-          <Text style={styles.blockTimeText} numberOfLines={1}>
+          <Text style={[styles.blockTimeText, onFill]} numberOfLines={1}>
             {time}
           </Text>
           {trip.driver && trip.driverInitials ? (
@@ -529,19 +532,19 @@ function TripBlock({
             </View>
           ) : null}
         </View>
-        <Text style={styles.blockLine} numberOfLines={1}>
+        <Text style={[styles.blockLine, onFill]} numberOfLines={1}>
           {trip.title}
         </Text>
         {vehicle ? (
           <View style={styles.blockVehicle}>
             <VehicleIcon vehicle={vehicle} size={12} />
-            <Text style={styles.blockLine} numberOfLines={1}>
+            <Text style={[styles.blockLine, onFill]} numberOfLines={1}>
               {vehicle.name}
             </Text>
           </View>
         ) : null}
         {trip.driver ? (
-          <Text style={[styles.blockLine, styles.blockDriver]} numberOfLines={1}>
+          <Text style={[styles.blockLine, styles.blockDriver, onFill]} numberOfLines={1}>
             {trip.driver}
           </Text>
         ) : awaitsDriver ? (
@@ -549,12 +552,12 @@ function TripBlock({
             Nog geen chauffeur
           </Text>
         ) : (
-          <Text style={[styles.blockLine, styles.blockMuted]} numberOfLines={1}>
+          <Text style={[styles.blockLine, styles.blockMuted, onFill]} numberOfLines={1}>
             Rijdt zelf
           </Text>
         )}
         {trip.destination ? (
-          <Text style={[styles.blockLine, styles.blockMuted]} numberOfLines={1}>
+          <Text style={[styles.blockLine, styles.blockMuted, onFill]} numberOfLines={1}>
             → {trip.destination}
           </Text>
         ) : null}
@@ -831,7 +834,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.line2,
     ...CARD_SHADOW,
   },
-  link: { color: COLORS.navy, textDecorationLine: 'underline' },
+  link: { color: COLORS.strong, textDecorationLine: 'underline' },
 
   // Het raster als witte kaart; onderaan loopt hij tot tegen de legende.
   pane: {
@@ -862,7 +865,7 @@ const styles = StyleSheet.create({
     backgroundColor: TRANSPORT.now,
     zIndex: 3,
   },
-  nowPillText: { fontSize: 10, lineHeight: 16, fontFamily: FONTS.bold, color: COLORS.surface, fontVariant: ['tabular-nums'] },
+  nowPillText: { fontSize: 10, lineHeight: 16, fontFamily: FONTS.bold, color: COLORS.plate, fontVariant: ['tabular-nums'] },
   // `.tg-dayhead`
   dayHead: {
     justifyContent: 'center',
@@ -878,12 +881,12 @@ const styles = StyleSheet.create({
   dayHeadNum: { minWidth: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   dayHeadNumToday: { borderRadius: RADIUS.pill, backgroundColor: COLORS.yellow, paddingHorizontal: 4 },
   dayHeadNumText: { fontSize: 18, fontFamily: FONTS.bold, letterSpacing: -0.3, color: COLORS.ink, fontVariant: ['tabular-nums'] },
-  dayHeadNumTextToday: { fontSize: 15 },
+  dayHeadNumTextToday: { fontSize: 15, color: COLORS.onYellow },
   dayHeadMuted: { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.muted },
   dayBody: { borderLeftWidth: 1, borderLeftColor: COLORS.line },
   // Vandaag warm getint, het weekend licht, zoals daar.
   dayToday: { backgroundColor: TRANSPORT.today },
-  dayWeekend: { backgroundColor: 'rgba(239, 242, 248, 0.45)' },
+  dayWeekend: { backgroundColor: IS_DARK ? 'rgba(255, 255, 255, 0.03)' : 'rgba(239, 242, 248, 0.45)' },
   line: { position: 'absolute', left: 0, right: 0, height: 1, backgroundColor: COLORS.line },
   now: { position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: TRANSPORT.now, zIndex: 2 },
 
@@ -916,7 +919,8 @@ const styles = StyleSheet.create({
   blockNoDriverText: { fontFamily: FONTS.semibold, color: COLORS.dangerInk },
   blockMuted: { color: COLORS.muted },
   chip: { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  chipText: { fontSize: 8, fontFamily: FONTS.bold, color: COLORS.ink },
+  chipText: { fontSize: 8, fontFamily: FONTS.bold, color: COLORS.onYellow },
+  onFill: { color: COLORS.onYellow },
   chipOpen: { backgroundColor: 'transparent', borderWidth: 1.25, borderColor: TRANSPORT.edge },
   chipOpenText: { fontSize: 11, lineHeight: 13, fontFamily: FONTS.semibold, color: COLORS.muted },
 
@@ -939,7 +943,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(14, 26, 54, 0.2)',
+    borderColor: IS_DARK ? TRANSPORT.border : 'rgba(14, 26, 54, 0.2)',
     backgroundColor: COLORS.paper,
   },
 

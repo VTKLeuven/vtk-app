@@ -49,7 +49,7 @@ export default function PocsScreen() {
                 onPress={() => void Linking.openURL(`mailto:${poc.email}`)}
                 style={styles.mail}
               >
-                <Mail color={COLORS.navy} size={15} />
+                <Mail color={COLORS.strong} size={15} />
                 <Text style={styles.mailText}>{poc.email}</Text>
               </Pressable>
             ) : null}
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   content: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxl },
   name: { ...TYPE.sectionTitle, color: COLORS.ink },
   mail: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  mailText: { ...TYPE.small, color: COLORS.navy, textDecorationLine: 'underline' },
+  mailText: { ...TYPE.small, color: COLORS.strong, textDecorationLine: 'underline' },
   people: { gap: SPACING.md, marginTop: SPACING.sm },
   person: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   personText: { flex: 1 },

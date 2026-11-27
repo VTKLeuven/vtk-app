@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bold,
     fontSize: 22,
     letterSpacing: -0.5,
-    color: COLORS.navy,
+    color: COLORS.strong,
     marginTop: SPACING.sm,
     paddingHorizontal: SPACING.xs,
   },

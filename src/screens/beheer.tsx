@@ -633,9 +633,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...CARD_SHADOW,
   },
-  pillPrimary: { backgroundColor: COLORS.navy, borderColor: COLORS.navy },
+  pillPrimary: { backgroundColor: COLORS.selected, borderColor: COLORS.selected },
   pillLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.ink },
-  pillLabelPrimary: { color: COLORS.paper },
+  pillLabelPrimary: { color: COLORS.onSelected },
 
   bo: {
     gap: 10,
@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.line,
   },
   laneDot: { width: 7, height: 7, borderRadius: 2, backgroundColor: COLORS.muted },
-  laneDotGlobal: { backgroundColor: COLORS.navy },
+  laneDotGlobal: { backgroundColor: COLORS.strong },
   laneDotGroup: { backgroundColor: COLORS.yellow },
   laneTitle: {
     flexShrink: 1,
@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 12 },
     elevation: 1,
   },
-  tilePressed: { borderColor: 'rgba(14, 26, 54, 0.28)' },
+  tilePressed: { borderColor: COLORS.line2 },
   chip: {
     width: 40,
     height: 40,

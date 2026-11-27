@@ -22,7 +22,7 @@ import {
   removeEventScanner,
   searchScannerCandidates,
 } from '../../api/scanner';
-import { COLORS, FONTS, HIT_TARGET, RADIUS, SCANNER, SPACING, TICKET_COLORS } from '../../theme/tokens';
+import { FONTS, HIT_TARGET, QR, RADIUS, SCANNER, SPACING, TICKET_COLORS } from '../../theme/tokens';
 import type {
   EventScanner,
   ScanHistoryItem,
@@ -508,7 +508,7 @@ export function ScannersSheet({
         <View style={styles.qrBox}>
           {inviteUrl ? (
             <View style={styles.qrCode}>
-              <QRCodeView value={inviteUrl} size={200} backgroundColor={COLORS.surface} color={COLORS.ink} />
+              <QRCodeView value={inviteUrl} size={200} backgroundColor={QR.background} color={QR.modules} />
             </View>
           ) : (
             <ActivityIndicator color={SCANNER.accent} />
@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
   qrToggleText: { fontFamily: FONTS.semibold, fontSize: 14, color: SCANNER.text },
   qrToggleTextOn: { color: SCANNER.accentInk },
   qrBox: { alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.lg },
-  qrCode: { padding: SPACING.sm, borderRadius: RADIUS.sm, backgroundColor: COLORS.surface },
+  qrCode: { padding: SPACING.sm, borderRadius: RADIUS.sm, backgroundColor: QR.background },
   checkInButton: {
     flexDirection: 'row',
     alignItems: 'center',

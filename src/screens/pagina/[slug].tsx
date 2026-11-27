@@ -71,7 +71,7 @@ export default function PaginaScreen() {
                 onPress={() => void WebBrowser.openBrowserAsync(download.url)}
                 style={({ pressed }) => [styles.download, pressed && styles.downloadPressed]}
               >
-                <Download color={COLORS.navy} size={18} />
+                <Download color={COLORS.strong} size={18} />
                 <View style={styles.downloadText}>
                   <Text style={styles.downloadLabel}>{download.label}</Text>
                   {download.sizeBytes ? (
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
   content: { paddingBottom: SPACING.xxl },
   // Wat boven de kop verschijnt als je op iOS omlaag trekt: geel, zoals de kop.
-  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
+  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.head },
   photo: {
     height: 190,
     marginHorizontal: SPACING.lg,

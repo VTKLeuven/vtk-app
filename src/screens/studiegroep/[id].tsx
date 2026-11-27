@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   },
   goalOn: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
   goalText: { ...TYPE.small, color: COLORS.body },
-  goalTextOn: { color: COLORS.ink, fontFamily: TYPE.cardTitle.fontFamily },
+  goalTextOn: { color: COLORS.onYellow, fontFamily: TYPE.cardTitle.fontFamily },
 
   member: {
     flexDirection: 'row',

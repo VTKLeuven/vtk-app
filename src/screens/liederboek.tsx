@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
   list: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xxl * 2 },
   headWrap: { marginHorizontal: -SPACING.lg, marginBottom: SPACING.lg },
-  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
+  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.head },
   search: {},
   searchField: { margin: 0 },
 
@@ -181,5 +181,5 @@ const styles = StyleSheet.create({
   },
   pageLeuven: { backgroundColor: COLORS.lowBg },
   pageBook: { ...TYPE.small, fontSize: 10, fontFamily: FONTS.bold, letterSpacing: 0.5, color: COLORS.muted },
-  pageNumber: { fontFamily: FONTS.bold, fontSize: 13, color: COLORS.navy, fontVariant: ['tabular-nums'] },
+  pageNumber: { fontFamily: FONTS.bold, fontSize: 13, color: COLORS.strong, fontVariant: ['tabular-nums'] },
 });

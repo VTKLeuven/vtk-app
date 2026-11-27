@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 1,
     borderRadius: RADIUS.md,
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.band,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',

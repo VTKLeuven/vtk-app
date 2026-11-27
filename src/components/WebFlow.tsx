@@ -191,7 +191,7 @@ export function WebFlow({
 
       {loading ? (
         <View style={styles.loading} pointerEvents="none">
-          <ActivityIndicator color={COLORS.navy} />
+          <ActivityIndicator color={COLORS.strong} />
         </View>
       ) : null}
     </View>

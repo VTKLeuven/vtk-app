@@ -11,6 +11,7 @@ import { dayKeyOf, todayKey } from '../monthGrid';
 import { useTabRouter } from '../navigation';
 import { addDays } from '../planning/grid';
 import { useApp } from '../state/app';
+import { IS_DARK } from '../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from './HomeSection';
 
@@ -74,6 +75,8 @@ export function ServiceList({ services, locale }: { services: AppServiceStatus[]
                 <Image
                   source={logo.source}
                   style={{ height: LOGO_HEIGHT, width: LOGO_HEIGHT * logo.ratio }}
+                  // In het donker eentonig: het navy van de logo's verdwijnt op zwart.
+                  tintColor={IS_DARK ? COLORS.ink : undefined}
                   contentFit="contain"
                   accessible={false}
                 />
@@ -148,7 +151,7 @@ function TheokotNext({ locale }: { locale: AppLocale }) {
     const what = count === 1 ? 'Je broodje' : `Je ${count} broodjes`;
     return (
       <ExtraLink
-        icon={<Sandwich size={18} color={COLORS.navy} />}
+        icon={<Sandwich size={18} color={COLORS.onYellow} />}
         title={`${what}: ${dayWord(next.pickupStart, locale)} van ${formatTime(next.pickupStart, locale)} tot ${formatTime(next.pickupEnd, locale)}`}
         detail="Af te halen aan het Theokot met je studentenkaart"
         onPress={() => router.push('/broodjes')}
@@ -157,7 +160,7 @@ function TheokotNext({ locale }: { locale: AppLocale }) {
   }
   return (
     <ExtraLink
-      icon={<Sandwich size={18} color={COLORS.navy} />}
+      icon={<Sandwich size={18} color={COLORS.onYellow} />}
       title="Broodjes bestellen"
       detail={viewer ? 'Bestel en haal af met je studentenkaart' : 'Log in om te bestellen'}
       onPress={() => router.push('/broodjes')}
@@ -184,7 +187,7 @@ function CudiSlot({ locale }: { locale: AppLocale }) {
   const mine = data?.mine.find((slot) => new Date(slot.end).getTime() > Date.now()) ?? null;
   return (
     <ExtraLink
-      icon={<CalendarClock size={18} color={COLORS.navy} />}
+      icon={<CalendarClock size={18} color={COLORS.onYellow} />}
       title={
         mine
           ? `Je tijdslot: ${dayWord(mine.start, locale)} van ${formatTime(mine.start, locale)} tot ${formatTime(mine.end, locale)}`
@@ -273,7 +276,7 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   // De tegel waarvan de week openstaat, krijgt een navy rand.
-  tileOpen: { borderColor: COLORS.navy },
+  tileOpen: { borderColor: COLORS.strong },
   pressed: { opacity: 0.7 },
   name: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.ink, textAlign: 'center', marginBottom: -4 },
   status: { fontFamily: FONTS.medium, fontSize: 12, color: COLORS.muted, textAlign: 'center' },
@@ -317,7 +320,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.band,
   },
   extraButtonLabel: { fontFamily: FONTS.bold, fontSize: 13, color: COLORS.yellow },
 });

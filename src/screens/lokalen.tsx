@@ -245,21 +245,21 @@ export default function LokalenScreen() {
                 <View style={styles.actions}>
                   {position.state.kind !== 'ok' ? (
                     <SmallButton
-                      icon={<Crosshair color={COLORS.navy} size={14} />}
+                      icon={<Crosshair color={COLORS.strong} size={14} />}
                       label={position.state.kind === 'busy' ? 'Zoeken' : 'Vanaf hier'}
                       disabled={position.state.kind === 'busy'}
                       onPress={() => void position.locate()}
                     />
                   ) : (
                     <SmallButton
-                      icon={<Crosshair color={COLORS.navy} size={14} />}
+                      icon={<Crosshair color={COLORS.strong} size={14} />}
                       label="Vanaf de halte"
                       onPress={position.forget}
                     />
                   )}
                   {route ? (
                     <SmallButton
-                      icon={<Navigation color={COLORS.navy} size={14} />}
+                      icon={<Navigation color={COLORS.strong} size={14} />}
                       label="In kaart-app"
                       onPress={() => openInMaps(route.building)}
                     />
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   dim: { opacity: 0.5 },
   list: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xxl, gap: SPACING.sm },
   headWrap: { marginHorizontal: -SPACING.lg },
-  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
+  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.head },
 
 
   row: {
