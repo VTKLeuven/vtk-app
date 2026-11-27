@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { ExternalLink, QrCode, Sandwich } from 'lucide-react-native';
+import { ExternalLink, Sandwich } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -10,6 +10,7 @@ import { fetchCalendar, fetchMedia, fetchToday } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { AlmaToday } from '../components/AlmaToday';
 import { CroppedPhoto } from '../components/CroppedPhoto';
+import { HomeShortcut } from '../components/HomeShortcut';
 import { CARD_SHADOW, HomeSection } from '../components/HomeSection';
 import { UpcomingLessonsList, useUpcomingLessons } from '../components/planning/UpcomingLessons';
 import { Prose } from '../components/Prose';
@@ -114,20 +115,12 @@ export default function HomeScreen() {
   // Tot de week binnen is, de eerstvolgende evenementen van `/vandaag`.
   const weekEvents = week.data?.events ?? today.upcomingEvents;
 
-  /** Rechtsboven op het geel: scannen voor wie dat mag, en je bonnetjes. */
+  /** Rechtsboven op het geel: je eigen snelknop en je bonnetjes. */
   const actions = viewer ? (
     <View style={styles.headActions}>
-      {today.canScanTickets || today.canAcceptVouchers ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Een code scannen"
-          onPress={() => router.push('/scannen')}
-          hitSlop={6}
-          style={({ pressed }) => [styles.round, pressed && styles.pressedHead]}
-        >
-          <QrCode color={COLORS.yellow} size={19} />
-        </Pressable>
-      ) : null}
+      {/* Een snelknop die je zelf kiest (lang drukken); tot eind november 2026
+          was dit "Code scannen", en dat werd niet gebruikt. */}
+      <HomeShortcut />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Bonnetjes, ${formatVouchers(today.vouchers ?? 0, locale)} openstaand`}
@@ -450,15 +443,6 @@ const styles = StyleSheet.create({
   },
 
   headActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  // Navy op het geel, zoals de bonnetjes op de site naast een navy knop staan.
-  round: {
-    width: 44,
-    height: 44,
-    borderRadius: RADIUS.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.navy,
-  },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -318,8 +318,12 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
   niet vóór je ingelogd bent; op iOS krijg je maar één kans. Wie toen weigerde,
   zet ze later aan via Meer -> Meldingen.
 - `src/scanKind.ts` - welk soort code er gescand is in **Code scannen**
-  (`scannen.tsx`, voor iedereen): uitnodiging, pas of fakbar, en een ticket dat
-  daar niet meetelt en naar Tickets scannen verwijst. De prefix zegt welke.
+  (`scannen.tsx`): uitnodiging, pas of fakbar, en een ticket dat daar niet
+  meetelt en naar Tickets scannen verwijst. De prefix zegt welke. Sinds eind
+  november 2026 staat het niet meer onder Meer en niet meer op Home (het werd
+  niet gebruikt); enkel "Uitnodiging scannen" bij Tickets scannen opent het nog.
+- `src/components/HomeShortcut.tsx` - de ronde knop in de gele kop van Home:
+  iedereen kiest zelf wat hij opent (lang drukken), bewaard op het toestel.
 - `src/scanner/`, `src/components/scanner/`, `src/api/scanner.ts` - de scanner aan
   de deur (`deur.tsx` kiest het event, `scan/[eventId].tsx` scant). Zie
   `docs/scanner.md`.
