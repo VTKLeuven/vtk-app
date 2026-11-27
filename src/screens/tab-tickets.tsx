@@ -332,7 +332,7 @@ function MyTickets({
         {upcoming.length === 0 ? (
           <Empty
             flush
-            title={past.length > 0 ? 'Geen tickets voor wat er komt' : 'Nog geen tickets'}
+            title={past.length > 0 ? 'Geen tickets voor aankomende evenementen' : 'Nog geen tickets'}
             hint="Wat je koopt, komt hier te staan en blijft ook zonder netwerk zichtbaar."
             action={{ label: 'Naar de verkoop', onPress: onShop }}
           />
