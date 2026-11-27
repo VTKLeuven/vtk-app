@@ -30,8 +30,10 @@ const PHOTO_HEIGHT = 206;
  * zeven seconden doorschoof (voorstel F1). Die kop zei enkel wat er
  * aankwam, niet wanneer; de strook zegt in één oogopslag welke dagen iets hebben.
  *
- * Vandaag staat open. Een dag zonder evenementen is vaag maar blijft aantikbaar,
- * en zegt dan dat er niets gepland is. De kaarten staan niet vanzelf te draaien:
+ * De eerste dag met een evenement staat open: is er vandaag niets (meer), dan
+ * staat het eerstvolgende er meteen. Zonder evenementen in de komende zeven dagen
+ * staat er onder de strook niets. Een dag zonder evenementen is vaag maar blijft
+ * aantikbaar, en zegt dan dat er niets gepland is. De kaarten staan niet vanzelf te draaien:
  * wat je niet zelf beweegt, beweegt niet.
  */
 export function WeekHero({
@@ -53,10 +55,9 @@ export function WeekHero({
 }) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const [selected, setSelected] = useState(today);
-  // Na middernacht of een verversing kan de gekozen dag uit de strook vallen.
+  // `null` zolang je zelf niets aantikte.
+  const [selected, setSelected] = useState<string | null>(null);
   const days = useMemo(() => Array.from({ length: WEEK_DAYS }, (_, i) => addDays(today, i)), [today]);
-  const day = days.includes(selected) ? selected : today;
 
   // Op geel hoort een donkere statusbalk.
   useStatusBar('dark');
@@ -78,7 +79,13 @@ export function WeekHero({
     return map;
   }, [events, days]);
 
-  const items = byDay.get(day) ?? [];
+  // Wat openstaat: de dag die je aantikte, en anders de eerste dag met een
+  // evenement. Is vandaag al voorbij, dan staat het eerstvolgende evenement er
+  // meteen, en niet "niets gepland". Na middernacht of een verversing kan een
+  // aangetikte dag uit de strook vallen; dan geldt weer de eerste.
+  const firstBusy = days.find((key) => (byDay.get(key)?.length ?? 0) > 0) ?? null;
+  const day = selected && days.includes(selected) ? selected : firstBusy;
+  const items = day ? (byDay.get(day) ?? []) : [];
   const single = items.length === 1;
   const cardWidth = single ? width - SIDE * 2 : width - SIDE * 2 - PEEK;
 
@@ -138,12 +145,16 @@ export function WeekHero({
         })}
       </View>
 
-      <View style={styles.dayHead}>
-        <Text style={styles.dayTitle}>{dayTitle(day, today, locale)}</Text>
-        <Text style={styles.dayCount}>{countLabel(items.length)}</Text>
-      </View>
+      {/* Geen enkel evenement in de komende zeven dagen: dan staat hier niets,
+          ook geen "niets gepland". */}
+      {day ? (
+        <View style={styles.dayHead}>
+          <Text style={styles.dayTitle}>{dayTitle(day, today, locale)}</Text>
+          <Text style={styles.dayCount}>{countLabel(items.length)}</Text>
+        </View>
+      ) : null}
 
-      {items.length === 0 ? (
+      {!day ? null : items.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyText}>Niets gepland op deze dag.</Text>
         </View>
