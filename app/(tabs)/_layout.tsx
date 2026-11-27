@@ -1,7 +1,8 @@
 import { Tabs } from 'expo-router';
-import { BookOpen, CalendarDays, House, LayoutGrid, Ticket } from 'lucide-react-native';
+import { BookOpen, CalendarDays, House, LayoutGrid, Ticket, type LucideIcon } from 'lucide-react-native';
+import { StyleSheet, Text, View, type ColorValue } from 'react-native';
 
-import { COLORS, FONTS } from '../../src/theme/tokens';
+import { COLORS, FONTS, RADIUS } from '../../src/theme/tokens';
 
 /**
  * De tabbalk: het enige wat deze app echt anders maakt dan de site.
@@ -37,7 +38,9 @@ import { COLORS, FONTS } from '../../src/theme/tokens';
  * als snelkoppeling op Home.
  *
  * De balk volgt de site: papieren grond, een dunne `--line` bovenrand, navy voor
- * wat actief is. Geel blijft accent en wordt hier niet als vulling gebruikt.
+ * wat actief is. Sinds de gele koppen (november 2026) staat de actieve tab op een
+ * gele pil, zoals in de ontwerpen van Home: het enige geel in de balk, en het
+ * zegt waar je bent.
  */
 export default function TabsLayout() {
   return (
@@ -58,41 +61,77 @@ export default function TabsLayout() {
           borderTopWidth: 1,
         },
         tabBarLabelStyle: { fontFamily: FONTS.medium, fontSize: 11 },
+        // Breed genoeg voor de pil achter het icoon; standaard is het vakje zo groot als het icoon.
+        tabBarIconStyle: { width: PILL_WIDTH, height: PILL_HEIGHT },
+        tabBarLabel: ({ focused, color, children }) => (
+          <Text style={[styles.label, { color }, focused && styles.labelActive]}>{children}</Text>
+        ),
         sceneStyle: { backgroundColor: COLORS.paper },
       }}
     >
       <Tabs.Screen
         name="(home)"
-        options={{ title: 'Home', tabBarIcon: ({ color, size }) => <House color={color} size={size} /> }}
+        options={{ title: 'Home', tabBarIcon: tabIcon(House) }}
       />
       <Tabs.Screen
         name="kalender"
         options={{
           title: 'Kalender',
-          tabBarIcon: ({ color, size }) => <CalendarDays color={color} size={size} />,
+          tabBarIcon: tabIcon(CalendarDays),
         }}
       />
       <Tabs.Screen
         name="studies"
         options={{
           title: 'Studies',
-          tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
+          tabBarIcon: tabIcon(BookOpen),
         }}
       />
       <Tabs.Screen
         name="tickets"
         options={{
           title: 'Tickets',
-          tabBarIcon: ({ color, size }) => <Ticket color={color} size={size} />,
+          tabBarIcon: tabIcon(Ticket),
         }}
       />
       <Tabs.Screen
         name="meer"
         options={{
           title: 'Meer',
-          tabBarIcon: ({ color, size }) => <LayoutGrid color={color} size={size} />,
+          tabBarIcon: tabIcon(LayoutGrid),
         }}
       />
     </Tabs>
   );
 }
+
+const PILL_WIDTH = 60;
+const PILL_HEIGHT = 32;
+
+/**
+ * Het icoon van een tab, op een gele pil wanneer de tab open staat. De balk tekent
+ * elk icoon twee keer (actief en niet) en laat ze in elkaar overvloeien, dus de
+ * pil verschijnt en verdwijnt vanzelf zacht.
+ */
+function tabIcon(Icon: LucideIcon) {
+  return function TabIcon({ focused, color, size }: { focused: boolean; color: ColorValue; size: number }) {
+    return (
+      <View style={[styles.pill, focused && styles.pillActive]}>
+        <Icon color={focused ? COLORS.navy : typeof color === 'string' ? color : COLORS.muted} size={size} strokeWidth={focused ? 2.2 : 2} />
+      </View>
+    );
+  };
+}
+
+const styles = StyleSheet.create({
+  pill: {
+    width: PILL_WIDTH,
+    height: PILL_HEIGHT,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pillActive: { backgroundColor: COLORS.yellow },
+  label: { fontFamily: FONTS.medium, fontSize: 11, marginTop: 2 },
+  labelActive: { fontFamily: FONTS.bold },
+});
