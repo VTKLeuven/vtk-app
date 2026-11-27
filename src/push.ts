@@ -8,11 +8,12 @@ import { getPref, setPref, clearPref } from './storage';
 /**
  * Pushberichten aan- en afzetten.
  *
- * **Toestemming wordt niet bij de eerste start gevraagd.** Dat is de belangrijkste
- * keuze in dit bestand. Een systeemvenster dat meteen na het installeren
- * verschijnt, wordt in de regel weggeklikt, en op iOS krijg je maar één kans: wie
- * één keer weigert, moet daarna naar de systeeminstellingen. Dus vragen we het
- * op het moment dat het ergens over gaat, en met een zin erbij die zegt waarover.
+ * **Toestemming wordt één keer vanzelf gevraagd, zodra je ingelogd bent**
+ * (`askPushOnce`, vanuit Home; sinds november 2026). Tot dan enkel via de knop
+ * onder Meer › Meldingen, en daar vond bijna niemand ze. Niet bij de allereerste
+ * start: wie nog niet ingelogd is, krijgt geen berichten die over hem gaan, en
+ * op iOS krijg je maar één kans; wie één keer weigert, moet daarna naar de
+ * systeeminstellingen. De knop onder Meldingen blijft voor wie later wil.
  *
  * Het token wordt bij elke start opnieuw aangemeld, want het besturingssysteem
  * kan het vervangen zonder dat de app dat merkt.
@@ -103,6 +104,27 @@ export async function disablePush(): Promise<void> {
     // ruimt het op zodra Expo het afkeurt.
   }
   clearPref(TOKEN_KEY);
+}
+
+/**
+ * Vraagt één keer vanzelf om pushberichten, voor wie ingelogd is en er nog nooit
+ * over besliste. Wie het al weigerde (hier of in de systeeminstellingen), krijgt
+ * de vraag niet opnieuw; wie al toestemming gaf, wordt stil aangemeld.
+ */
+export async function askPushOnce(): Promise<void> {
+  if (hasBeenAsked()) return;
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status === 'denied') {
+      setPref(ASKED_KEY, 'yes');
+      return;
+    }
+    await enablePush();
+  } catch {
+    // Expo Go of een toestel zonder pushdienst: dan staat het niet aan, en de
+    // knop onder Meldingen kan het later nog.
+    setPref(ASKED_KEY, 'yes');
+  }
 }
 
 /**

@@ -270,9 +270,10 @@ uitzondering: die werkt in Expo Go niet.
   Het CMS kent de app niet en zet "Piano reserveren" als link naar `/piano`;
   zonder deze tabel zou dat in een browser openen terwijl er een scherm voor
   bestaat. **Komt er een native scherm bij, voeg hier dan een regel toe.**
-- `src/push.ts` - pushberichten. Toestemming wordt gevraagd via de knop onder
-  Meer -> Meldingen en **nooit bij de eerste start**; op iOS krijg je maar één
-  kans.
+- `src/push.ts` - pushberichten. Toestemming wordt **één keer vanzelf gevraagd
+  zodra je ingelogd op Home staat** (`askPushOnce`, sinds november 2026), en
+  niet vóór je ingelogd bent; op iOS krijg je maar één kans. Wie toen weigerde,
+  zet ze later aan via Meer -> Meldingen.
 - `src/scanKind.ts` - welk soort code er gescand is in **Code scannen**
   (`scannen.tsx`, voor iedereen): uitnodiging, pas of fakbar, en een ticket dat
   daar niet meetelt en naar Tickets scannen verwijst. De prefix zegt welke.

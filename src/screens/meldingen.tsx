@@ -25,8 +25,8 @@ import { CARD_SHADOW } from '../components/HomeSection';
  * scherm zelf:
  *
  * 1. **De toestemming van je telefoon.** Staat die uit, dan komt er niets binnen,
- *    ongeacht wat er hieronder aangevinkt staat. Op iOS krijg je maar één kans om
- *    ze te vragen, dus die vraag stellen we hier en niet bij de eerste start.
+ *    ongeacht wat er hieronder aangevinkt staat. Home vraagt ze één keer vanzelf
+ *    zodra je ingelogd bent (`askPushOnce`); hier zet je ze later alsnog aan.
  * 2. **Welke van de berichten je wil.** Dat staat op de server, want de server
  *    beslist wat hij stuurt.
  *

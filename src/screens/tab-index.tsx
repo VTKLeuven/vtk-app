@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { Coins, ExternalLink, QrCode } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
+import { useEffect } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { AppCalendarEvent, AppLocale } from '../api/contract';
@@ -18,6 +19,7 @@ import { KURT_URL } from '../components/planning/BlokView';
 import { LinkCard, TaskCard } from '../components/TaskCard';
 import { Button, Card, ErrorState, Loading, StaleNotice } from '../components/ui';
 import { formatDay, formatVouchers } from '../format';
+import { askPushOnce } from '../push';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
@@ -55,6 +57,12 @@ export default function HomeScreen() {
   const { locale, viewer, bootstrap, refresh: refreshApp } = useApp();
   const resource = useResource('vandaag', () => fetchToday(locale), locale);
   const upcoming = useUpcomingLessons(locale, Boolean(viewer) && bootstrap?.abilities?.planning === true);
+
+  // Eén keer vanzelf om meldingen vragen, zodra je ingelogd op Home staat (`push.ts`).
+  const viewerId = viewer?.id ?? null;
+  useEffect(() => {
+    if (viewerId) void askPushOnce();
+  }, [viewerId]);
 
   if (resource.loading) return <Loading label="VTK openen" />;
   if (!resource.data) {
