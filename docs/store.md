@@ -11,8 +11,8 @@ niet opnieuw moet beginnen. Pas het hier aan wanneer je het daar aanpast.
 
 **Promotional Text** (170, wijzigbaar zonder review):
 
-> Je volgende lessen, tickets aan de deur en broodjes van het Theokot: alles
-> van VTK, de kring van de ingenieursstudenten in Leuven, in je broekzak.
+> Tickets, broodjes, je lessenrooster en de activiteiten van VTK, de kring van
+> de ingenieursstudenten in Leuven.
 
 **What's New in This Version** (per versie, verplicht vanaf de tweede):
 
@@ -55,27 +55,27 @@ kuleuven,ingenieur,student,studentenvereniging,tickets,cantus,theokot,broodjes,l
 **Description**:
 
 ```
-De app van VTK, de studentenvereniging van de ingenieursstudenten aan de KU Leuven. Alles wat je met je telefoon in de hand doet, op één plek.
+De app van VTK, de studentenkring van de ingenieurs aan de KU Leuven.
 
-VANDAAG
-Zie meteen wat er open is (het Theokot, de cursusdienst en Elixir), je volgende lessen en wat er op jou wacht: een broodje om af te halen, een ticket voor vanavond, een shift.
+Home
+De evenementen van deze week, of het Theokot, de cursusdienst en Elixir open zijn, je volgende lessen en wat er vandaag op het menu staat in de Alma's.
 
-KALENDER EN PLANNING
-Alle activiteiten van VTK per week of per maand. Duid aan wat je interesseert en krijg een dag vooraf een herinnering. Koppel je KU Leuven-lessenrooster en zie je lessen, deadlines en VTK-evenementen samen in één planning, dezelfde als op Burgieclan.
+Kalender
+Alle activiteiten van VTK, als lijst of als agenda. Koppel je lessenrooster van de KU Leuven en je ziet je lessen, deadlines en evenementen in één planning, dezelfde als op Burgieclan.
 
-TICKETS
-Koop tickets voor cantussen, galabals en andere evenementen, en toon ze aan de deur. Je ticket staat ook zonder netwerk op je telefoon, en met één tik vult de code het hele scherm.
+Tickets
+Koop tickets voor cantussen, galabals en andere activiteiten. Aan de deur toon je ze vanuit de app, ook zonder netwerk, of vanuit je wallet.
 
-BROODJES
-Bestel je broodje bij het Theokot, pas je bestelling aan of neem een overschot over.
+Broodjes
+Bestel bij het Theokot en betaal bij het afhalen.
 
-STUDEREN
-Meet je studietijd, blok samen met je vrienden in een studiegroep en vind een vrij lokaal op de campus.
+Studies
+Reserveer je cursussen en een tijdslot bij de cursusdienst, open de documenten van Burgieclan per vak, en hou je studietijd bij, alleen of met je vrienden.
 
-EN NOG MEER
-Foto's en aftermovies, shiften, de piano reserveren, peilingen van je POC, het praesidium en de werkgroepen, en je bonnetjes voor de fakbar.
+Meer
+Shiften, de piano reserveren, foto's, het Liederboek, een vrij lokaal zoeken, peilingen van je POC, het praesidium en je bonnetjes voor de fakbar.
 
-Inloggen gaat met je VTK-account of je KU Leuven-login, net als op vtk.be.
+Inloggen gaat met je KU Leuven-login of je VTK-account, zoals op vtk.be.
 ```
 
 **Support URL**: https://vtk.be/contact
