@@ -200,73 +200,79 @@ export default function LokalenScreen() {
 
   return (
     <View style={styles.root}>
-      <PageHead title="Lokalen" subtitle="Zoek een lokaal op de campus" />
-      {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
-
-      <View style={styles.search}>
-        <SearchField
-          value={query}
-          onChange={(next) => {
-            setQuery(next);
-            // Opnieuw beginnen te typen laat de keuze los; anders blijft de
-            // kaart een gebouw tonen dat niet meer in de lijst staat.
-            setPicked(null);
-          }}
-          placeholder="200K 00.06, aula, Franklin"
-          label="Zoek een lokaal of gebouw"
-        />
-
-        <CampusMap
-          buildings={data.buildings}
-          campus={data.campus}
-          selectedId={focus}
-          routePoints={route?.points ?? []}
-          here={position.state.kind === 'ok' ? position.state.at : null}
-          onSelect={(id) => setPicked((current) => (current === id ? null : id))}
-        />
-
-        <View style={styles.legendRow}>
-          <Text style={styles.legend}>
-            {route
-              ? `${route.building.name}${route.building.shortCode ? ` (${route.building.shortCode})` : ''} · ${Math.round(route.metres)} m te voet vanaf ${route.from}`
-              : 'Tik een gebouw aan of zoek een lokaal; de route wordt hier berekend.'}
-          </Text>
-
-          <View style={styles.actions}>
-            {position.state.kind !== 'ok' ? (
-              <SmallButton
-                icon={<Crosshair color={COLORS.navy} size={14} />}
-                label={position.state.kind === 'busy' ? 'Zoeken' : 'Vanaf hier'}
-                disabled={position.state.kind === 'busy'}
-                onPress={() => void position.locate()}
-              />
-            ) : (
-              <SmallButton
-                icon={<Crosshair color={COLORS.navy} size={14} />}
-                label="Vanaf de halte"
-                onPress={position.forget}
-              />
-            )}
-            {route ? (
-              <SmallButton
-                icon={<Navigation color={COLORS.navy} size={14} />}
-                label="In kaart-app"
-                onPress={() => openInMaps(route.building)}
-              />
-            ) : null}
-          </View>
-
-          {positionNote(position.state) ? (
-            <Text style={styles.note}>{positionNote(position.state)}</Text>
-          ) : null}
-        </View>
-      </View>
-
       <FlatList
         data={results}
         keyExtractor={(room) => room.id}
+        style={styles.root}
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
+        // De kop, het zoekveld en de kaart staan in de lijst en schuiven mee weg.
+        ListHeaderComponent={
+          <View style={styles.headWrap}>
+            <View style={styles.overscroll} />
+            <PageHead title="Lokalen" subtitle="Zoek een lokaal op de campus" />
+            {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
+
+            <View style={styles.search}>
+              <SearchField
+                value={query}
+                onChange={(next) => {
+                  setQuery(next);
+                  // Opnieuw beginnen te typen laat de keuze los; anders blijft de
+                  // kaart een gebouw tonen dat niet meer in de lijst staat.
+                  setPicked(null);
+                }}
+                placeholder="200K 00.06, aula, Franklin"
+                label="Zoek een lokaal of gebouw"
+              />
+
+              <CampusMap
+                buildings={data.buildings}
+                campus={data.campus}
+                selectedId={focus}
+                routePoints={route?.points ?? []}
+                here={position.state.kind === 'ok' ? position.state.at : null}
+                onSelect={(id) => setPicked((current) => (current === id ? null : id))}
+              />
+
+              <View style={styles.legendRow}>
+                <Text style={styles.legend}>
+                  {route
+                    ? `${route.building.name}${route.building.shortCode ? ` (${route.building.shortCode})` : ''} · ${Math.round(route.metres)} m te voet vanaf ${route.from}`
+                    : 'Tik een gebouw aan of zoek een lokaal; de route wordt hier berekend.'}
+                </Text>
+
+                <View style={styles.actions}>
+                  {position.state.kind !== 'ok' ? (
+                    <SmallButton
+                      icon={<Crosshair color={COLORS.navy} size={14} />}
+                      label={position.state.kind === 'busy' ? 'Zoeken' : 'Vanaf hier'}
+                      disabled={position.state.kind === 'busy'}
+                      onPress={() => void position.locate()}
+                    />
+                  ) : (
+                    <SmallButton
+                      icon={<Crosshair color={COLORS.navy} size={14} />}
+                      label="Vanaf de halte"
+                      onPress={position.forget}
+                    />
+                  )}
+                  {route ? (
+                    <SmallButton
+                      icon={<Navigation color={COLORS.navy} size={14} />}
+                      label="In kaart-app"
+                      onPress={() => openInMaps(route.building)}
+                    />
+                  ) : null}
+                </View>
+
+                {positionNote(position.state) ? (
+                  <Text style={styles.note}>{positionNote(position.state)}</Text>
+                ) : null}
+              </View>
+            </View>
+          </View>
+        }
         ListEmptyComponent={
           /* KULag screent enkel op toegankelijkheid, dus niet elk lokaal staat
              erin. Doen alsof een bureau niet bestaat is erger dan zeggen waar
@@ -376,6 +382,9 @@ const styles = StyleSheet.create({
   smallText: { ...TYPE.small, fontFamily: TYPE.cardTitle.fontFamily, color: COLORS.ink },
   dim: { opacity: 0.5 },
   list: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xxl, gap: SPACING.sm },
+  headWrap: { marginHorizontal: -SPACING.lg },
+  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
+
 
   row: {
     flexDirection: 'row',

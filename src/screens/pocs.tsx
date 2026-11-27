@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { Mail } from 'lucide-react-native';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { fetchPocs } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
@@ -9,6 +9,7 @@ import { PageHead } from '../components/PageHead';
 import { Card, Empty, ErrorState, Loading } from '../components/ui';
 import { useApp } from '../state/app';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { HeadScroll } from '../components/HeadScroll';
 
 /**
  * Alle POC's.
@@ -30,11 +31,10 @@ export default function PocsScreen() {
 
   return (
     <>
-      <PageHead
+      <HeadScroll head={<PageHead
         title="POC's"
         subtitle="De permanente onderwijscommissies en wie er voor jou in zit"
-      />
-      <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+      />} style={styles.root} contentContainerStyle={styles.content}>
         {resource.data.length === 0 ? (
           <Empty title="Geen POC's" hint="Er staat nog niets ingevuld." />
         ) : null}
@@ -70,7 +70,7 @@ export default function PocsScreen() {
             </View>
           </Card>
         ))}
-      </ScrollView>
+      </HeadScroll>
     </>
   );
 }

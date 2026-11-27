@@ -105,45 +105,6 @@ export default function AlbumsScreen() {
 
   return (
     <>
-      <PageHead
-        title="Foto's"
-        right={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={searching ? 'Zoeken sluiten' : 'Zoek een album'}
-            onPress={toggleSearch}
-            hitSlop={8}
-            style={({ pressed }) => [styles.searchButton, pressed && styles.pressed]}
-          >
-            {searching ? (
-              <X color={COLORS.ink} size={19} />
-            ) : (
-              <Search color={COLORS.ink} size={19} />
-            )}
-          </Pressable>
-        }
-        tabs={
-          years.length > 1
-            ? {
-                scroll: true,
-                value: year,
-                onChange: setYear,
-                options: [{ value: ALL, label: 'Alle' }, ...years.map((label) => ({ value: label, label }))],
-              }
-            : undefined
-        }
-      />
-
-      {searching ? (
-        <SearchField
-          value={query}
-          onChange={setQuery}
-          placeholder="Zoek een album"
-          label="Zoek een album op titel"
-          autoFocus
-        />
-      ) : null}
-
       <SectionList
         sections={sections}
         keyExtractor={(row) =>
@@ -151,7 +112,8 @@ export default function AlbumsScreen() {
         }
         style={styles.root}
         contentContainerStyle={styles.list}
-        stickySectionHeadersEnabled
+        stickySectionHeadersEnabled={false}
+        keyboardShouldPersistTaps="handled"
         // Krap gehouden: tweehonderd covers hoeven niet allemaal in het geheugen
         // te staan om te kunnen scrollen.
         initialNumToRender={5}
@@ -165,8 +127,50 @@ export default function AlbumsScreen() {
             onRefresh={() => void resource.refresh()}
           />
         }
+        // De kop en het zoekveld staan in de lijst en schuiven mee weg.
         ListHeaderComponent={
           <>
+            <View style={styles.headWrap}>
+              <View style={styles.overscroll} />
+              <PageHead
+                title="Foto's"
+                right={
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={searching ? 'Zoeken sluiten' : 'Zoek een album'}
+                    onPress={toggleSearch}
+                    hitSlop={8}
+                    style={({ pressed }) => [styles.searchButton, pressed && styles.pressed]}
+                  >
+                    {searching ? (
+                      <X color={COLORS.ink} size={19} />
+                    ) : (
+                      <Search color={COLORS.ink} size={19} />
+                    )}
+                  </Pressable>
+                }
+                tabs={
+                  years.length > 1
+                    ? {
+                        scroll: true,
+                        value: year,
+                        onChange: setYear,
+                        options: [{ value: ALL, label: 'Alle' }, ...years.map((label) => ({ value: label, label }))],
+                      }
+                    : undefined
+                }
+              />
+
+              {searching ? (
+                <SearchField
+                  value={query}
+                  onChange={setQuery}
+                  placeholder="Zoek een album"
+                  label="Zoek een album op titel"
+                  autoFocus
+                />
+              ) : null}
+            </View>
             {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
             {term ? (
               <Text style={styles.count}>
@@ -229,6 +233,8 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   list: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xxl },
+  headWrap: { marginHorizontal: -SPACING.lg },
+  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
   count: { ...TYPE.small, color: COLORS.muted, marginTop: SPACING.md },
   sectionHeader: {
     backgroundColor: COLORS.paper,

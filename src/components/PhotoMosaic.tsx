@@ -36,12 +36,15 @@ export function PhotoMosaic({
   width,
   onOpen,
   empty,
+  header,
 }: {
   photos: AppPhoto[];
   /** De breedte van het scherm; het raster loopt van rand tot rand. */
   width: number;
   onOpen: (index: number) => void;
   empty?: React.ReactElement;
+  /** Bovenaan in de lijst, zodat het meeschuift: de kop van het album. */
+  header?: React.ReactElement;
 }) {
   const cell = (width - GAP * 2) / 3;
   const big = cell * 2 + GAP;
@@ -88,6 +91,7 @@ export function PhotoMosaic({
       windowSize={7}
       removeClippedSubviews
       ListEmptyComponent={empty}
+      ListHeaderComponent={header}
       renderItem={({ item: chunk }) => {
         const [a, b, c] = chunk.photos;
         if (chunk.kind === 'bigLeft') {

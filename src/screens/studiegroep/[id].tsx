@@ -6,7 +6,6 @@ import {
   Alert,
   Pressable,
   RefreshControl,
-  ScrollView,
   Share,
   StyleSheet,
   Text,
@@ -27,6 +26,7 @@ import { formatSpan } from '../../format';
 import { useTabRouter } from '../../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { groupErrorText } from './nieuw';
+import { HeadScroll } from '../../components/HeadScroll';
 
 /**
  * Eén blokgroep: de code, de leden, het doel.
@@ -141,7 +141,7 @@ export default function StudiegroepScreen() {
 
   return (
     <>
-      <PageHead
+      <HeadScroll head={<PageHead
         title={group.name}
         kicker="Blokgroep"
         subtitle={`${group.memberCount} ${group.memberCount === 1 ? 'lid' : 'leden'}`}
@@ -150,9 +150,7 @@ export default function StudiegroepScreen() {
             <Share2 color={COLORS.ink} size={21} />
           </HeadButton>
         }
-      />
-
-      <ScrollView
+      />}
         style={styles.root}
         contentContainerStyle={styles.content}
         refreshControl={
@@ -247,7 +245,7 @@ export default function StudiegroepScreen() {
           variant="ghost"
           onPress={leave}
         />
-      </ScrollView>
+      </HeadScroll>
     </>
   );
 }

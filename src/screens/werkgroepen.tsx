@@ -10,6 +10,7 @@ import { Card, Empty, ErrorState, Loading } from '../components/ui';
 import { useApp } from '../state/app';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
+import { HeadScroll } from '../components/HeadScroll';
 
 /**
  * De werkgroepen, per werkingsjaar.
@@ -41,11 +42,10 @@ export default function WerkgroepenScreen() {
 
   return (
     <>
-      <PageHead
+      <HeadScroll head={<PageHead
         title="Werkgroepen"
         subtitle={data.year ? `Werkingsjaar ${data.year}-${data.year + 1}` : undefined}
-      />
-      <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+      />} style={styles.root} contentContainerStyle={styles.content}>
         {data.years.length > 1 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.years}>
             {data.years.map((option) => (
@@ -97,7 +97,7 @@ export default function WerkgroepenScreen() {
             )}
           </Card>
         ))}
-      </ScrollView>
+      </HeadScroll>
     </>
   );
 }

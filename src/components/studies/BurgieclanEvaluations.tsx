@@ -1,13 +1,14 @@
 import * as WebBrowser from 'expo-web-browser';
 import { ChevronDown, Star } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { AppBurgieclanEvaluations, AppBurgieclanEvaluationSection, AppLocale } from '../../api/contract';
 import { formatShortDate } from '../../format';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW } from '../HomeSection';
 import { Empty, MarginRegister } from '../ui';
+import { HeadScroll } from '../HeadScroll';
 
 /** Zoveel opmerkingen per rubriek staan er meteen; de rest achter "Alle opmerkingen". */
 const FIRST_COMMENTS = 3;
@@ -27,10 +28,13 @@ export function EvaluationsView({
   evaluations,
   url,
   locale,
+  head,
 }: {
   evaluations: AppBurgieclanEvaluations;
   url: string;
   locale: AppLocale;
+  /** De kop van het vak; staat in de scroll en schuift mee weg. */
+  head?: React.ReactNode;
 }) {
   const sections = evaluations.sections.filter(
     (section) => section.comments.length > 0 || section.recent.count > 0 || section.allTime.count > 0,
@@ -44,11 +48,13 @@ export function EvaluationsView({
 
   if (sections.length === 0) {
     return (
-      <Empty
-        title="Nog geen evaluaties"
-        hint="Niemand evalueerde dit vak al. Jij kan de eerste zijn, op Burgieclan."
-        action={{ label: 'Evalueren op Burgieclan', onPress: external.onPress }}
-      />
+      <HeadScroll head={head} style={styles.root}>
+        <Empty
+          title="Nog geen evaluaties"
+          hint="Niemand evalueerde dit vak al. Jij kan de eerste zijn, op Burgieclan."
+          action={{ label: 'Evalueren op Burgieclan', onPress: external.onPress }}
+        />
+      </HeadScroll>
     );
   }
 
@@ -56,12 +62,12 @@ export function EvaluationsView({
     evaluations.recentYears.length > 0 ? evaluations.recentYears.join(', ') : 'De laatste jaren';
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <HeadScroll head={head} style={styles.root} contentContainerStyle={styles.content}>
       {sections.map((section) => (
         <Section key={section.id} section={section} recentLabel={recentLabel} locale={locale} />
       ))}
       <MarginRegister title="Op Burgieclan" links={[external]} />
-    </ScrollView>
+    </HeadScroll>
   );
 }
 

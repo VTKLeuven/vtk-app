@@ -6,7 +6,6 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -25,6 +24,7 @@ import { MagazineReader } from '../components/MagazineReader';
 import { Empty, ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
 import { useApp } from '../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { HeadScroll } from '../components/HeadScroll';
 
 const KIND_LABEL: Record<AppPublication['kind'], string> = {
   bakske: "'t Bakske",
@@ -61,8 +61,7 @@ export default function MediaScreen() {
 
   return (
     <>
-      <PageHead title="Media" subtitle="'t Bakske, Ir.Reëel en de aftermovies" />
-      <ScrollView
+      <HeadScroll head={<PageHead title="Media" subtitle="'t Bakske, Ir.Reëel en de aftermovies" />}
         style={styles.root}
         refreshControl={
           <RefreshControl
@@ -82,7 +81,7 @@ export default function MediaScreen() {
         {publications.length === 0 && aftermovies.length === 0 ? (
           <Empty title="Nog niets" hint="Magazines en aftermovies verschijnen hier zodra ze online staan." />
         ) : null}
-      </ScrollView>
+      </HeadScroll>
     </>
   );
 }

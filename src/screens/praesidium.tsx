@@ -9,6 +9,7 @@ import { Card, Empty, ErrorState, Loading } from '../components/ui';
 import { useApp } from '../state/app';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
+import { HeadScroll } from '../components/HeadScroll';
 
 /** Hoeveel jaren los in de balk staan; de rest zit erachter. */
 const YEARS_IN_BAR = 5;
@@ -43,13 +44,11 @@ export default function PraesidiumScreen() {
 
   return (
     <>
-      <PageHead
+      <HeadScroll head={<PageHead
         title="Praesidium"
         subtitle={`Werkingsjaar ${data.year}-${data.year + 1}`}
         kicker="De ploeg"
-      />
-
-      <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+      />} style={styles.root} contentContainerStyle={styles.content}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.years}>
           {visibleYears.map((option) => (
             <Pressable
@@ -105,7 +104,7 @@ export default function PraesidiumScreen() {
             </View>
           </Card>
         ))}
-      </ScrollView>
+      </HeadScroll>
     </>
   );
 }

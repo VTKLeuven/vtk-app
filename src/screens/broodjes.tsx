@@ -26,6 +26,7 @@ import { enablePush, pushIsOn } from '../push';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { HeadScroll } from '../components/HeadScroll';
 
 /** Onder dit aantal zegt de voorraad iets; daarboven staat ze er niet, zoals op /theokot. */
 const LOW_STOCK = 5;
@@ -64,8 +65,7 @@ export default function BroodjesScreen() {
   if (!viewer) {
     return (
       <>
-        {head()}
-        <ScrollView contentContainerStyle={styles.content} style={styles.root}>
+        <HeadScroll head={head()} contentContainerStyle={styles.content} style={styles.root}>
           <Card>
             <Text style={styles.title}>Log eerst in</Text>
             <Text style={styles.body}>
@@ -74,7 +74,7 @@ export default function BroodjesScreen() {
             </Text>
             <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
           </Card>
-        </ScrollView>
+        </HeadScroll>
       </>
     );
   }
@@ -82,8 +82,7 @@ export default function BroodjesScreen() {
   if (gate) {
     return (
       <>
-        {head()}
-        <ScrollView contentContainerStyle={styles.content} style={styles.root}>
+        <HeadScroll head={head()} contentContainerStyle={styles.content} style={styles.root}>
           <Card featured>
             <Text style={styles.title}>
               {gate === 'onboarding' ? 'Werk eerst je profiel af' : 'Bevestig eerst je studie'}
@@ -96,7 +95,7 @@ export default function BroodjesScreen() {
               onPress={() => router.push({ pathname: '/poort', params: { gate } })}
             />
           </Card>
-        </ScrollView>
+        </HeadScroll>
       </>
     );
   }

@@ -102,29 +102,6 @@ export default function AlbumScreen() {
 
   return (
     <>
-      <PageHead
-        title={album.title}
-        subtitle={[
-          photoCount(album.photoCount, locale),
-          album.date ? formatLongDate(album.date, locale) : null,
-        ]
-          .filter(Boolean)
-          .join(' · ')}
-        tabs={
-          parts && activePart
-            ? {
-                scroll: true,
-                value: activePart.id,
-                onChange: (next) => {
-                  setPart(next);
-                  setOpenIndex(null);
-                },
-                options: parts.map((sub) => ({ value: sub.id, label: sub.title, count: sub.photoCount })),
-              }
-            : undefined
-        }
-      />
-
       <PhotoMosaic
         // Een ander deel begint bovenaan, niet halverwege het vorige.
         key={activePart?.id ?? 'alles'}
@@ -132,6 +109,34 @@ export default function AlbumScreen() {
         width={width}
         onOpen={changeIndex}
         empty={<Empty title="Leeg album" hint="Er staan nog geen foto's in dit album." />}
+        // De kop staat in de lijst en schuift mee weg.
+        header={
+          <View>
+            <View style={styles.overscroll} />
+          <PageHead
+            title={album.title}
+            subtitle={[
+              photoCount(album.photoCount, locale),
+              album.date ? formatLongDate(album.date, locale) : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+            tabs={
+              parts && activePart
+                ? {
+                    scroll: true,
+                    value: activePart.id,
+                    onChange: (next) => {
+                      setPart(next);
+                      setOpenIndex(null);
+                    },
+                    options: parts.map((sub) => ({ value: sub.id, label: sub.title, count: sub.photoCount })),
+                  }
+                : undefined
+            }
+          />
+          </View>
+        }
       />
 
       <PhotoViewer
@@ -190,6 +195,8 @@ export default function AlbumScreen() {
 }
 
 const styles = StyleSheet.create({
+  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
+
   actions: { flexDirection: 'row', gap: SPACING.sm },
   button: {
     width: 40,

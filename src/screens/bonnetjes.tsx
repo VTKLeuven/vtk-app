@@ -1,5 +1,5 @@
 import { Check, Ticket } from 'lucide-react-native';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import type { AppShiftYear, AppVoucherEntry } from '../api/contract';
 import { fetchVouchers } from '../api/endpoints';
@@ -13,6 +13,7 @@ import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
+import { HeadScroll } from '../components/HeadScroll';
 
 /**
  * Bonnetjes: je shiften van dit jaar, wat ze opleverden en wat je ermee kan.
@@ -45,8 +46,7 @@ export default function BonnetjesScreen() {
   if (!viewer) {
     return (
       <>
-        <PageHead title="Bonnetjes" />
-        <ScrollView contentContainerStyle={styles.content} style={styles.root}>
+        <HeadScroll head={<PageHead title="Bonnetjes" />} contentContainerStyle={styles.content} style={styles.root}>
           <View style={styles.pad}>
             <Card>
               <Text style={styles.title}>Log eerst in</Text>
@@ -54,7 +54,7 @@ export default function BonnetjesScreen() {
               <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
             </Card>
           </View>
-        </ScrollView>
+        </HeadScroll>
       </>
     );
   }
@@ -72,8 +72,7 @@ export default function BonnetjesScreen() {
 
   return (
     <>
-      <PageHead title="Bonnetjes" subtitle="Eén per begonnen uur shift" />
-      <ScrollView
+      <HeadScroll head={<PageHead title="Bonnetjes" subtitle="Eén per begonnen uur shift" />}
         contentContainerStyle={styles.content}
         style={styles.root}
         refreshControl={
@@ -141,7 +140,7 @@ export default function BonnetjesScreen() {
             uitbetaalde, gaan wel van je saldo af maar staan hier niet in.
           </Text>
         ) : null}
-      </ScrollView>
+      </HeadScroll>
     </>
   );
 }

@@ -3,7 +3,6 @@ import {
   Alert,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -20,6 +19,7 @@ import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
+import { HeadScroll } from '../components/HeadScroll';
 
 /** Ruim genoeg voor een alinea; dezelfde grens als op de site (`MAX_OPEN_ANSWER_LENGTH`). */
 const MAX_OPEN_ANSWER = 2000;
@@ -40,8 +40,7 @@ export default function PeilingenScreen() {
   if (!viewer) {
     return (
       <>
-        <PageHead title="Peilingen" subtitle="Je RiVers vragen je mening" />
-        <ScrollView contentContainerStyle={styles.content} style={styles.root}>
+        <HeadScroll head={<PageHead title="Peilingen" subtitle="Je RiVers vragen je mening" />} contentContainerStyle={styles.content} style={styles.root}>
           <Card>
             <Text style={styles.title}>Log eerst in</Text>
             <Text style={styles.body}>
@@ -50,7 +49,7 @@ export default function PeilingenScreen() {
             </Text>
             <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
           </Card>
-        </ScrollView>
+        </HeadScroll>
       </>
     );
   }
@@ -66,8 +65,7 @@ export default function PeilingenScreen() {
 
   return (
     <>
-      <PageHead title="Peilingen" subtitle="Je RiVers vragen je mening" />
-      <ScrollView
+      <HeadScroll head={<PageHead title="Peilingen" subtitle="Je RiVers vragen je mening" />}
         style={styles.root}
         contentContainerStyle={styles.content}
         keyboardDismissMode="on-drag"
@@ -98,7 +96,7 @@ export default function PeilingenScreen() {
         {polls.map((poll) => (
           <PollCard key={poll.id} poll={poll} onSaved={() => void resource.reload()} />
         ))}
-      </ScrollView>
+      </HeadScroll>
     </>
   );
 }

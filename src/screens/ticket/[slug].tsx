@@ -87,8 +87,12 @@ function Shop({
 
   return (
     <View style={styles.root}>
-      {event.imageUrl ? null : <PageHead title={event.title} subtitle={event.ownerGroupName} />}
       <ScrollView contentContainerStyle={styles.content} style={styles.root}>
+        {event.imageUrl ? null : (
+          <View style={styles.bleed}>
+            <PageHead title={event.title} subtitle={event.ownerGroupName} />
+          </View>
+        )}
         {event.imageUrl ? (
           // De banner van /tickets over de volle breedte, met de gele datumpin.
           <View style={styles.bleed}>

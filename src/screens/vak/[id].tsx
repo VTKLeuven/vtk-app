@@ -2,16 +2,18 @@ import * as WebBrowser from 'expo-web-browser';
 import { useLocalSearchParams } from 'expo-router';
 import { ChevronDown, ChevronRight, FileText, Star } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import type { AppBurgieclanCourse, AppBurgieclanDocument } from '../../api/contract';
 import { fetchBurgieclanCourse, fetchBurgieclanFile, setBurgieclanFavorite } from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
 import { YellowHead, YellowHeadButton } from '../../components/YellowHead';
 import { EvaluationsView } from '../../components/studies/BurgieclanEvaluations';
+import { HeadScroll } from '../../components/HeadScroll';
 import { Empty, ErrorState, Loading, MarginRegister, StaleNotice } from '../../components/ui';
 import { formatShortDate } from '../../format';
 import { useApp } from '../../state/app';
+import { useTabRouter } from '../../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW } from '../../components/HomeSection';
 
@@ -23,13 +25,13 @@ type View_ = 'documenten' | 'evaluaties';
  * twee staan als pillen in de kop. Binnen een soort staat het nieuwste
  * academiejaar bovenaan; dat is wat je meestal zoekt.
  *
- * Een document openen haalt een link op die tien minuten geldig is en opent die
- * in het venster van het systeem: dat toont een pdf beter dan wij het zouden
- * nabouwen, en je kan er van daaruit mee delen of bewaren.
+ * Een document openen haalt een link op die tien minuten geldig is en toont de pdf
+ * in de app zelf (`pdf.tsx`), met een knop om hem te delen of te bewaren.
  */
 export default function VakScreen() {
   const { id, naam } = useLocalSearchParams<{ id: string; naam?: string }>();
   const { locale } = useApp();
+  const router = useTabRouter();
   const resource = useResource(`burgieclan-vak-${id}`, () => fetchBurgieclanCourse(locale, id), `${locale}:${id}`);
   const [view, setView] = useState<View_>('documenten');
   const [favorite, setFavorite] = useState<boolean | null>(null);
@@ -84,10 +86,8 @@ export default function VakScreen() {
     setOpening(document.id);
     try {
       const file = await fetchBurgieclanFile(document.id);
-      await WebBrowser.openBrowserAsync(file.url, {
-        presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
-        controlsColor: COLORS.navy,
-      });
+      // In de app zelf (`pdf.tsx`), niet meer in het browservenster van het systeem.
+      router.push({ pathname: '/pdf', params: { url: file.url, title: document.name } });
     } catch (error) {
       Alert.alert('Document niet geopend', messageFor(error instanceof Error ? error : null));
     } finally {
@@ -95,48 +95,45 @@ export default function VakScreen() {
     }
   };
 
+  // De kop staat in de scroll en schuift mee weg, bij de documenten en bij de evaluaties.
+  const head = (
+        <YellowHead
+          back
+          title={course.name}
+          subtitle={[course.code, subtitleFor(course)].filter(Boolean).join(' · ')}
+          right={
+            <YellowHeadButton
+              label={starred ? 'Uit je vakken halen' : 'Bij je vakken zetten'}
+              onPress={() => {
+                if (!starBusy) void toggleStar();
+              }}
+            >
+              <Star size={20} color={COLORS.yellow} fill={starred ? COLORS.yellow : 'transparent'} />
+            </YellowHeadButton>
+          }
+          tabs={
+            evaluations
+              ? {
+                  value: view,
+                  onChange: setView,
+                  options: [
+                    { value: 'documenten', label: `Documenten ${documents.length}` },
+                    { value: 'evaluaties', label: `Evaluaties ${commentCount}` },
+                  ],
+                }
+              : undefined
+          }
+        />
+  );
+
   return (
     <>
-      <YellowHead
-        back
-        title={course.name}
-        subtitle={[course.code, subtitleFor(course)].filter(Boolean).join(' · ')}
-        right={
-          <YellowHeadButton
-            label={starred ? 'Uit je vakken halen' : 'Bij je vakken zetten'}
-            onPress={() => {
-              if (!starBusy) void toggleStar();
-            }}
-          >
-            <Star size={20} color={COLORS.yellow} fill={starred ? COLORS.yellow : 'transparent'} />
-          </YellowHeadButton>
-        }
-        tabs={
-          evaluations
-            ? {
-                value: view,
-                onChange: setView,
-                options: [
-                  { value: 'documenten', label: `Documenten ${documents.length}` },
-                  { value: 'evaluaties', label: `Evaluaties ${commentCount}` },
-                ],
-              }
-            : undefined
-        }
-      />
-
       {view === 'evaluaties' && evaluations ? (
-        <EvaluationsView evaluations={evaluations} url={course.url} locale={locale} />
-      ) : null}
-      {view === 'documenten' && documents.length === 0 ? (
-        <Empty
-          title="Nog geen documenten"
-          hint="Niemand deelde voor dit vak al iets. Heb jij een samenvatting of een oud examen?"
-          action={{ label: 'Opladen op Burgieclan', onPress: () => void WebBrowser.openBrowserAsync(course.url) }}
-        />
+        <EvaluationsView evaluations={evaluations} url={course.url} locale={locale} head={head} />
       ) : null}
       {view === 'documenten' ? (
-      <ScrollView
+      <HeadScroll
+        head={head}
         style={styles.root}
         contentContainerStyle={styles.content}
         refreshControl={
@@ -144,6 +141,14 @@ export default function VakScreen() {
         }
       >
         {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
+        {documents.length === 0 ? (
+          <Empty
+            flush
+            title="Nog geen documenten"
+            hint="Niemand deelde voor dit vak al iets. Heb jij een samenvatting of een oud examen?"
+            action={{ label: 'Opladen op Burgieclan', onPress: () => void WebBrowser.openBrowserAsync(course.url) }}
+          />
+        ) : null}
 
         {/* Per soort (examens, oefenzittingen, samenvattingen) een kaart die je
             openklapt, standaard dicht zoals de rubrieken van de evaluaties. Met
@@ -235,7 +240,7 @@ export default function VakScreen() {
             ]}
           />
         ) : null}
-      </ScrollView>
+      </HeadScroll>
       ) : null}
     </>
   );

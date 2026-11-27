@@ -6,7 +6,6 @@ import {
   Modal,
   Pressable,
   StyleSheet,
-  View,
   useWindowDimensions,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -133,6 +132,15 @@ function Pager({
   const positioned = useRef(false);
   // Hoe ver de foto omhoog of omlaag weggeveegd is; de achtergrond vaagt mee weg.
   const dismiss = useSharedValue(0);
+  // Sluiten maakt de viewer meteen onzichtbaar, op de UI-thread, nog voor de modal
+  // zelf weg is. Het wegnemen van een native modal duurt op iOS even, en tot dan
+  // bleef de foto staan: dat voelde als een vertraging na elke tik.
+  const shown = useSharedValue(1);
+  const hidden = useAnimatedStyle(() => ({ opacity: shown.value }));
+  const close = useCallback(() => {
+    shown.value = 0;
+    onClose();
+  }, [shown, onClose]);
   const backdrop = useAnimatedStyle(() => ({ opacity: 1 - Math.min(Math.abs(dismiss.value) / 320, 0.9) }));
   const chrome = useAnimatedStyle(() => ({ opacity: 1 - Math.min(Math.abs(dismiss.value) / 120, 1) }));
 
@@ -159,7 +167,7 @@ function Pager({
   );
 
   return (
-    <View style={styles.viewer}>
+    <Animated.View style={[styles.viewer, hidden]}>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.backdrop, backdrop]} />
       <FlatList
         ref={list}
@@ -191,6 +199,7 @@ function Pager({
             active={position === index}
             onZoomChange={setZoomed}
             dismiss={dismiss}
+            shown={shown}
             onClose={onClose}
           />
         )}
@@ -200,7 +209,7 @@ function Pager({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Sluiten"
-          onPress={onClose}
+          onPress={close}
           hitSlop={14}
           style={styles.button}
         >
@@ -212,7 +221,7 @@ function Pager({
       <Animated.Text style={[styles.counter, { bottom: insets.bottom + SPACING.xl }, chrome]}>
         {index + 1} van {photos.length}
       </Animated.Text>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -244,6 +253,7 @@ function ZoomablePhoto({
   active,
   onZoomChange,
   dismiss,
+  shown,
   onClose,
 }: {
   photo: ViewerPhoto;
@@ -253,6 +263,8 @@ function ZoomablePhoto({
   onZoomChange: (zoomed: boolean) => void;
   /** Hoe ver de foto weggeveegd is, voor de achtergrond. */
   dismiss: SharedValue<number>;
+  /** 0 zodra er gesloten wordt: de viewer is dan meteen weg; zie `Pager`. */
+  shown: SharedValue<number>;
   onClose: () => void;
 }) {
   const scale = useSharedValue(1);
@@ -404,9 +416,12 @@ function ZoomablePhoto({
       if (mode.value === 2) {
         if (Math.abs(event.translationY) > 110 || Math.abs(event.velocityY) > 900) {
           const away = (event.translationY < 0 ? -1 : 1) * height;
-          dismiss.value = withTiming(away, { duration: 180 });
-          y.value = withTiming(away, { duration: 180 }, (done) => {
-            if (done) runOnJS(onClose)();
+          dismiss.value = withTiming(away, { duration: 150 });
+          y.value = withTiming(away, { duration: 150 }, (done) => {
+            if (done) {
+              shown.value = 0;
+              runOnJS(onClose)();
+            }
           });
         } else {
           x.value = withSpring(0, SPRING);
@@ -471,12 +486,16 @@ function ZoomablePhoto({
       const shownHeight = Math.min(height, width / aspect.value);
       const outside =
         Math.abs(event.x - width / 2) > shownWidth / 2 || Math.abs(event.y - height / 2) > shownHeight / 2;
-      if (outside) runOnJS(onClose)();
+      if (outside) {
+        shown.value = 0;
+        runOnJS(onClose)();
+      }
     });
 
-  // Knijpen en slepen tegelijk, zonder te wachten op een tik; één tik wacht wel
-  // tot het geen dubbeltik is.
-  const gesture = Gesture.Simultaneous(pinch, pan, Gesture.Exclusive(doubleTap, singleTap));
+  // Alles tegelijk. Een tik naast de foto sluit meteen en wacht niet meer tot het
+  // geen dubbeltik is (dat kostte telkens bijna 200 ms); een dubbeltik om in te
+  // zoomen doe je op de foto, en daar doet één tik niets.
+  const gesture = Gesture.Simultaneous(pinch, pan, doubleTap, singleTap);
 
   const animated = useAnimatedStyle(() => ({
     transform: [{ translateX: x.value }, { translateY: y.value }, { scale: scale.value }],

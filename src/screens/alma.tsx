@@ -86,6 +86,10 @@ export default function AlmaScreen() {
   const [index, setIndex] = useState(0);
   // De uren van de week staan standaard dicht.
   const [hoursOpen, setHoursOpen] = useState(false);
+  // Hoe hoog elke dag is, zodat de rij met dagen zo hoog is als de dag die openstaat.
+  const [heights, setHeights] = useState<Record<string, number>>({});
+  // Omlaag trekken ververst ook een andere dag dan vandaag.
+  const [refreshNonce, setRefreshNonce] = useState(0);
   const pager = useRef<FlatList<string>>(null);
   const goTo = (next: number) => {
     if (next < 0 || next >= pages.length) return;
@@ -154,7 +158,24 @@ export default function AlmaScreen() {
   }
 
   return (
-    <View style={styles.root}>
+    // Eén verticale scroll met de kop erin (eind november 2026): de kop schuift mee
+    // weg in plaats van te blijven staan. De dagen blijven opzij te vegen; de rij
+    // met dagen is zo hoog als de dag die openstaat.
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={styles.outer}
+      refreshControl={
+        <RefreshControl
+          refreshing={base.refreshing}
+          tintColor={COLORS.navy}
+          onRefresh={() => {
+            void base.refresh();
+            setRefreshNonce((n) => n + 1);
+          }}
+        />
+      }
+    >
+      <View style={styles.overscroll} />
       {head}
       {base.stale ? <StaleNotice onRetry={() => void base.refresh()} /> : null}
 
@@ -163,7 +184,7 @@ export default function AlmaScreen() {
           meest naartoe trok. */}
       <FlatList
         ref={pager}
-        style={styles.pager}
+        style={heights[pages[index]] ? { height: heights[pages[index]] } : undefined}
         data={pages}
         keyExtractor={(date) => date}
         horizontal
@@ -181,10 +202,14 @@ export default function AlmaScreen() {
             today={item === data.date ? base : null}
             hoursOpen={hoursOpen}
             onToggleHours={() => setHoursOpen((current) => !current)}
+            refreshNonce={refreshNonce}
+            onHeight={(height) =>
+              setHeights((current) => (current[item] === height ? current : { ...current, [item]: height }))
+            }
           />
         )}
       />
-    </View>
+    </ScrollView>
   );
 }
 
@@ -199,10 +224,14 @@ function DayPage({
   today,
   hoursOpen,
   onToggleHours,
+  refreshNonce,
+  onHeight,
 }: {
   date: string;
   width: number;
   slug: Slug;
+  refreshNonce: number;
+  onHeight: (height: number) => void;
   /** Of de uren van de week openstaan; geldt voor elke dag tegelijk. */
   hoursOpen: boolean;
   onToggleHours: () => void;
@@ -213,14 +242,20 @@ function DayPage({
   const own = useResource('alma', () => fetchAlma(locale, date, true), `${locale}:alle:${date}`, today === null);
   const resource = today ?? own;
   const restaurant = resource.data?.restaurants.find((candidate) => candidate.slug === slug) ?? null;
+  const refreshOwn = own.refresh;
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    if (today === null) void refreshOwn();
+  }, [refreshNonce, today, refreshOwn]);
 
   return (
-    <ScrollView
-      style={{ width }}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl refreshing={resource.refreshing} onRefresh={() => void resource.refresh()} tintColor={COLORS.navy} />
-      }
+    <View
+      style={[{ width }, styles.content]}
+      onLayout={(event) => onHeight(Math.ceil(event.nativeEvent.layout.height))}
     >
       {resource.loading && !resource.data ? (
         <Loading />
@@ -260,7 +295,7 @@ function DayPage({
           />
         </>
       )}
-    </ScrollView>
+    </View>
   );
 }
 
@@ -621,7 +656,6 @@ function WeekHours({
 
 const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
-  pager: { flex: 1 },
   // Enkel zo hoog als de pillen: buiten een verticale lijst rekte de rij anders uit
   // tot de hele vrije hoogte.
   // De dagen lopen tot tegen de randen van het scherm, zoals de pillen erboven.
@@ -657,6 +691,9 @@ const styles = StyleSheet.create({
     marginBottom: -SPACING.xl,
   },
   root: { flex: 1, backgroundColor: COLORS.paper },
+  outer: { paddingBottom: SPACING.xxl },
+  // Wat boven de kop verschijnt als je op iOS omlaag trekt: geel, zoals de kop.
+  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
   content: { paddingTop: SPACING.sm, paddingBottom: SPACING.xxl * 2, gap: SPACING.xl },
   // Open in het groen, dicht in het grijs; geen geel bolletje meer.
   menu: {},

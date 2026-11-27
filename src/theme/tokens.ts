@@ -241,3 +241,22 @@ export const TICKET_COLORS = {
 
 /** Minimale aanraakoppervlakte aan de deur; dit wordt met handschoenen aan bediend. */
 export const HIT_TARGET = 48;
+
+/**
+ * De kleuren van de statuspil van een bestelling op cudi.vtk.be (*Mijn
+ * bestellingen*, `ORDER_STATUS_PILLS` in `app/[association]/(main)/account/orders/page.tsx`
+ * van de cursusdienst): de Tailwind-tinten `*-100` als vlak en `*-800` als tekst.
+ * Zo heeft elke stand bij een bestelling in de app dezelfde kleur als op cudi.
+ */
+export const CUDI_STATUS = {
+  /** Afgehaald, of ligt klaar: green-100 / green-800. */
+  green: { bg: '#DCFCE7', ink: '#166534' },
+  /** Online betaald: blue-100 / blue-800. */
+  blue: { bg: '#DBEAFE', ink: '#1E40AF' },
+  /** Wacht op levering, op de wachtlijst: yellow-100 / yellow-800. */
+  yellow: { bg: '#FEF9C3', ink: '#854D0E' },
+  /** Niet op tijd afgehaald: amber-100 / amber-900. */
+  amber: { bg: '#FEF3C7', ink: '#78350F' },
+  /** Geannuleerd: red-100 / red-800. */
+  red: { bg: '#FEE2E2', ink: '#991B1B' },
+} as const;

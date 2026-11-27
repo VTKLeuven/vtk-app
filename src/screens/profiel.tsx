@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
 import { Bell, ChevronRight, Coins, Sandwich, TicketCheck, Wrench } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { baseUrl } from '../api/client';
 import { fetchProfile } from '../api/endpoints';
@@ -17,6 +17,7 @@ import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
+import { HeadScroll } from '../components/HeadScroll';
 
 /**
  * Profiel: wie je bent, en je shiften.
@@ -48,8 +49,7 @@ export default function ProfielScreen() {
   if (!viewer) {
     return (
       <>
-        <PageHead title="Profiel" subtitle="Log in met je VTK-account" />
-        <ScrollView contentContainerStyle={styles.content} style={styles.root}>
+        <HeadScroll head={<PageHead title="Profiel" subtitle="Log in met je VTK-account" />} contentContainerStyle={styles.content} style={styles.root}>
           <Card>
             <Text style={styles.title}>Nog niet ingelogd</Text>
             <Text style={styles.body}>
@@ -64,7 +64,7 @@ export default function ProfielScreen() {
             setLocale={setLocale}
             onOpenServer={() => router.push('/instellingen')}
           />
-        </ScrollView>
+        </HeadScroll>
       </>
     );
   }
@@ -73,8 +73,7 @@ export default function ProfielScreen() {
 
   return (
     <>
-      <PageHead title="Profiel" subtitle={viewer.email} />
-      <ScrollView
+      <HeadScroll head={<PageHead title="Profiel" subtitle={viewer.email} />}
         contentContainerStyle={styles.content}
         style={styles.root}
         refreshControl={
@@ -229,7 +228,7 @@ export default function ProfielScreen() {
               .finally(() => setSigningOut(false));
           }}
         />
-      </ScrollView>
+      </HeadScroll>
     </>
   );
 }

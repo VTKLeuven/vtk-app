@@ -2,7 +2,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Image } from 'expo-image';
 import { ChevronDown, ChevronRight, ChevronUp, ExternalLink, LockKeyhole, Search, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Path, SvgXml } from 'react-native-svg';
 
 import { ApiError } from '../api/client';
@@ -15,6 +15,7 @@ import { useTabRouter } from '../navigation';
 import { useApp } from '../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
+import { HeadScroll } from '../components/HeadScroll';
 
 /**
  * Beheer: de admin van vtk.be, voor wie er rechten voor heeft.
@@ -145,8 +146,7 @@ export default function BeheerScreen() {
 
   return (
     <>
-      {head}
-      <ScrollView
+      <HeadScroll head={head}
         style={styles.root}
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={resource.refreshing} onRefresh={() => void resource.refresh()} />}
@@ -248,7 +248,7 @@ export default function BeheerScreen() {
           <Text style={styles.body}>Het dashboard zoals op de site</Text>
           <ChevronRight size={18} color={COLORS.muted} />
         </Pressable>
-      </ScrollView>
+      </HeadScroll>
     </>
   );
 }

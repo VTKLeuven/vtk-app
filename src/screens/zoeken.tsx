@@ -96,24 +96,30 @@ export default function ZoekenScreen() {
 
   return (
     <>
-      <PageHead title="Zoeken" subtitle="Pagina's, activiteiten en albums" />
-
-      <SearchField
-        value={query}
-        onChange={setQuery}
-        placeholder="Waar zoek je naar?"
-        label="Zoekterm"
-        autoFocus
-      />
-
-      {busy && results.length === 0 ? <Loading label="Zoeken" /> : null}
-
       <FlatList
         data={results}
         keyExtractor={(result) => `${result.kind}:${result.id}`}
         style={styles.root}
         contentContainerStyle={styles.list}
         keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        // De kop en het zoekveld staan in de lijst en schuiven mee weg.
+        ListHeaderComponent={
+          <View style={styles.headWrap}>
+            <View style={styles.overscroll} />
+            <PageHead title="Zoeken" subtitle="Pagina's, activiteiten en albums" />
+
+            <SearchField
+              value={query}
+              onChange={setQuery}
+              placeholder="Waar zoek je naar?"
+              label="Zoekterm"
+              autoFocus
+            />
+
+            {busy && results.length === 0 ? <Loading label="Zoeken" /> : null}
+          </View>
+        }
         renderItem={({ item }) => (
           <Pressable
             accessibilityRole="button"
@@ -195,6 +201,9 @@ function absolute(href: string): string {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
   list: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxl },
+  headWrap: { marginHorizontal: -SPACING.lg, marginTop: -SPACING.lg },
+  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',

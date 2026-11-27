@@ -1,7 +1,7 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Hourglass, PackageCheck, Wallet } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import type { AppCudiOrder } from '../api/contract';
 import { cancelCudiLine, cudiCheckout, fetchCudiOverview } from '../api/endpoints';
@@ -12,6 +12,7 @@ import { Button, Card, Empty, ErrorState, Loading, SectionHeading, StaleNotice }
 import { useTabRouter } from '../navigation';
 import { useApp } from '../state/app';
 import { COLORS, FONTS, SPACING, TYPE } from '../theme/tokens';
+import { HeadScroll } from '../components/HeadScroll';
 
 /**
  * Al je bestellingen bij de cursusdienst, zoals Mijn bestellingen op cudi:
@@ -40,14 +41,13 @@ export default function CudiBestellingenScreen() {
   if (!viewer) {
     return (
       <>
-        {head}
-        <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+        <HeadScroll head={head} style={styles.root} contentContainerStyle={styles.content}>
           <Card>
             <Text style={styles.title}>Log eerst in</Text>
             <Text style={styles.body}>Je bestellingen bij de cursusdienst hangen aan je VTK-account.</Text>
             <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
           </Card>
-        </ScrollView>
+        </HeadScroll>
       </>
     );
   }
@@ -135,8 +135,7 @@ export default function CudiBestellingenScreen() {
 
   return (
     <>
-      {head}
-      <ScrollView
+      <HeadScroll head={head}
         style={styles.root}
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={resource.refreshing} onRefresh={() => void resource.refresh()} />}
@@ -161,7 +160,7 @@ export default function CudiBestellingenScreen() {
             {done.map(card)}
           </View>
         ) : null}
-      </ScrollView>
+      </HeadScroll>
     </>
   );
 }

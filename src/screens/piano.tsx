@@ -423,9 +423,10 @@ const styles = StyleSheet.create({
 
   strip: { flexGrow: 0, flexShrink: 0, marginHorizontal: -SIDE },
   squares: { gap: 6, paddingHorizontal: SIDE },
+  // Echt vierkant; de stip zweeft onderaan en duwt de dag niet omhoog.
   square: {
-    width: 48,
-    height: 62,
+    width: 52,
+    height: 52,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -443,7 +444,7 @@ const styles = StyleSheet.create({
   },
   squareDay: { fontFamily: FONTS.bold, fontSize: 18, color: COLORS.navy, fontVariant: ['tabular-nums'] },
   squareTextActive: { color: COLORS.yellow },
-  squareDot: { width: 5, height: 5, borderRadius: 3, marginTop: 2 },
+  squareDot: { position: 'absolute', bottom: 6, width: 5, height: 5, borderRadius: 3 },
   squareDotOwn: { backgroundColor: COLORS.navy },
   squareDotActive: { backgroundColor: COLORS.yellow },
 

@@ -1,12 +1,13 @@
 
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { createStudyGroup, joinStudyGroup } from '../../api/endpoints';
 import { PageHead } from '../../components/PageHead';
 import { Button, Card } from '../../components/ui';
 import { useTabRouter } from '../../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
+import { HeadScroll } from '../../components/HeadScroll';
 
 /**
  * Een groep maken, of erbij komen met een code.
@@ -47,8 +48,7 @@ export default function NieuweStudiegroepScreen() {
 
   return (
     <>
-      <PageHead title="Blokgroep" subtitle="Maak er een of kom erbij met een code" />
-      <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+      <HeadScroll head={<PageHead title="Blokgroep" subtitle="Maak er een of kom erbij met een code" />} style={styles.root} contentContainerStyle={styles.content}>
         <Card>
           <Text style={styles.cardTitle}>Ik heb een code</Text>
           <Text style={styles.body}>
@@ -101,7 +101,7 @@ export default function NieuweStudiegroepScreen() {
             heel VTK.
           </Text>
         </View>
-      </ScrollView>
+      </HeadScroll>
     </>
   );
 }

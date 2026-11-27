@@ -1,7 +1,7 @@
 
 import { Bell } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import type { AppNotificationTopic } from '../api/contract';
 import {
@@ -17,6 +17,7 @@ import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
+import { HeadScroll } from '../components/HeadScroll';
 
 /**
  * Waarvoor je telefoon afgaat.
@@ -81,14 +82,13 @@ export default function MeldingenScreen() {
   if (!viewer) {
     return (
       <>
-        <PageHead title="Meldingen" />
-        <ScrollView contentContainerStyle={styles.content} style={styles.root}>
+        <HeadScroll head={<PageHead title="Meldingen" />} contentContainerStyle={styles.content} style={styles.root}>
           <Card>
             <Text style={styles.title}>Log eerst in</Text>
             <Text style={styles.body}>Meldingen hangen aan je account en aan je toestel.</Text>
             <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
           </Card>
-        </ScrollView>
+        </HeadScroll>
       </>
     );
   }
@@ -151,8 +151,7 @@ export default function MeldingenScreen() {
 
   return (
     <>
-      <PageHead title="Meldingen" subtitle="Waarvoor je telefoon afgaat" />
-      <ScrollView contentContainerStyle={styles.content} style={styles.root}>
+      <HeadScroll head={<PageHead title="Meldingen" subtitle="Waarvoor je telefoon afgaat" />} contentContainerStyle={styles.content} style={styles.root}>
         <Card featured={!pushOn}>
           <View style={styles.headRow}>
             <Bell color={COLORS.navy} size={20} />
@@ -222,7 +221,7 @@ export default function MeldingenScreen() {
         {settings.categories.length === 0 ? (
           <Text style={styles.hint}>Er staan nog geen categorieën klaar.</Text>
         ) : null}
-      </ScrollView>
+      </HeadScroll>
     </>
   );
 }

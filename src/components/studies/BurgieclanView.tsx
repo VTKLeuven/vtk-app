@@ -27,6 +27,7 @@ import { YellowHead } from '../YellowHead';
 import { SearchField } from '../SearchField';
 import { Button, Card, CardList, Empty, ErrorState, Loading, MarginRegister, StaleNotice } from '../ui';
 import type { StudiesTabs } from './tabs';
+import { HeadScroll } from '../HeadScroll';
 
 /**
  * Burgieclan, het derde tabblad van Studies: de documenten van je vakken.
@@ -72,8 +73,7 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
   if (!viewer) {
     return (
       <>
-        {head}
-        <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+        <HeadScroll head={head} style={styles.root} contentContainerStyle={styles.content}>
           <Card>
             <Text style={styles.title}>Log eerst in</Text>
             <Text style={styles.body}>
@@ -82,7 +82,7 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
             </Text>
             <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
           </Card>
-        </ScrollView>
+        </HeadScroll>
       </>
     );
   }

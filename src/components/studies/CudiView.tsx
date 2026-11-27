@@ -44,6 +44,7 @@ import { YellowHead, YellowHeadButton } from '../YellowHead';
 import { CudiOrderCard, euro } from './CudiOrderCard';
 import type { StudiesTabs } from './tabs';
 import { CARD_SHADOW } from '../HomeSection';
+import { HeadScroll } from '../HeadScroll';
 
 /**
  * Wanneer een oudere cudi geen maximum meestuurt: één. Strenger dan cudi kan nooit
@@ -164,8 +165,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
   if (!viewer) {
     return (
       <>
-        {head}
-        <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+        <HeadScroll head={head} style={styles.root} contentContainerStyle={styles.content}>
           <Card>
             <Text style={styles.title}>Log eerst in</Text>
             <Text style={styles.body}>
@@ -174,7 +174,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
             </Text>
             <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
           </Card>
-        </ScrollView>
+        </HeadScroll>
       </>
     );
   }

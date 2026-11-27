@@ -62,8 +62,8 @@ export const TAB_ROUTES = {
   ],
   kalender: ['evenement/[id]', 'ticket/[slug]',
     'ticket-bestellen/[slug]', 'mijn-tickets', 'meldingen',
-    // Een vak in de planner (Per vak) opent zijn pagina op Burgieclan.
-    'vak/[id]'],
+    // Een vak in de planner (Per vak) opent zijn pagina op Burgieclan, en daar een document.
+    'vak/[id]', 'pdf'],
   studies: [
     'studiegroep/[id]',
     'studiegroep/nieuw',
@@ -72,6 +72,8 @@ export const TAB_ROUTES = {
     'cudi-bestellingen',
     'cudi-tijdsloten',
     'web',
+    // Een document van Burgieclan, in de app zelf.
+    'pdf',
   ],
   tickets: ['ticket/[slug]',
     'ticket-bestellen/[slug]', 'mijn-tickets', 'scannen', 'deur'],

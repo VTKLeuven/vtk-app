@@ -1,7 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import { useCallback, useRef, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { fetchScanEvents } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
@@ -12,6 +12,7 @@ import { useTabRouter } from '../navigation';
 import { queueSizes } from '../scanner/storage';
 import { useApp } from '../state/app';
 import { COLORS, SPACING, TYPE } from '../theme/tokens';
+import { HeadScroll } from '../components/HeadScroll';
 
 /**
  * Tickets scannen (vroeger "Aan de deur"): de evenementen die jij mag scannen.
@@ -70,8 +71,7 @@ export default function DeurScreen() {
 
   return (
     <>
-      <PageHead title="Tickets scannen" subtitle="Kies het evenement waar je scant" />
-      <ScrollView
+      <HeadScroll head={<PageHead title="Tickets scannen" subtitle="Kies het evenement waar je scant" />}
         style={styles.root}
         contentContainerStyle={styles.content}
         refreshControl={
@@ -124,7 +124,7 @@ export default function DeurScreen() {
             })}
           </CardList>
         )}
-      </ScrollView>
+      </HeadScroll>
     </>
   );
 }
@@ -136,7 +136,7 @@ export default function DeurScreen() {
 const styles = StyleSheet.create({
   cardList: { marginHorizontal: SPACING.lg },
   root: { flex: 1, backgroundColor: COLORS.paper },
-  content: { paddingBottom: SPACING.xxl },
+  content: { paddingTop: SPACING.lg, paddingBottom: SPACING.xxl },
   empty: { padding: SPACING.lg, gap: SPACING.md },
 
   row: {

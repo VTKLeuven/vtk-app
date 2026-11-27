@@ -115,7 +115,8 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
    een onderdeel van de admin (zie 3), en de twee eenmalige stappen op cudi die
    bij je account horen (voorwaarden aanvaarden, je vakken aanduiden), en het
    feedbackformulier van de app op dopl.vtk.be (Meer › Feedback App). Enkel
-   `*.vtk.be` opent daar.
+   `*.vtk.be` opent daar. Een document van Burgieclan opent sinds dan in
+   `src/screens/pdf.tsx`, een WebView voor dat ene bestand.
 3. **De admin niet nabouwen.** Tot november 2026 stond hier "geen admin". Nu
    heeft wie in het beheer mag (dezelfde regel als de link op de site: een recht
    of superadmin, `abilities.admin`) onder Meer › Beheer een native dashboard:
@@ -142,6 +143,13 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
      geel voor wat open staat, een navy waas voor de rest). Een actie rechts is
      een `HeadButton` (wit, rond) of een `YellowHeadButton` (navy, rond). Wat in
      `right` of `children` staat, staat op het geel: navy en wit, geen grijs.
+   - **De kop schuift mee weg** (eind november 2026): ze staat in de scroll
+     (`HeadScroll` in `src/components/HeadScroll.tsx`, of als
+     `ListHeaderComponent`) en blijft nooit vast bovenaan staan, ook niet om een
+     dagkiezer bereikbaar te houden. Een vaste kop is een uitzondering die
+     uitdrukkelijk gevraagd moet zijn. Enkel waar de inhoud zelf een eigen
+     scroll heeft die er niet onder kan (de week van de planning, de agenda van
+     Transport, een WebView zoals `web.tsx` en `pdf.tsx`, de scanner) staat ze vast.
    - **Witte kaarten met een zachte schaduw** (`CARD_SHADOW` uit
      `src/components/HomeSection.tsx`, radius 20) in plaats van kaarten met een
      haarlijnrand. Een lijst is één kaart met haarlijnen tussen de rijen

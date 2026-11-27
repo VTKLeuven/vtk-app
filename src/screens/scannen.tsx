@@ -1,7 +1,7 @@
 
 import { Beer, Coins, DoorOpen, ScanLine, TicketCheck } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { ApiError } from '../api/client';
 import type { AppFakCheckin, AppPassHolder } from '../api/contract';
@@ -15,6 +15,7 @@ import { scanKindOf, UNKNOWN_SCAN_MESSAGE } from '../scanKind';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { HeadScroll } from '../components/HeadScroll';
 
 type ScanResult =
   | { kind: 'busy' }
@@ -117,8 +118,7 @@ export default function ScannenScreen() {
   if (!viewer) {
     return (
       <>
-        <PageHead title="Scannen" />
-        <ScrollView contentContainerStyle={styles.content} style={styles.root}>
+        <HeadScroll head={<PageHead title="Scannen" />} contentContainerStyle={styles.content} style={styles.root}>
           <Card>
             <Text style={styles.title}>Log eerst in</Text>
             <Text style={styles.body}>
@@ -127,15 +127,14 @@ export default function ScannenScreen() {
             </Text>
             <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
           </Card>
-        </ScrollView>
+        </HeadScroll>
       </>
     );
   }
 
   return (
     <>
-      <PageHead title="Scannen" subtitle="Uitnodiging, fakbar of een pas" />
-      <ScrollView contentContainerStyle={styles.content} style={styles.root}>
+      <HeadScroll head={<PageHead title="Scannen" subtitle="Uitnodiging, fakbar of een pas" />} contentContainerStyle={styles.content} style={styles.root}>
         <QrScanner
           onScan={handle}
           paused={result !== null}
@@ -164,7 +163,7 @@ export default function ScannenScreen() {
         {mayScanTickets && !result ? (
           <Button label="Tickets scannen" variant="ghost" onPress={() => router.push('/deur')} />
         ) : null}
-      </ScrollView>
+      </HeadScroll>
     </>
   );
 }

@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import type { AppCudiOrder, AppCudiOrdering, AppLocale } from '../../api/contract';
 import { formatDayShort, formatEuro, formatShortDate, formatTime } from '../../format';
-import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
+import { COLORS, CUDI_STATUS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW } from '../HomeSection';
 import { Button } from '../ui';
 
@@ -135,25 +135,32 @@ export const TONES = {
   quiet: { bg: COLORS.paper2, ink: COLORS.muted },
 } as const satisfies Record<string, Tone>;
 
+/**
+ * De band van een bestelling in de kleur van haar stand, dezelfde als de pil op
+ * cudi.vtk.be (`CUDI_STATUS`): groen afgehaald of klaar, blauw online betaald,
+ * geel wacht op levering, amber niet op tijd afgehaald, rood geannuleerd.
+ */
 const ORDER_LOOK: Record<AppCudiOrder['status'], { tone: Tone; icon: typeof BookOpen }> = {
-  READY: { tone: TONES.ok, icon: PackageCheck },
-  ONLINE_PAID: { tone: TONES.ok, icon: PackageCheck },
-  PENDING: { tone: TONES.waiting, icon: Truck },
-  POS_COMPLETED: { tone: TONES.info, icon: CheckCheck },
-  EXPIRED: { tone: TONES.danger, icon: TimerOff },
-  CANCELLED: { tone: TONES.quiet, icon: CircleX },
+  READY: { tone: CUDI_STATUS.green, icon: PackageCheck },
+  ONLINE_PAID: { tone: CUDI_STATUS.blue, icon: PackageCheck },
+  PENDING: { tone: CUDI_STATUS.yellow, icon: Truck },
+  POS_COMPLETED: { tone: CUDI_STATUS.green, icon: CheckCheck },
+  EXPIRED: { tone: CUDI_STATUS.amber, icon: TimerOff },
+  CANCELLED: { tone: CUDI_STATUS.red, icon: CircleX },
 };
 
+/** Een cursus in een bestelling, in dezelfde kleuren als de band. */
 function lineTone(status: string): Tone {
   switch (status) {
     case 'ASSIGNED':
-      return TONES.ok;
-    case 'BOOKED':
-      return TONES.waiting;
     case 'SOLD':
-      return TONES.info;
+      return CUDI_STATUS.green;
+    case 'BOOKED':
+      return CUDI_STATUS.yellow;
     case 'EXPIRED':
-      return TONES.danger;
+      return CUDI_STATUS.amber;
+    case 'CANCELLED':
+      return CUDI_STATUS.red;
     default:
       return TONES.quiet;
   }

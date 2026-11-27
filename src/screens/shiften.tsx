@@ -31,6 +31,7 @@ import { addDays } from '../planning/grid';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { HeadScroll } from '../components/HeadScroll';
 
 const SIDE = SPACING.xl - 4;
 /** Tot zoveel plaatsen tonen we bolletjes; daarboven "3/12". */
@@ -69,6 +70,8 @@ export default function ShiftenScreen() {
 
   const scroller = useRef<ScrollViewInstance>(null);
   const offsets = useRef<Record<string, number>>({});
+  // De kop staat in de scroll; de dagen meten zich onder de kop.
+  const headHeight = useRef(0);
   const [current, setCurrent] = useState<string | null>(null);
   // Een tik op een dag scrolt; tot dat scrollen gedaan is, telt de stand van de
   // scroll niet als keuze, anders springt het vierkantje over de tussenliggende dagen.
@@ -80,7 +83,7 @@ export default function ShiftenScreen() {
     if (y === undefined) return;
     jumping.current = true;
     setCurrent(key);
-    scroller.current?.scrollTo({ y: Math.max(0, y - SPACING.md), animated: true });
+    scroller.current?.scrollTo({ y: Math.max(0, headHeight.current + y - SPACING.md), animated: true });
   };
 
   const onScroll = (y: number) => {
@@ -88,7 +91,7 @@ export default function ShiftenScreen() {
     let found = days[0]?.key ?? null;
     for (const day of days) {
       const top = offsets.current[day.key];
-      if (top !== undefined && top - SPACING.xl <= y) found = day.key;
+      if (top !== undefined && headHeight.current + top - SPACING.xl <= y) found = day.key;
     }
     if (found && found !== selected) setCurrent(found);
   };
@@ -133,8 +136,16 @@ export default function ShiftenScreen() {
 
   return (
     <View style={styles.root}>
-      {head}
-      <ScrollView
+      <HeadScroll
+        head={
+          <View
+            onLayout={(event) => {
+              headHeight.current = event.nativeEvent.layout.height;
+            }}
+          >
+            {head}
+          </View>
+        }
         ref={scroller}
         style={styles.root}
         contentContainerStyle={styles.content}
@@ -185,7 +196,7 @@ export default function ShiftenScreen() {
             </View>
           </View>
         ))}
-      </ScrollView>
+      </HeadScroll>
     </View>
   );
 }
@@ -223,8 +234,8 @@ function DayMargin({ dayKey, iso, locale }: { dayKey: string; iso: string; local
 }
 
 /**
- * De dagen met shiften als vierkantjes in het geel. Eronder een stip waar je zelf
- * op staat, anders hoeveel shiften er nog plaats hebben, of "vol".
+ * De dagen met shiften als vierkantjes in het geel, met een stip waar je zelf op
+ * staat. Een dag waar alles volzet is, staat gedempt.
  */
 function DaySquares({
   days,
@@ -281,11 +292,7 @@ function DaySquares({
             <Text style={[styles.squareDay, active && styles.squareTextActive]}>
               {brussels(locale, { day: 'numeric' }).format(date)}
             </Text>
-            {mine ? (
-              <View style={[styles.squareDot, active && styles.squareDotActive]} />
-            ) : (
-              <Text style={[styles.squareCount, active && styles.squareTextActive]}>{open === 0 ? 'vol' : open}</Text>
-            )}
+            <View style={[styles.squareDot, mine && styles.squareDotMine, mine && active && styles.squareDotActive]} />
           </Pressable>
         );
       })}
@@ -564,9 +571,10 @@ const styles = StyleSheet.create({
   // De dagen in het geel, zoals bij Alma en Piano.
   strip: { flexGrow: 0, flexShrink: 0, marginHorizontal: -SIDE },
   squares: { gap: 6, paddingHorizontal: SIDE },
+  // Echt vierkant; de stip zweeft onderaan en duwt de dag niet omhoog.
   square: {
-    width: 48,
-    height: 62,
+    width: 52,
+    height: 52,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -583,9 +591,11 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
   },
   squareDay: { fontFamily: FONTS.bold, fontSize: 18, color: COLORS.navy, fontVariant: ['tabular-nums'] },
-  squareCount: { fontFamily: FONTS.semibold, fontSize: 10, color: COLORS.body },
   squareTextActive: { color: COLORS.yellow },
-  squareDot: { width: 6, height: 6, borderRadius: 3, marginTop: 3, backgroundColor: COLORS.navy },
+  // Een stip waar je zelf op een shift staat; anders blijft de plek leeg, zodat
+  // alle vierkantjes even hoog zijn.
+  squareDot: { position: 'absolute', bottom: 6, width: 6, height: 6, borderRadius: 3 },
+  squareDotMine: { backgroundColor: COLORS.navy },
   squareDotActive: { backgroundColor: COLORS.yellow },
 
   // Een dag: de datum in de marge, de shiften achter de gele lijn.
