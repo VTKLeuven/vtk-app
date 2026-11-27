@@ -220,7 +220,8 @@ uitzondering: die werkt in Expo Go niet.
   van Burgieclan opent als pdf in het systeemvenster. Tickets heeft twee tabbladen
   (Kopen/Mijne) als pillen in de kop (`tabs` op `PageHead`). Kalender heeft er
   drie (Planning, Evenementen, Mijn evenementen; tot november 2026 Agenda en
-  Mijn lijst) en opent op **Planning** voor wie die
+  Mijn lijst) en opent op **Planning**, ook wie niet ingelogd is (die krijgt
+  daar de vraag om in te loggen en daarna zijn lessenrooster te importeren) en voor wie die
   heeft (de Burgieclan-koppeling via `src/components/planning/PlanningView.tsx`;
   zie `docs/burgieclan-planning.md` in `vtk-website-new`); Lijst en Maand zijn
   weergaven onder Evenementen, geen tabbladen, en er is geen filter op
@@ -243,9 +244,11 @@ uitzondering: die werkt in Expo Go niet.
 - `src/campus/` - geografie, positiebepaling (`expo-location`) en wandelroutes
   op campus Arenberg voor de lokalenzoeker (`src/screens/lokalen.tsx`).
 - `src/alma.ts`, `src/screens/alma.tsx`, `src/components/AlmaToday.tsx` - de
-  vier Alma's op campus Arenberg (Alma 3, Quadrivium, De Moete, ESAT2): open of
-  niet, de uren van de week en het menu per dag, op Home onder je lessen en als
-  eigen scherm. Alma heeft geen API; vtk.be leest hun pagina's (`lib/alma/` op de
+  Alma's: open of niet, de uren van de week en het menu per dag. Home toont onder
+  je lessen enkel de vier op campus Arenberg (Alma 3, Quadrivium, De Moete,
+  ESAT2); het Alma-scherm vraagt er met `?alle=1` ook Alma 1, Alma 2 en
+  Gasthuisberg bij, als extra pillen. Een tik op een gerecht toont de foto in het
+  groot. Alma heeft geen API; vtk.be leest hun pagina's (`lib/alma/` op de
   site, een half uur in de cache) en geeft ze door via `/api/app/v1/alma`. Wijzigt
   alma.be zijn opmaak, dan valt het menu weg tot `lib/alma/parse.ts` mee is; de
   app praat nooit zelf met alma.be.

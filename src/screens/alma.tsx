@@ -21,13 +21,14 @@ import { fetchAlma } from '../api/endpoints';
 import { messageFor, useResource, type Resource } from '../api/useResource';
 import { almaClock, almaPrice, almaStatusLine } from '../alma';
 import { PageHead } from '../components/PageHead';
+import { PhotoViewer, type ViewerPhoto } from '../components/PhotoViewer';
 import { CardList, Empty, ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice } from '../components/ui';
 import { useApp } from '../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 
 type Slug = AppAlmaRestaurant['slug'];
 
-const SLUGS: Slug[] = ['alma-3', 'alma-quadrivium', 'de-moete', 'esat2'];
+const SLUGS: Slug[] = ['alma-3', 'alma-quadrivium', 'de-moete', 'esat2', 'alma-1', 'alma-2', 'alma-gasthuisberg'];
 
 /** Zoveel dagen staan er in de rij om te kiezen; Alma zet soms tot twee maanden online. */
 const SHOWN_DAYS = 10;
@@ -43,16 +44,11 @@ const DIET: Record<NonNullable<AppAlmaDish['diet']>, string | null> = {
   meat: null,
 };
 
-const CLIMATE: Record<NonNullable<AppAlmaDish['climate']>, string> = {
-  'very-low': 'Klimaatimpact heel laag',
-  low: 'Klimaatimpact laag',
-  medium: 'Klimaatimpact gemiddeld',
-  high: 'Klimaatimpact hoog',
-};
-
 /**
- * De Alma's op campus Arenberg: per restaurant het menu van een dag en de uren
- * van de week, zoals op de pagina van dat restaurant op alma.be.
+ * De Alma's: de vier op campus Arenberg, Alma 1 en 2 in het centrum en
+ * Gasthuisberg. Per restaurant het menu van een dag en de uren van de week, zoals
+ * op de pagina van dat restaurant op alma.be. Een tik op een gerecht toont de
+ * foto in het groot. Home toont enkel de vier van Arenberg (`AlmaToday`).
  *
  * Het restaurant kies je met de pillen in de kop, de dag met de rij eronder. De
  * prijs is die voor studenten en personeel van KU Leuven; de twee andere staan op
@@ -69,7 +65,7 @@ export default function AlmaScreen() {
     SLUGS.includes(params.restaurant as Slug) ? (params.restaurant as Slug) : 'alma-3',
   );
   // Vandaag: de status, de pillen, de dagen met een menu en het menu van vandaag.
-  const base = useResource('alma', () => fetchAlma(locale), `${locale}:`);
+  const base = useResource('alma', () => fetchAlma(locale, undefined, true), `${locale}:alle:`);
   const data = base.data;
   const restaurant = data?.restaurants.find((candidate) => candidate.slug === slug) ?? null;
 
@@ -111,7 +107,7 @@ export default function AlmaScreen() {
     <View {...backSwipe.panHandlers}>
       <PageHead
         title="Alma"
-        subtitle="De restaurants op campus Arenberg"
+        subtitle="Arenberg, het centrum en Gasthuisberg"
         tabs={{
           value: slug,
           onChange: setSlug,
@@ -189,7 +185,7 @@ function DayPage({
   today: Resource<AppAlma> | null;
 }) {
   const { locale } = useApp();
-  const own = useResource('alma', () => fetchAlma(locale, date), `${locale}:${date}`, today === null);
+  const own = useResource('alma', () => fetchAlma(locale, date, true), `${locale}:alle:${date}`, today === null);
   const resource = today ?? own;
   const restaurant = resource.data?.restaurants.find((candidate) => candidate.slug === slug) ?? null;
 
@@ -317,6 +313,20 @@ function Days({ dates, selected, onSelect }: { dates: string[]; selected: string
 
 function Menu({ restaurant, date }: { restaurant: AppAlmaRestaurant; date: string }) {
   const [unfolded, setUnfolded] = useState<Set<string>>(new Set());
+  // Elke foto van dit menu, zodat je in de viewer naar het volgende gerecht veegt.
+  const photos = useMemo<ViewerPhoto[]>(
+    () =>
+      restaurant.menu
+        .flatMap((section) => section.groups.flatMap((group) => group.dishes))
+        .filter((dish) => dish.imageUrl)
+        .map((dish) => ({ id: dish.id, url: dish.imageUrl!, filename: dish.name })),
+    [restaurant.menu],
+  );
+  const [viewing, setViewing] = useState<number | null>(null);
+  const openPhoto = (dish: AppAlmaDish) => {
+    const at = photos.findIndex((photo) => photo.id === dish.id);
+    if (at >= 0) setViewing(at);
+  };
 
   if (restaurant.unavailable) {
     return (
@@ -349,7 +359,7 @@ function Menu({ restaurant, date }: { restaurant: AppAlmaRestaurant; date: strin
                   {group.title ? <Text style={styles.groupTitle}>{group.title.toUpperCase()}</Text> : null}
                   <CardList>
                     {dishes.map((dish) => (
-                      <Dish key={dish.id} dish={dish} />
+                      <Dish key={dish.id} dish={dish} onPress={dish.imageUrl ? () => openPhoto(dish) : undefined} />
                     ))}
                   </CardList>
                 </View>
@@ -368,17 +378,25 @@ function Menu({ restaurant, date }: { restaurant: AppAlmaRestaurant; date: strin
           </View>
         );
       })}
+      <PhotoViewer photos={photos} index={viewing} onIndexChange={setViewing} onClose={() => setViewing(null)} />
     </View>
   );
 }
 
-function Dish({ dish }: { dish: AppAlmaDish }) {
+function Dish({ dish, onPress }: { dish: AppAlmaDish; onPress?: () => void }) {
   const price = almaPrice(dish.prices.kuleuven);
   const diet = dish.diet ? DIET[dish.diet] : null;
-  const meta = [dish.protein, dish.climate ? CLIMATE[dish.climate] : null].filter(Boolean).join(' · ');
+  const meta = dish.protein ?? '';
 
   return (
-    <View style={styles.dish} accessible accessibilityLabel={[dish.name, price, diet, meta].filter(Boolean).join(', ')}>
+    <Pressable
+      style={({ pressed }) => [styles.dish, pressed && onPress ? styles.pressed : null]}
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityHint={onPress ? 'Toont de foto in het groot' : undefined}
+      accessibilityLabel={[dish.name, price, diet, meta].filter(Boolean).join(', ')}
+    >
       <View style={styles.thumb}>
         {dish.imageUrl ? (
           <Image cachePolicy="memory-disk"
@@ -407,7 +425,7 @@ function Dish({ dish }: { dish: AppAlmaDish }) {
         ) : null}
       </View>
       {price ? <Text style={styles.price}>{price}</Text> : null}
-    </View>
+    </Pressable>
   );
 }
 
@@ -465,6 +483,7 @@ function Hours({ restaurant }: { restaurant: AppAlmaRestaurant }) {
 }
 
 const styles = StyleSheet.create({
+  pressed: { opacity: 0.7 },
   pager: { flex: 1 },
   // Enkel zo hoog als de pillen: buiten een verticale lijst rekte de rij anders uit
   // tot de hele vrije hoogte.

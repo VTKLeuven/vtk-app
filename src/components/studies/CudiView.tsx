@@ -59,12 +59,13 @@ type Placed = Extract<AppCudiOrderResult, { ok: true }>;
  *
  * Van boven naar onder in de volgorde waarin je het nodig hebt:
  *
- * 1. **Wat klaarligt**, met tot wanneer en de knop om een tijdslot te kiezen.
- *    Ligt er iets voor je, dan is dat de reden dat je hier bent.
- * 2. Wat nog op levering wacht, en de link naar al je bestellingen.
- * 3. **Zoeken** en de cursussen van jouw vakken, als register met een stapper,
+ * 1. **De openingsuren** van deze week: wanneer kan ik langs.
+ * 2. **Wat klaarligt**, met tot wanneer en de knop om een tijdslot te kiezen,
+ *    of anders de tijdsloten zelf.
+ * 3. Wat nog op levering wacht, en de link naar al je bestellingen.
+ * 4. **Zoeken** en de cursussen van jouw vakken, als register met een stapper,
  *    en de balk met het totaal onder de lijst, zoals bij Broodjes.
- * 4. Het algemene materiaal ("Voor iedereen"), dichtgeklapt: het is lang en
+ * 5. Het algemene materiaal ("Voor iedereen"), dichtgeklapt: het is lang en
  *    zelden waarvoor je komt.
  *
  * **Cudi beslist alles**: reserveren gaat door dezelfde functie als de knop in de
@@ -314,6 +315,21 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
 
         {placed ? <PlacedNotice result={placed} /> : null}
 
+        {hours && !hours.unavailable && hours.entries.length > 0 ? (
+          <View style={styles.block}>
+            <SectionHeading>Openingsuren deze week</SectionHeading>
+            <CardList>
+              {hours.entries.map((entry) => (
+                <View key={entry.day} style={styles.hoursRow}>
+                  <Text style={styles.hoursDay}>{entry.day}</Text>
+                  <Text style={styles.hoursValue}>{entry.hours}</Text>
+                </View>
+              ))}
+            </CardList>
+            {hours.note ? <Text style={styles.hint}>{hours.note}</Text> : null}
+          </View>
+        ) : null}
+
         {ready.length > 0 ? (
           <ReadyCard
             ready={ready}
@@ -451,21 +467,6 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
                   </View>
                 ))
               : null}
-          </View>
-        ) : null}
-
-        {hours && !hours.unavailable && hours.entries.length > 0 ? (
-          <View style={styles.block}>
-            <SectionHeading>Openingsuren deze week</SectionHeading>
-            <CardList>
-              {hours.entries.map((entry) => (
-                <View key={entry.day} style={styles.hoursRow}>
-                  <Text style={styles.hoursDay}>{entry.day}</Text>
-                  <Text style={styles.hoursValue}>{entry.hours}</Text>
-                </View>
-              ))}
-            </CardList>
-            {hours.note ? <Text style={styles.hint}>{hours.note}</Text> : null}
           </View>
         ) : null}
 
@@ -685,7 +686,7 @@ function ReadyCard({
           onPress={onTimeslots}
         />
       ) : (
-        <Text style={styles.hint}>Kom langs tijdens de openingsuren, hieronder.</Text>
+        <Text style={styles.hint}>Kom langs tijdens de openingsuren, hierboven.</Text>
       )}
     </Card>
   );

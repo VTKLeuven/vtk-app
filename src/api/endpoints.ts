@@ -383,6 +383,11 @@ export function setStudyGoal(dailyGoalMinutes: number): Promise<AppStudyOverview
   return apiFetch(appApi('/studeren/doel'), { method: 'PATCH', body: { dailyGoalMinutes } });
 }
 
+/** De vakken onder "Waaraan werk je?", de hele lijst in één keer. */
+export function setStudySubjects(subjects: string[]): Promise<AppStudyOverview> {
+  return apiFetch(appApi('/studeren/vakken'), { method: 'PUT', body: { subjects } });
+}
+
 export function createStudyGroup(
   name: string,
 ): Promise<{ groupId: string; overview: AppStudyOverview }> {
@@ -578,6 +583,10 @@ export function cudiCheckout(locale: AppLocale, orderId: string): Promise<{ chec
  * een dag (standaard vandaag). De site leest alma.be en houdt het een half uur
  * bij; de app praat enkel met vtk.be. Werkt zonder login.
  */
-export function fetchAlma(locale: AppLocale, datum?: string): Promise<AppAlma> {
-  return apiFetch<AppAlma>(appApi('/alma', { locale, datum }), { timeout: 15_000 });
+/**
+ * Standaard de vier Alma's op Arenberg (Home); met `all` ook Alma 1, Alma 2 en
+ * Gasthuisberg, voor het Alma-scherm.
+ */
+export function fetchAlma(locale: AppLocale, datum?: string, all = false): Promise<AppAlma> {
+  return apiFetch<AppAlma>(appApi('/alma', { locale, datum, alle: all ? '1' : undefined }), { timeout: 15_000 });
 }

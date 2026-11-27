@@ -10,7 +10,7 @@ import { EventTile } from '../components/EventTile';
 import { MonthView } from '../components/MonthView';
 import { PlanningView } from '../components/planning/PlanningView';
 import { HeadButton, PageHead } from '../components/PageHead';
-import { Empty, ErrorState, Loading, StaleNotice, WeekHead } from '../components/ui';
+import { Button, Card, Empty, ErrorState, Loading, StaleNotice, WeekHead } from '../components/ui';
 import { formatDay } from '../format';
 import { anchorOf, dayKeyOf, gridRange, todayKey, type MonthAnchor } from '../monthGrid';
 import { displayStart, eventDayKeys } from '../moments';
@@ -77,6 +77,9 @@ export default function KalenderScreen() {
   const { locale, viewer, bootstrap } = useApp();
   // Enkel wanneer de server met Burgieclan gekoppeld is; zie `abilities.planning`.
   const planningAvailable = viewer !== null && bootstrap?.abilities?.planning === true;
+  // Uitgelogd staat de planning er ook, en opent de kalender erop: met de vraag
+  // om eerst in te loggen, zodat je weet dat je er je lessenrooster in krijgt.
+  const planningTab = viewer === null || planningAvailable;
 
   const params = useLocalSearchParams<{ tab?: string; n?: string }>();
   // `null` zolang er niets gekozen is: dan Planning wanneer die er is, anders
@@ -86,10 +89,10 @@ export default function KalenderScreen() {
     params.tab === 'planning' || params.tab === 'agenda' || params.tab === 'mijn' ? params.tab : null,
   );
   useTabParam<Tab>(params.tab, ['planning', 'agenda', 'mijn'], setChosen, params.n);
-  const fallback: Tab = planningAvailable ? 'planning' : 'agenda';
-  // De planning en "Mijn lijst" vragen een login; uitgelogd valt dat terug op Evenementen.
+  const fallback: Tab = planningTab ? 'planning' : 'agenda';
+  // "Mijn lijst" vraagt een login; uitgelogd valt dat terug op de planning.
   const allowed = (option: Tab | null) =>
-    option !== null && !(option === 'planning' && !planningAvailable) && !(option === 'mijn' && !viewer);
+    option !== null && !(option === 'planning' && !planningTab) && !(option === 'mijn' && !viewer);
   const tab: Tab = chosen !== null && allowed(chosen) ? chosen : fallback;
 
   const [view, setViewState] = useState<Weergave>(() => (getPref(VIEW_KEY) === 'maand' ? 'maand' : 'lijst'));
@@ -161,7 +164,7 @@ export default function KalenderScreen() {
     value: tab,
     onChange: setChosen,
     options: [
-      ...(planningAvailable ? [{ value: 'planning' as const, label: 'Planning' }] : []),
+      ...(planningTab ? [{ value: 'planning' as const, label: 'Planning' }] : []),
       { value: 'agenda' as const, label: 'Evenementen' },
       ...(viewer ? [{ value: 'mijn' as const, label: 'Mijn lijst' }] : []),
     ],
@@ -179,12 +182,25 @@ export default function KalenderScreen() {
     return (
       <View style={styles.root}>
         <PageHead title="Kalender" back={false} compact right={bell} tabs={headTabs} />
-        <PlanningView
-          locale={locale}
-          onOpenEvent={(id) => router.push(`/evenement/${id}`)}
-          onOpenCourse={(id) => router.push(`/vak/${id}`)}
-          onOpenStudies={() => router.push({ pathname: '/studies', params: { tab: 'blokken' } })}
-        />
+        {viewer ? (
+          <PlanningView
+            locale={locale}
+            onOpenEvent={(id) => router.push(`/evenement/${id}`)}
+            onOpenCourse={(id) => router.push(`/vak/${id}`)}
+            onOpenStudies={() => router.push({ pathname: '/studies', params: { tab: 'blokken' } })}
+          />
+        ) : (
+          <ScrollView contentContainerStyle={styles.loginContent}>
+            <Card>
+              <Text style={styles.loginTitle}>Log eerst in</Text>
+              <Text style={styles.loginBody}>
+                Daarna kan je je lessenrooster van KU Leuven importeren, en zie je hier je lessen naast de
+                evenementen van VTK.
+              </Text>
+              <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+            </Card>
+          </ScrollView>
+        )}
       </View>
     );
   }
@@ -382,5 +398,8 @@ const styles = StyleSheet.create({
 
   dayTitle: { ...TYPE.sectionTitle, color: COLORS.ink, marginTop: SPACING.sm },
   hint: { ...TYPE.small, color: COLORS.muted },
+  loginContent: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxl },
+  loginTitle: { ...TYPE.cardTitle, color: COLORS.ink },
+  loginBody: { ...TYPE.body, color: COLORS.body },
   footer: { ...TYPE.small, color: COLORS.muted, paddingTop: SPACING.lg },
 });

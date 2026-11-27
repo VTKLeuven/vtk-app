@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 
-import { ChevronRight, Pause, Play, Plus, Settings2, Square, Users } from 'lucide-react-native';
+import { ChevronRight, Pause, Pencil, Play, Plus, Settings2, Square, Trash2, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppState,
@@ -17,12 +17,14 @@ import { Image } from 'expo-image';
 import type { AppStudyGroup, AppStudyMemberState, AppStudyOverview } from '../../api/contract';
 import {
   fetchStudyOverview,
+  setStudySubjects,
   startStudySession,
   stopStudySession,
   updateStudySession,
 } from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
 import { HeadButton, PageHead } from '../../components/PageHead';
+import { Sheet } from '../../components/planning/PlanningSheets';
 import {
   Skyline,
   buildingFor,
@@ -50,9 +52,11 @@ import { CARD_SHADOW } from '../HomeSection';
  * levensteken weg, dan telt de server de sessie tot het laatste moment waarop hij
  * wist dat ze liep; zie `lib/app-api/study.ts` aan de andere kant.
  *
- * **Weg uit de app is pauze.** Dat is de afgesproken vorm van eerlijkheid: geen
- * teller die doorloopt terwijl je op iets anders zit, maar ook geen straf voor
- * even een bericht lezen, want een pauze korter dan een minuut telt niet mee.
+ * **De teller loopt door buiten de app** (sinds november 2026; tot dan was weg
+ * uit de app pauze). Wie studeert, legt zijn telefoon weg. Pauzeren doe je met de
+ * knop. Blijft de app langer dan drie uur dicht, dan sluit de server de sessie
+ * drie uur na het laatste levensteken (`STUDY_AWAY_SECONDS` op de site), zodat
+ * een vergeten teller geen nacht oplevert.
  */
 
 /** Hoe vaak de app zich meldt terwijl er een sessie loopt. */
@@ -151,19 +155,15 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
   }, [viewer, session, applyOverview]);
 
   /**
-   * Weg uit de app is pauze, terug is hervatten.
-   *
-   * Er wordt op elke toestand buiten `active` gepauzeerd en niet enkel op
-   * `background`: iOS zet een app ook op `inactive` bij een inkomend gesprek of
-   * een bedieningspaneel, en dat zijn precies de momenten waarop je niet aan het
-   * studeren bent. De marge van een minuut aan de serverkant vangt het korte
-   * geval op.
+   * Terug in de app: meteen een levensteken, zodat de klok en de zaal kloppen
+   * met wat de server telde terwijl de telefoon weg lag. Weggaan pauzeert niet:
+   * de teller loopt door (zie boven).
    */
   useEffect(() => {
     if (!session) return;
     const subscription = AppState.addEventListener('change', (state) => {
-      const action = state === 'active' ? 'resume' : 'pause';
-      void updateStudySession({ action }).then(applyOverview).catch(() => {});
+      if (state !== 'active') return;
+      void updateStudySession({ action: 'heartbeat' }).then(applyOverview).catch(() => {});
     });
     return () => subscription.remove();
   }, [session, applyOverview]);
@@ -266,6 +266,7 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
             call(() => updateStudySession({ action: session?.paused ? 'resume' : 'pause' }))
           }
           onStop={() => call(async () => (await stopStudySession()).overview)}
+          onSaveSubjects={(subjects) => call(() => setStudySubjects(subjects))}
         />
 
         {problem ? <Text style={styles.problem}>{problem}</Text> : null}
@@ -303,6 +304,7 @@ function SessionPanel({
   onStart,
   onPause,
   onStop,
+  onSaveSubjects,
 }: {
   overview: AppStudyOverview;
   group: AppStudyGroup | null;
@@ -311,6 +313,7 @@ function SessionPanel({
   onStart: (subject?: string) => void;
   onPause: () => void;
   onStop: () => void;
+  onSaveSubjects: (subjects: string[]) => Promise<void>;
 }) {
   const [subject, setSubject] = useState('');
   const session = overview.session;
@@ -322,14 +325,15 @@ function SessionPanel({
         <View style={styles.panelBody}>
           <Text style={styles.panelTitle}>Kom erbij</Text>
           <Text style={styles.panelHint}>
-            Elke tien minuten komt er een verdieping bij. Ga je weg uit de app, dan
-            pauzeert de teller.
+            Elke tien minuten komt er een verdieping bij. Leg je telefoon gerust weg:
+            de teller loopt door tot je stopt.
           </Text>
 
           <SubjectRow
             value={subject}
             onChange={setSubject}
             suggestions={overview.subjects}
+            onSave={onSaveSubjects}
           />
 
           <Button
@@ -425,11 +429,15 @@ function SubjectRow({
   value,
   onChange,
   suggestions,
+  onSave,
 }: {
   value: string;
   onChange: (value: string) => void;
   suggestions: string[];
+  onSave: (subjects: string[]) => Promise<void>;
 }) {
+  const [managing, setManaging] = useState(false);
+
   return (
     <View style={styles.subject}>
       <TextInput
@@ -441,22 +449,128 @@ function SubjectRow({
         maxLength={60}
         returnKeyType="done"
       />
-      {suggestions.length > 0 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-          {suggestions.map((item) => (
-            <Pressable
-              key={item}
-              accessibilityRole="button"
-              accessibilityLabel={item}
-              onPress={() => onChange(item)}
-              style={[styles.chip, value === item && styles.chipOn]}
-            >
-              <Text style={[styles.chipText, value === item && styles.chipTextOn]}>{item}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
+        {suggestions.map((item) => (
+          <Pressable
+            key={item}
+            accessibilityRole="button"
+            accessibilityLabel={item}
+            onPress={() => onChange(item)}
+            style={[styles.chip, value === item && styles.chipOn]}
+          >
+            <Text style={[styles.chipText, value === item && styles.chipTextOn]}>{item}</Text>
+          </Pressable>
+        ))}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Vakken beheren"
+          onPress={() => setManaging(true)}
+          style={[styles.chip, styles.chipManage]}
+        >
+          {suggestions.length > 0 ? <Pencil color={COLORS.onDarkMuted} size={13} /> : <Plus color={COLORS.onDarkMuted} size={14} />}
+          <Text style={styles.chipText}>{suggestions.length > 0 ? 'Beheren' : 'Vakken toevoegen'}</Text>
+        </Pressable>
+      </ScrollView>
+      {/* Pas getekend wanneer het open gaat, zodat het telkens begint van de lijst zoals ze nu is. */}
+      {managing ? (
+        <SubjectsSheet
+          subjects={suggestions}
+          onClose={() => setManaging(false)}
+          onSave={async (next) => {
+            await onSave(next);
+            setManaging(false);
+          }}
+        />
       ) : null}
     </View>
+  );
+}
+
+/**
+ * De vakken onder "Waaraan werk je?" beheren: hernoemen, weggooien, toevoegen.
+ * Het blad werkt op een kopie en bewaart de hele lijst in één keer; sluiten
+ * zonder bewaren laat alles zoals het was. Een oude sessie houdt haar vak.
+ */
+function SubjectsSheet({
+  subjects,
+  onClose,
+  onSave,
+}: {
+  subjects: string[];
+  onClose: () => void;
+  onSave: (subjects: string[]) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState<string[]>(subjects);
+  const [added, setAdded] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const add = () => {
+    const name = added.trim();
+    if (!name) return;
+    if (!draft.some((item) => item.trim().toLowerCase() === name.toLowerCase())) setDraft([...draft, name]);
+    setAdded('');
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const pending = added.trim();
+      const all = pending && !draft.some((item) => item.trim().toLowerCase() === pending.toLowerCase()) ? [...draft, pending] : draft;
+      await onSave(all.map((item) => item.trim()).filter(Boolean));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Sheet visible title="Waaraan werk je?" onClose={onClose}>
+      <Text style={styles.sheetHint}>
+        De vakken die je onder het tekstveld ziet. Tik op een naam om ze aan te passen.
+      </Text>
+      {draft.map((item, index) => (
+        <View key={index} style={styles.sheetRow}>
+          <TextInput
+            value={item}
+            onChangeText={(text) => setDraft(draft.map((other, at) => (at === index ? text : other)))}
+            style={styles.sheetInput}
+            maxLength={60}
+            accessibilityLabel={`Vak ${index + 1}`}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${item || 'Vak'} verwijderen`}
+            hitSlop={8}
+            onPress={() => setDraft(draft.filter((_, at) => at !== index))}
+            style={styles.sheetDelete}
+          >
+            <Trash2 color={COLORS.dangerInk} size={18} />
+          </Pressable>
+        </View>
+      ))}
+      <View style={styles.sheetRow}>
+        <TextInput
+          value={added}
+          onChangeText={setAdded}
+          placeholder="Nieuw vak"
+          placeholderTextColor={COLORS.muted}
+          style={styles.sheetInput}
+          maxLength={60}
+          returnKeyType="done"
+          onSubmitEditing={add}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Vak toevoegen"
+          hitSlop={8}
+          disabled={!added.trim()}
+          onPress={add}
+          style={[styles.sheetDelete, !added.trim() && styles.disabled]}
+        >
+          <Plus color={COLORS.ink} size={20} />
+        </Pressable>
+      </View>
+      <Button label="Bewaren" onPress={() => void save()} busy={saving} />
+    </Sheet>
   );
 }
 
@@ -788,6 +902,22 @@ const styles = StyleSheet.create({
     marginRight: SPACING.sm,
   },
   chipOn: { backgroundColor: COLORS.yellow, borderColor: COLORS.yellow },
+  chipManage: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  sheetHint: { ...TYPE.small, color: COLORS.muted },
+  sheetRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  sheetInput: {
+    ...TYPE.body,
+    flex: 1,
+    color: COLORS.ink,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.controlBorder,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 10,
+  },
+  sheetDelete: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  disabled: { opacity: 0.4 },
   chipText: { ...TYPE.small, color: COLORS.onDarkMuted },
   chipTextOn: { color: COLORS.ink, fontFamily: TYPE.cardTitle.fontFamily },
 

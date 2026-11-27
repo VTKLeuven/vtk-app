@@ -52,7 +52,7 @@ const MAX_EVENTS = 6;
  */
 export default function HomeScreen() {
   const router = useTabRouter();
-  const { locale, viewer, gate, bootstrap, refresh: refreshApp } = useApp();
+  const { locale, viewer, bootstrap, refresh: refreshApp } = useApp();
   const resource = useResource('vandaag', () => fetchToday(locale), locale);
   const upcoming = useUpcomingLessons(locale, Boolean(viewer) && bootstrap?.abilities?.planning === true);
 
@@ -237,13 +237,6 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
-        {viewer && !gate && today.tasks.length === 0 ? (
-          <View style={styles.block}>
-            <Text style={styles.quiet}>
-              Er wacht niets op je. Wat je bestelt of koopt, verschijnt hier vanzelf.
-            </Text>
-          </View>
-        ) : null}
       </ScrollView>
     </View>
   );
@@ -430,5 +423,4 @@ const styles = StyleSheet.create({
 
   cardTitle: { ...TYPE.cardTitle, color: COLORS.ink },
   cardBody: { ...TYPE.body, color: COLORS.body },
-  quiet: { ...TYPE.small, color: COLORS.muted, paddingHorizontal: SPACING.xs },
 });
