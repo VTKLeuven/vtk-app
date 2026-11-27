@@ -119,10 +119,11 @@ export function PageHead<T extends string = string>({
             >
               {title}
             </Text>
+            {/* Onder de titel, naast de terugknop: links gelijk met de titel. */}
+            {subtitle && !inline ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
           </View>
           {right ? <View style={styles.right}>{right}</View> : null}
         </View>
-        {subtitle && !inline ? <Text style={[styles.subtitle, styles.subtitleInline]}>{subtitle}</Text> : null}
         {tabs ? (
           tabs.scroll ? (
             <ScrollView
@@ -402,7 +403,6 @@ const styles = StyleSheet.create({
   inlineText: { flex: 1, gap: 2 },
   titleInline: { fontSize: 26, lineHeight: 30, letterSpacing: -0.8 },
   titleInlineLong: { fontSize: 21, lineHeight: 25, letterSpacing: -0.5 },
-  subtitleInline: { marginTop: SPACING.sm },
   tabsScrollInline: { marginTop: SPACING.md - 12 },
   back: {
     flexDirection: 'row',

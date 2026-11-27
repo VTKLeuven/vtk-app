@@ -89,16 +89,19 @@ export function YellowHead<T extends string>({
                 <ChevronLeft color={COLORS.yellow} size={21} strokeWidth={2.4} />
               </YellowHeadButton>
             ) : null}
-            <Text
-              accessibilityRole="header"
-              numberOfLines={3}
-              style={[styles.title, styles.titleInline, title.length > 30 && styles.titleInlineLong]}
-            >
-              {title}
-            </Text>
+            <View style={styles.inlineText}>
+              <Text
+                accessibilityRole="header"
+                numberOfLines={3}
+                style={[styles.title, styles.titleInline, title.length > 30 && styles.titleInlineLong]}
+              >
+                {title}
+              </Text>
+              {/* Onder de titel, naast de terugknop: links gelijk met de titel. */}
+              {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+            </View>
             {right}
           </View>
-          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
         </>
       ) : (
         <View style={styles.top}>
@@ -238,7 +241,8 @@ const styles = StyleSheet.create({
   },
   titleDetail: { fontSize: 30, lineHeight: 34, letterSpacing: -1 },
   inlineRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: 44 },
-  titleInline: { flex: 1, fontSize: 26, lineHeight: 30, letterSpacing: -0.8 },
+  inlineText: { flex: 1, gap: 2 },
+  titleInline: { fontSize: 26, lineHeight: 30, letterSpacing: -0.8 },
   titleInlineLong: { fontSize: 21, lineHeight: 25, letterSpacing: -0.5 },
   titleBlock: { flexShrink: 1, gap: 4 },
   subtitle: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.navy },
