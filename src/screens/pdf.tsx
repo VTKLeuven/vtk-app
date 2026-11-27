@@ -3,7 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { Share } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 import { HeadButton, PageHead } from '../components/PageHead';
@@ -18,12 +18,12 @@ import { COLORS } from '../theme/tokens';
  * Burgieclan is maar tien minuten geldig, en met het bestand lokaal kan je het
  * ook delen of bewaren (de knop rechtsboven).
  *
- * - **iOS** toont een pdf zelf in een WebView, met knijpen om te zoomen en tekst
- *   die je kan selecteren.
- * - **Android** kan dat niet: daar tekent pdf.js de pagina's in een WebView. Het
- *   script komt van jsDelivr; het bestand zelf gaat nergens heen, het wordt als
- *   base64 in de pagina gezet. Een eigen native pdf-module zou niet in Expo Go
- *   zitten (zie AGENTS.md), en dan kon niemand de app nog op een iPhone bekijken.
+ * pdf.js tekent de pagina's onder elkaar in een WebView, op iOS en Android. iOS
+ * kan een pdf zelf tonen, maar die weergave klikte bij het scrollen vast op elke
+ * pagina; een gewone pagina met de pagina's als afbeeldingen scrolt vloeiend.
+ * Het script komt van jsDelivr; het bestand zelf gaat nergens heen, het wordt
+ * als base64 in de pagina gezet. Een eigen native pdf-module zou niet in Expo Go
+ * zitten (zie AGENTS.md), en dan kon niemand de app nog op een iPhone bekijken.
  *
  * De kop blijft hier staan: de WebView scrolt zelf, en een kop die meeschuift
  * kan daar niet in.
@@ -57,7 +57,7 @@ export default function PdfScreen() {
     };
   }, [url, title]);
 
-  /** Android: de pdf als base64 aan pdf.js geven zodra de pagina klaar is. */
+  /** De pdf als base64 aan pdf.js geven zodra de pagina klaar is. */
   const sendToPdfJs = async () => {
     if (!file) return;
     try {
@@ -98,30 +98,20 @@ export default function PdfScreen() {
     <View style={styles.root}>
       {head}
       {file ? (
-        Platform.OS === 'ios' ? (
-          <WebView
-            source={{ uri: file.uri }}
-            originWhitelist={['file://*']}
-            allowingReadAccessToURL={file.uri}
-            allowFileAccess
-            style={styles.web}
-            onLoadEnd={() => setRendered(true)}
-            onError={() => setError(true)}
-          />
-        ) : (
-          <WebView
-            ref={web}
-            source={{ html: PDF_JS_PAGE, baseUrl: 'https://cdn.jsdelivr.net' }}
-            originWhitelist={['*']}
-            style={styles.web}
-            onLoadEnd={() => void sendToPdfJs()}
-            onMessage={(event) => {
-              if (event.nativeEvent.data === 'ok') setRendered(true);
-              else if (event.nativeEvent.data === 'error') setError(true);
-            }}
-            onError={() => setError(true)}
-          />
-        )
+        <WebView
+          ref={web}
+          source={{ html: PDF_JS_PAGE, baseUrl: 'https://cdn.jsdelivr.net' }}
+          originWhitelist={['*']}
+          style={styles.web}
+          // Gewoon vloeiend scrollen, zonder af te remmen naar een pagina.
+          decelerationRate="normal"
+          onLoadEnd={() => void sendToPdfJs()}
+          onMessage={(event) => {
+            if (event.nativeEvent.data === 'ok') setRendered(true);
+            else if (event.nativeEvent.data === 'error') setError(true);
+          }}
+          onError={() => setError(true)}
+        />
       ) : null}
       {!rendered ? (
         <View style={styles.loading} pointerEvents="none">
@@ -142,7 +132,7 @@ const PDF_JS_PAGE = `<!doctype html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
 <style>
-  html, body { margin: 0; background: #E6ECF5; }
+  html, body { margin: 0; background: #E6ECF5; -webkit-overflow-scrolling: touch; }
   #pages { display: flex; flex-direction: column; gap: 10px; padding: 10px 0 40px; align-items: center; }
   canvas { background: #fff; box-shadow: 0 2px 10px rgba(14,26,54,0.12); max-width: 100%; }
 </style>
