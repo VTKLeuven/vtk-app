@@ -6,7 +6,6 @@ import { useKeepAwake } from 'expo-keep-awake';
 import { CircleCheck, Clock, MapPin, Maximize2, ScanLine, X } from 'lucide-react-native';
 import { useState } from 'react';
 import {
-  Linking,
   Modal,
   Platform,
   Pressable,
@@ -29,6 +28,7 @@ import { VtkQr } from '../components/VtkQr';
 import { Button, Card, Empty, ErrorState, Loading, StaleNotice } from '../components/ui';
 import { formatDay, formatEuro, formatTime } from '../format';
 import { useApp } from '../state/app';
+import { addToAppleWallet, addToGoogleWallet } from '../wallet';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { useTabParam } from '../useTabParam';
@@ -431,14 +431,14 @@ function TicketBlock({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: ()
             <Button
               label="Aan Apple Wallet toevoegen"
               variant="ghost"
-              onPress={() => void WebBrowser.openBrowserAsync(ticket.walletAppleUrl as string)}
+              onPress={() => void addToAppleWallet(ticket.walletAppleUrl as string)}
             />
           ) : null}
           {Platform.OS === 'android' && ticket.walletGoogleUrl ? (
             <Button
               label="Aan Google Wallet toevoegen"
               variant="ghost"
-              onPress={() => void openGoogleWallet(ticket.walletGoogleUrl as string)}
+              onPress={() => void addToGoogleWallet(ticket.walletGoogleUrl as string)}
             />
           ) : null}
         </>
@@ -456,30 +456,6 @@ function TicketBlock({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: ()
  * helderheid zetten we niet hoger: daar is een native module voor nodig die niet
  * in elke APK zit.
  */
-/**
- * Google Wallet rechtstreeks openen, zonder browser ertussen.
- *
- * Het adres op vtk.be stuurt door naar `pay.google.com/gp/v/save/...`. Opende de
- * app dat in de browser in de app, dan gaf die het door aan Google Wallet en
- * bleef er na het bewaren een wit tabblad staan dat je zelf moest sluiten. Hier
- * volgen we de doorverwijzing zelf en geven het eindadres aan het systeem: dat
- * opent Google Wallet, en terug brengt je meteen in de app. Zonder Google Wallet
- * opent het systeem de pagina in de browser.
- */
-async function openGoogleWallet(url: string): Promise<void> {
-  try {
-    const response = await fetch(url);
-    const target = response.url;
-    if (response.ok && target.startsWith('https://pay.google.com/')) {
-      await Linking.openURL(target);
-      return;
-    }
-  } catch {
-    // Valt terug op de browser hieronder.
-  }
-  await WebBrowser.openBrowserAsync(url);
-}
-
 function TicketZoom({
   ticket,
   title,

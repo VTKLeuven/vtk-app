@@ -93,6 +93,14 @@ webview, svg, crypto, haptics, netwerk, keep-awake). Iets anders erbij betekent
 dat niemand de app nog op een iPhone kan bekijken. Push is de bestaande
 uitzondering: die werkt in Expo Go niet.
 
+**De enige eigen native module is `modules/vtk-wallet`** (november 2026): het
+venster van Apple Wallet in de app, zodat er na "Voeg toe" geen witte
+browserpagina achterblijft. Ze is optioneel geladen (`requireOptionalNativeModule`
+in `src/wallet.ts`): in Expo Go en in een oudere build bestaat ze niet, en dan
+opent de pas zoals voordien in de browser. Zo blijft de app in Expo Go werken en
+valt een EAS Update naar een oudere build niet om. Een nieuwe native module hoort
+diezelfde vorm te hebben, met een terugval die werkt zonder.
+
 ## Regels
 
 1. **De server is de waarheid.** Elke regel die iets beslist (mag ik bestellen,
