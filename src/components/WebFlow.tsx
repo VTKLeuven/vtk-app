@@ -168,6 +168,9 @@ export function WebFlow({
       </View>
 
       <WebView
+        // Zonder dit krijgt de WebView op iOS een vertraging van 0 mee en stopt
+        // scrollen meteen, alsof het vastklikt.
+        decelerationRate="normal"
         source={{ uri: url }}
         originWhitelist={['*']}
         // Houdt `target="_blank"` en `window.open()` in deze WebView zodat

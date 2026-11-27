@@ -5,7 +5,9 @@ import { ChevronDown, ChevronRight, ExternalLink, MessageSquare, Search } from '
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { baseUrl } from '../api/client';
+import { baseUrl, mediaUrl } from '../api/client';
+import { fetchMedia } from '../api/endpoints';
+import { useResource } from '../api/useResource';
 import type { AppLocale, AppNavTab } from '../api/contract';
 import { CARD_SHADOW } from '../components/HomeSection';
 import { YellowHead } from '../components/YellowHead';
@@ -44,6 +46,10 @@ type Link = RegisterLink;
 export default function MeerScreen() {
   const router = useTabRouter();
   const { bootstrap, viewer, locale, loading, stale, error, refresh } = useApp();
+  // De kaft van het nieuwste Bakske, als foto bij Media (dezelfde cache als Home).
+  const media = useResource('media', () => fetchMedia(locale), locale);
+  const bakske = media.data?.publications.find((item) => item.kind === 'bakske') ?? null;
+  const mediaCover = bakske?.coverUrl ? (mediaUrl(bakske.coverUrl) ?? null) : null;
   const [open, setOpen] = useState<string | null>(null);
 
   if (loading) return <Loading />;
@@ -170,6 +176,7 @@ export default function MeerScreen() {
               <TabTile
                 key={tab.id}
                 tab={tab}
+                photo={photoFor(tab, mediaCover)}
                 expanded={open === tab.id}
                 onToggle={() => setOpen(open === tab.id ? null : tab.id)}
                 onNative={(route) => {
@@ -198,8 +205,25 @@ export default function MeerScreen() {
  * Een onderdeel met items klapt uit en toont ze als register; een onderdeel met
  * een eigen scherm (Broodjes, Media) opent dat scherm.
  */
+/**
+ * Een foto voor een onderdeel zonder foto in het CMS (/admin/home): Career en
+ * Over VTK met een foto van de site zelf, Media met de kaft van het nieuwste
+ * Bakske. Zet iemand er in het CMS een, dan wint die.
+ */
+const FALLBACK_PHOTOS: Record<string, number> = {
+  career: require('../../assets/meer/career.jpg'),
+  'over-vtk': require('../../assets/meer/over-vtk.jpg'),
+};
+
+function photoFor(tab: AppNavTab, mediaCover: string | null): { uri: string } | number | null {
+  if (tab.imageUrl) return { uri: tab.imageUrl };
+  if (tab.slug === 'media' && mediaCover) return { uri: mediaCover };
+  return FALLBACK_PHOTOS[tab.slug] ?? null;
+}
+
 function TabTile({
   tab,
+  photo,
   expanded,
   onToggle,
   onNative,
@@ -208,6 +232,7 @@ function TabTile({
   onWeb,
 }: {
   tab: AppNavTab;
+  photo: { uri: string } | number | null;
   expanded: boolean;
   onToggle: () => void;
   onNative: (route: string) => void;
@@ -237,8 +262,8 @@ function TabTile({
         onPress={openTab}
         style={({ pressed }) => [styles.tileHead, pressed && styles.pressed]}
       >
-        {tab.imageUrl ? (
-          <Image cachePolicy="memory-disk" source={{ uri: tab.imageUrl }} style={styles.tilePhoto} contentFit="cover" />
+        {photo ? (
+          <Image cachePolicy="memory-disk" source={photo} style={styles.tilePhoto} contentFit="cover" />
         ) : (
           <View style={[styles.tilePhoto, styles.striped]}>
             {Array.from({ length: 8 }, (_, index) => (

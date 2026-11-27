@@ -73,7 +73,6 @@ export default function WebScreen() {
   return (
     <View style={styles.root}>
       <PageHead
-        compact
         title={title ?? 'vtk.be'}
         right={
           <HeadButton accessibilityLabel="Herladen" onPress={() => setNonce((n) => n + 1)}>
@@ -82,6 +81,9 @@ export default function WebScreen() {
         }
       />
       <WebView
+        // Zonder dit krijgt de WebView op iOS een vertraging van 0 mee en stopt
+        // scrollen meteen, alsof het vastklikt.
+        decelerationRate="normal"
         key={nonce}
         source={{ uri: target }}
         originWhitelist={['*']}

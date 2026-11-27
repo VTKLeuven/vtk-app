@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm },
   brand: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   logo: { width: 52, height: 30 },
-  greeting: { flexShrink: 1, fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.navy },
+  greeting: { flexShrink: 1, fontFamily: FONTS.bold, fontSize: 19, letterSpacing: -0.3, color: COLORS.navy },
   title: { fontFamily: FONTS.bold, fontSize: 34, lineHeight: 38, letterSpacing: -1.3, color: COLORS.navy },
 
   strip: { flexDirection: 'row', gap: 6 },
