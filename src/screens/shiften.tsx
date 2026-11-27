@@ -1,6 +1,16 @@
-import { ChevronDown, Globe } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Check, Globe, Plus } from 'lucide-react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+  type ScrollViewInstance,
+} from 'react-native';
 
 import { ApiError } from '../api/client';
 import type { AppShift } from '../api/contract';
@@ -11,27 +21,35 @@ import {
   unregisterFromShift,
 } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
-import { DatePin } from '../components/DatePin';
-import { PageHead } from '../components/PageHead';
 import { RewardCoins } from '../components/RewardCoins';
 import { Prose } from '../components/Prose';
-import { Button, Card, Empty, ErrorState, Loading, StaleNotice, WeekHead } from '../components/ui';
+import { Button, Card, Empty, ErrorState, Loading, StaleNotice } from '../components/ui';
+import { YellowHead } from '../components/YellowHead';
 import { formatDay, formatTime } from '../format';
 import { dayKeyOf, todayKey } from '../monthGrid';
+import { addDays } from '../planning/grid';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
-import { groupByWeek } from '../weeks';
-import { CARD_SHADOW } from '../components/HomeSection';
+
+const SIDE = SPACING.xl - 4;
+/** Tot zoveel plaatsen tonen we bolletjes; daarboven "3/12". */
+const MAX_PIPS = 6;
 
 /**
  * Shiften: de agenda van /shift.
  *
- * Alles onder elkaar, per week een kop en per dag een kaart met de gele
- * datumpin; de shiften zijn rijen met het uur, de naam, de plaats en een teller
- * (1/3), en een knop om in te schrijven. Tik een rij aan voor de uitleg, de keuze
- * om je plaats af te staan en uitschrijven. Je eigen shiften staan ertussen, met
- * de gele rail, zoals op de site; een aparte lijst erboven herhaalde ze enkel.
+ * Sinds eind november 2026 een register (voorstel B): per dag de datum in de
+ * marge en de gele lijn ernaast, en daar de shiften onder elkaar met het uur, de
+ * naam, de plaats, wat ze opleveren, bolletjes voor de bezette plaatsen en een
+ * ronde knop om in te schrijven. Geen witte kaart per dag meer: dat was druk en
+ * herhaalde zichzelf. Alles staat op één pagina; de dagen staan als vierkantjes
+ * in de gele kop (zoals bij Alma en Piano), en een tik erop schuift naar die dag.
+ * Bij het scrollen volgt het vierkantje de dag die bovenaan staat.
+ *
+ * Je eigen shiften staan ertussen, met "Jij" in het geel. Tik een rij aan voor
+ * de uitleg, wie er nog op staat, de keuze om je plaats af te staan en
+ * uitschrijven.
  *
  * Alle regels staan op de server. Of je nog kan uitschrijven is een veld dat de
  * API meestuurt (`canUnregister`) en geen berekening hier: de 24-uursgrens en de
@@ -41,87 +59,134 @@ import { CARD_SHADOW } from '../components/HomeSection';
 export default function ShiftenScreen() {
   const router = useTabRouter();
   const { locale, viewer } = useApp();
-  const resource = useResource('shiften', () => fetchShifts(locale), locale);
-  const weeks = useMemo(() => {
+  const resource = useResource('shiften', () => fetchShifts(locale), locale, viewer !== null);
+  const days = useMemo(() => {
     const all = [...(resource.data?.mine ?? []), ...(resource.data?.available ?? [])].sort((a, b) =>
       a.start.localeCompare(b.start),
     );
-    return groupByWeek(all, (shift) => shift.start, locale).map((week) => ({
-      ...week,
-      days: groupByDay(week.items),
-    }));
-  }, [resource.data, locale]);
+    return groupByDay(all);
+  }, [resource.data]);
+
+  const scroller = useRef<ScrollViewInstance>(null);
+  const offsets = useRef<Record<string, number>>({});
+  const [current, setCurrent] = useState<string | null>(null);
+  // Een tik op een dag scrolt; tot dat scrollen gedaan is, telt de stand van de
+  // scroll niet als keuze, anders springt het vierkantje over de tussenliggende dagen.
+  const jumping = useRef(false);
+  const selected = current && days.some((day) => day.key === current) ? current : (days[0]?.key ?? null);
+
+  const jumpTo = (key: string) => {
+    const y = offsets.current[key];
+    if (y === undefined) return;
+    jumping.current = true;
+    setCurrent(key);
+    scroller.current?.scrollTo({ y: Math.max(0, y - SPACING.md), animated: true });
+  };
+
+  const onScroll = (y: number) => {
+    if (jumping.current) return;
+    let found = days[0]?.key ?? null;
+    for (const day of days) {
+      const top = offsets.current[day.key];
+      if (top !== undefined && top - SPACING.xl <= y) found = day.key;
+    }
+    if (found && found !== selected) setCurrent(found);
+  };
+
+  const head = (
+    <YellowHead title="Shiften" subtitle="Help mee en verdien bonnetjes" back>
+      {days.length > 0 ? <DaySquares days={days} selected={selected} locale={locale} onSelect={jumpTo} /> : null}
+    </YellowHead>
+  );
 
   if (!viewer) {
     return (
-      <>
-        <PageHead title="Shiften" subtitle="Help mee en verdien bonnetjes" />
-        <ScrollView contentContainerStyle={styles.content} style={styles.root}>
+      <View style={styles.root}>
+        {head}
+        <View style={styles.padded}>
           <Card>
             <Text style={styles.title}>Log eerst in</Text>
             <Text style={styles.body}>Inschrijven op een shift hangt aan je account.</Text>
             <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
           </Card>
-        </ScrollView>
-      </>
+        </View>
+      </View>
     );
   }
 
-  if (resource.loading) return <Loading label="Shiften ophalen" />;
+  if (resource.loading && !resource.data) {
+    return (
+      <View style={styles.root}>
+        {head}
+        <Loading label="Shiften ophalen" />
+      </View>
+    );
+  }
   if (!resource.data) {
     return (
-      <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
+      <View style={styles.root}>
+        {head}
+        <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
+      </View>
     );
   }
 
   return (
-    <>
-      <PageHead title="Shiften" subtitle="Help mee en verdien bonnetjes" />
+    <View style={styles.root}>
+      {head}
       <ScrollView
+        ref={scroller}
         style={styles.root}
         contentContainerStyle={styles.content}
+        scrollEventThrottle={64}
+        onScroll={(event) => onScroll(event.nativeEvent.contentOffset.y)}
+        onMomentumScrollEnd={() => {
+          jumping.current = false;
+        }}
+        onScrollEndDrag={() => {
+          jumping.current = false;
+        }}
+        onScrollBeginDrag={() => {
+          jumping.current = false;
+        }}
         refreshControl={
-          <RefreshControl refreshing={resource.refreshing} onRefresh={() => void resource.refresh()} />
+          <RefreshControl refreshing={resource.refreshing} tintColor={COLORS.navy} onRefresh={() => void resource.refresh()} />
         }
       >
         {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
 
-        {weeks.length === 0 ? (
+        {days.length === 0 ? (
           <Empty
+            flush
             title="Geen shiften"
             hint="Er staat nu niets open. Nieuwe shiften verschijnen hier zodra ze ingepland zijn."
           />
         ) : null}
 
-        {weeks.map((week) => (
-          <View key={week.key} style={styles.week}>
-            <WeekHead name={week.name} range={week.range} />
-            {week.days.map((day) => (
-              <View key={day.key} style={styles.day}>
-                <View style={styles.dayHead}>
-                  <DatePin iso={day.shifts[0].start} locale={locale} size="sm" month={false} />
-                  <View style={styles.flex}>
-                    <Text style={styles.dayName}>{dayName(day.key, day.shifts[0].start, locale)}</Text>
-                    <Text style={styles.hint}>
-                      {day.shifts.length === 1 ? '1 shift' : `${day.shifts.length} shiften`}
-                      {day.shifts.some((shift) => shift.registered) ? ', jij staat erop' : ''}
-                    </Text>
-                  </View>
-                </View>
-                {day.shifts.map((shift) => (
-                  <ShiftRow
-                    key={shift.id}
-                    shift={shift}
-                    locale={locale}
-                    onChanged={() => void resource.reload()}
-                  />
-                ))}
-              </View>
-            ))}
+        {days.map((day) => (
+          <View
+            key={day.key}
+            style={styles.day}
+            onLayout={(event) => {
+              offsets.current[day.key] = event.nativeEvent.layout.y;
+            }}
+          >
+            <DayMargin dayKey={day.key} iso={day.shifts[0].start} locale={locale} />
+            <View style={styles.dayRows}>
+              {day.shifts.map((shift, index) => (
+                <ShiftRow
+                  key={shift.id}
+                  shift={shift}
+                  first={index === 0}
+                  locale={locale}
+                  onChanged={() => void resource.reload()}
+                />
+              ))}
+            </View>
           </View>
         ))}
       </ScrollView>
-    </>
+    </View>
   );
 }
 
@@ -134,25 +199,127 @@ function groupByDay(shifts: AppShift[]): { key: string; shifts: AppShift[] }[] {
   return [...days.entries()].map(([key, items]) => ({ key, shifts: items }));
 }
 
-/** "Vandaag", "Morgen", anders de weekdag. */
-function dayName(key: string, iso: string, locale: 'nl' | 'en'): string {
+const brussels = (locale: 'nl' | 'en', options: Intl.DateTimeFormatOptions) =>
+  new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'nl-BE', { timeZone: 'Europe/Brussels', ...options });
+
+/** De datum in de marge: "MA", "30", "nov"; vandaag en morgen met een woord. */
+function DayMargin({ dayKey, iso, locale }: { dayKey: string; iso: string; locale: 'nl' | 'en' }) {
+  const date = new Date(iso);
   const today = todayKey();
-  const tomorrow = todayKey(new Date(Date.now() + 24 * 60 * 60 * 1000));
-  if (key === today) return locale === 'en' ? 'Today' : 'Vandaag';
-  if (key === tomorrow) return locale === 'en' ? 'Tomorrow' : 'Morgen';
-  const name = new Date(iso).toLocaleDateString(locale === 'en' ? 'en-GB' : 'nl-BE', {
-    timeZone: 'Europe/Brussels',
-    weekday: 'long',
-  });
-  return name.charAt(0).toUpperCase() + name.slice(1);
+  const tomorrow = addDays(today, 1);
+  const word =
+    dayKey === today
+      ? locale === 'en' ? 'today' : 'vandaag'
+      : dayKey === tomorrow
+        ? locale === 'en' ? 'tomorrow' : 'morgen'
+        : brussels(locale, { month: 'short' }).format(date).replace('.', '');
+  return (
+    <View style={styles.margin} accessible accessibilityRole="header" accessibilityLabel={formatDay(iso, locale)}>
+      <Text style={styles.marginWeekday}>{brussels(locale, { weekday: 'short' }).format(date).replace('.', '').toUpperCase()}</Text>
+      <Text style={styles.marginDay}>{brussels(locale, { day: 'numeric' }).format(date)}</Text>
+      <Text style={styles.marginMonth}>{word}</Text>
+    </View>
+  );
+}
+
+/**
+ * De dagen met shiften als vierkantjes in het geel. Eronder een stip waar je zelf
+ * op staat, anders hoeveel shiften er nog plaats hebben, of "vol".
+ */
+function DaySquares({
+  days,
+  selected,
+  locale,
+  onSelect,
+}: {
+  days: { key: string; shifts: AppShift[] }[];
+  selected: string | null;
+  locale: 'nl' | 'en';
+  onSelect: (key: string) => void;
+}) {
+  const strip = useRef<ScrollViewInstance>(null);
+  const offsets = useRef<Record<string, number>>({});
+  useEffect(() => {
+    const x = selected ? offsets.current[selected] : undefined;
+    if (x !== undefined) strip.current?.scrollTo({ x: Math.max(0, x - SPACING.xl), animated: true });
+  }, [selected]);
+
+  return (
+    <ScrollView
+      ref={strip}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.strip}
+      contentContainerStyle={styles.squares}
+    >
+      {days.map((day) => {
+        const date = new Date(day.shifts[0].start);
+        const active = day.key === selected;
+        const mine = day.shifts.some((shift) => shift.registered);
+        const open = day.shifts.filter((shift) => shift.canRegister).length;
+        return (
+          <Pressable
+            key={day.key}
+            onLayout={(event) => {
+              offsets.current[day.key] = event.nativeEvent.layout.x;
+            }}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={[
+              formatDay(day.shifts[0].start, locale),
+              mine ? 'je staat op een shift' : null,
+              open === 0 ? 'alles volzet' : `${open} met plaats`,
+            ]
+              .filter(Boolean)
+              .join(', ')}
+            onPress={() => onSelect(day.key)}
+            style={[styles.square, open === 0 && !mine && styles.squareOff, active && styles.squareActive]}
+          >
+            <Text style={[styles.squareWeekday, active && styles.squareTextActive]}>
+              {brussels(locale, { weekday: 'short' }).format(date).replace('.', '')}
+            </Text>
+            <Text style={[styles.squareDay, active && styles.squareTextActive]}>
+              {brussels(locale, { day: 'numeric' }).format(date)}
+            </Text>
+            {mine ? (
+              <View style={[styles.squareDot, active && styles.squareDotActive]} />
+            ) : (
+              <Text style={[styles.squareCount, active && styles.squareTextActive]}>{open === 0 ? 'vol' : open}</Text>
+            )}
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+/** Een bolletje per plaats, gevuld wat bezet is; bij veel plaatsen "3/12". */
+function Spots({ shift }: { shift: AppShift }) {
+  const label = `${shift.takenSpots} van ${shift.maxParticipants} plaatsen bezet`;
+  if (shift.maxParticipants > MAX_PIPS) {
+    return (
+      <Text style={styles.spotsText} accessibilityLabel={label}>
+        {shift.takenSpots}/{shift.maxParticipants}
+      </Text>
+    );
+  }
+  return (
+    <View style={styles.pips} accessible accessibilityLabel={label}>
+      {Array.from({ length: shift.maxParticipants }, (_, index) => (
+        <View key={index} style={[styles.pip, index < shift.takenSpots && styles.pipTaken]} />
+      ))}
+    </View>
+  );
 }
 
 function ShiftRow({
   shift,
+  first,
   locale,
   onChanged,
 }: {
   shift: AppShift;
+  first: boolean;
   locale: 'nl' | 'en';
   onChanged: () => void;
 }) {
@@ -211,29 +378,24 @@ function ShiftRow({
   const full = shift.takenSpots >= shift.maxParticipants;
 
   return (
-    <View style={[styles.shift, shift.registered && styles.mine]}>
+    <View style={[styles.shift, !first && styles.shiftDivider]}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
-        accessibilityLabel={`${shift.name}, ${formatTime(shift.start, locale)}`}
+        accessibilityLabel={`${shift.name}, ${formatTime(shift.start, locale)} tot ${formatTime(shift.end, locale)}, ${shift.location}`}
         onPress={() => setOpen(!open)}
         style={({ pressed }) => [styles.shiftRow, pressed && styles.pressed]}
       >
-        <Text style={styles.time}>
-          {formatTime(shift.start, locale)}
-          {'\n'}
-          <Text style={styles.timeEnd}>{formatTime(shift.end, locale)}</Text>
-        </Text>
         <View style={styles.flex}>
-          <Text style={styles.shiftName} numberOfLines={1}>
+          <Text style={styles.time}>
+            {formatTime(shift.start, locale)} - {formatTime(shift.end, locale)}
+          </Text>
+          <Text style={[styles.shiftName, shift.registered && styles.shiftNameMine]} numberOfLines={2}>
             {shift.name}
           </Text>
           <View style={styles.meta}>
             <Text style={[styles.hint, styles.metaText]} numberOfLines={1}>
-              {shift.location}{'  '}
-              <Text style={styles.count}>
-                {shift.takenSpots}/{shift.maxParticipants}
-              </Text>
+              {[shift.location, shift.openToInternationals ? 'English ok' : null].filter(Boolean).join(' · ')}
             </Text>
             {shift.reward > 0 ? (
               <RewardCoins
@@ -245,24 +407,29 @@ function ShiftRow({
           </View>
         </View>
         {shift.registered ? (
-          <View style={styles.tag}>
-            <Text style={styles.tagText}>Ingeschreven</Text>
+          <View style={styles.mineTag}>
+            <Check size={14} color={COLORS.navy} strokeWidth={2.8} />
+            <Text style={styles.mineTagText}>Jij</Text>
           </View>
-        ) : shift.canRegister ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Inschrijven voor ${shift.name}`}
-            disabled={busy}
-            onPress={() => void act('register')}
-            hitSlop={6}
-            style={({ pressed }) => [styles.go, (busy || pressed) && styles.pressed]}
-          >
-            <Text style={styles.goText}>Schrijf in</Text>
-          </Pressable>
         ) : (
-          <Text style={styles.hint}>{full ? 'Volzet' : 'Gesloten'}</Text>
+          <>
+            <Spots shift={shift} />
+            {shift.canRegister ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Inschrijven voor ${shift.name}`}
+                disabled={busy}
+                onPress={() => void act('register')}
+                hitSlop={6}
+                style={({ pressed }) => [styles.go, (busy || pressed) && styles.pressed]}
+              >
+                <Plus size={18} color={COLORS.yellow} strokeWidth={2.6} />
+              </Pressable>
+            ) : (
+              <Text style={styles.closed}>{full ? 'Volzet' : 'Gesloten'}</Text>
+            )}
+          </>
         )}
-        <ChevronDown color={COLORS.muted} size={15} style={open ? styles.chevronOpen : undefined} />
       </Pressable>
 
       {open ? (
@@ -386,73 +553,83 @@ function shiftErrorText(error: unknown): string {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
-  content: { padding: SPACING.xl - 4, gap: SPACING.lg, paddingBottom: SPACING.xxl },
+  padded: { padding: SPACING.lg },
+  content: { paddingHorizontal: SIDE, paddingTop: SPACING.xl - 2, gap: SPACING.xl, paddingBottom: SPACING.xxl * 2 },
   flex: { flex: 1 },
   title: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },
   hint: { ...TYPE.small, color: COLORS.muted },
   pressed: { opacity: 0.7 },
 
-  week: { gap: SPACING.sm },
-  day: {
+  // De dagen in het geel, zoals bij Alma en Piano.
+  strip: { flexGrow: 0, flexShrink: 0, marginHorizontal: -SIDE },
+  squares: { gap: 6, paddingHorizontal: SIDE },
+  square: {
+    width: 48,
+    height: 62,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 1,
     backgroundColor: COLORS.surface,
-    borderRadius: 20,
-    overflow: 'hidden',
-    ...CARD_SHADOW,
   },
-  dayHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line,
-  },
-  dayName: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink },
-
-  shift: { borderBottomWidth: 1, borderBottomColor: COLORS.line },
-  // Je eigen shift: de gele rail van de site.
-  mine: { borderLeftWidth: 3, borderLeftColor: COLORS.yellow },
-  shiftRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 10,
-  },
-  time: {
-    width: 46,
+  squareOff: { backgroundColor: 'rgba(14, 26, 54, 0.08)' },
+  squareActive: { backgroundColor: COLORS.navy },
+  squareWeekday: {
     fontFamily: FONTS.semibold,
-    fontSize: 13.5,
-    lineHeight: 17,
-    color: COLORS.ink,
-    fontVariant: ['tabular-nums'],
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: COLORS.navy,
   },
-  timeEnd: { fontFamily: FONTS.regular, color: COLORS.muted },
-  shiftName: { fontFamily: FONTS.semibold, fontSize: 15, lineHeight: 20, color: COLORS.ink },
-  count: { fontVariant: ['tabular-nums'], color: COLORS.body },
-  go: {
-    backgroundColor: COLORS.ink,
-    borderRadius: RADIUS.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  goText: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.paper },
-  tag: {
-    backgroundColor: COLORS.paper2,
-    borderRadius: RADIUS.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  tagText: { fontFamily: FONTS.semibold, fontSize: 12, color: COLORS.ink },
-  chevronOpen: { transform: [{ rotate: '180deg' }] },
+  squareDay: { fontFamily: FONTS.bold, fontSize: 18, color: COLORS.navy, fontVariant: ['tabular-nums'] },
+  squareCount: { fontFamily: FONTS.semibold, fontSize: 10, color: COLORS.body },
+  squareTextActive: { color: COLORS.yellow },
+  squareDot: { width: 6, height: 6, borderRadius: 3, marginTop: 3, backgroundColor: COLORS.navy },
+  squareDotActive: { backgroundColor: COLORS.yellow },
 
-  details: { paddingHorizontal: SPACING.md, paddingBottom: SPACING.md, gap: SPACING.sm },
+  // Een dag: de datum in de marge, de shiften achter de gele lijn.
+  day: { flexDirection: 'row', gap: 14 },
+  margin: { width: 46, paddingTop: 2 },
+  marginWeekday: { fontFamily: FONTS.bold, fontSize: 11, letterSpacing: 1.2, color: COLORS.muted },
+  marginDay: { fontFamily: FONTS.bold, fontSize: 26, lineHeight: 30, color: COLORS.navy, fontVariant: ['tabular-nums'] },
+  marginMonth: { fontFamily: FONTS.semibold, fontSize: 11, color: COLORS.muted },
+  dayRows: { flex: 1, borderLeftWidth: 3, borderLeftColor: COLORS.yellow, paddingLeft: 14 },
+
+  shift: {},
+  shiftDivider: { borderTopWidth: 1, borderTopColor: COLORS.line },
+  shiftRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
+  time: { fontFamily: FONTS.semibold, fontSize: 12.5, color: COLORS.body, fontVariant: ['tabular-nums'] },
+  shiftName: { fontFamily: FONTS.semibold, fontSize: 16, lineHeight: 21, color: COLORS.ink, marginTop: 1 },
+  shiftNameMine: { fontFamily: FONTS.bold, color: COLORS.navy },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: 2 },
+  metaText: { flexShrink: 1 },
+  pips: { flexDirection: 'row', gap: 3 },
+  pip: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.5, borderColor: COLORS.navy },
+  pipTaken: { backgroundColor: COLORS.navy },
+  spotsText: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.body, fontVariant: ['tabular-nums'] },
+  go: {
+    width: 36,
+    height: 36,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.navy,
+  },
+  closed: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.muted },
+  mineTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    height: 30,
+    paddingHorizontal: 10,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.yellow,
+  },
+  mineTagText: { fontFamily: FONTS.bold, fontSize: 12.5, color: COLORS.navy },
+  details: { paddingBottom: SPACING.md, gap: SPACING.sm },
   factRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   factLabel: { ...TYPE.kicker, color: COLORS.muted, textTransform: 'uppercase' },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  metaText: { flexShrink: 1 },
   roster: { gap: SPACING.sm, marginTop: SPACING.xs },
   people: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   person: {
@@ -467,7 +644,7 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     paddingVertical: 3,
   },
-  // Jezelf: de gele rand, zoals je eigen shift de gele rail krijgt.
+  // Jezelf: de gele rand.
   personSelf: { borderColor: COLORS.yellow },
   initial: {
     width: 22,

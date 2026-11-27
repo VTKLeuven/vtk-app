@@ -1,13 +1,15 @@
 import { Image } from 'expo-image';
-import { CircleAlert } from 'lucide-react-native';
-import { useCallback, useMemo, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Bell, CircleAlert } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { ApiError } from '../api/client';
 import type { AppLocale, AppTheokot, AppTheokotItem, AppTheokotSession } from '../api/contract';
 import {
   cancelTheokotOrder,
+  fetchNotificationSettings,
   fetchTheokot,
+  setNotificationTopic,
   placeTheokotOrder,
   releaseTheokotOrder,
   takeOverTheokotSandwich,
@@ -20,6 +22,7 @@ import { YellowHead } from '../components/YellowHead';
 import { Stepper } from '../components/Stepper';
 import { Button, Card, CardList, Empty, ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
 import { formatDate, formatDay, formatEuro, formatTime, formatTimeRange } from '../format';
+import { enablePush, pushIsOn } from '../push';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
@@ -519,6 +522,11 @@ function SessionView({
         <View style={styles.content}>
           {notices}
 
+          {/* Nog niets te bestellen: aftellen tot het opent (voorstel E, eind
+              november 2026), in plaats van één regel op een leeg scherm. */}
+          {session.window === 'UPCOMING' && !order && offered.length === 0 ? (
+            <Countdown session={session} locale={locale} onOpened={onRefresh} />
+          ) : (
           <Text style={styles.when}>
             {session.window === 'UPCOMING' ? (
               <>Bestellen opent <Text style={styles.strong}>{formatDay(session.orderOpenAt, locale)}</Text>, </>
@@ -529,6 +537,7 @@ function SessionView({
             )}
             afhalen <Text style={styles.strong}>{formatTimeRange(session.pickupStart, session.pickupEnd, locale)}</Text>.
           </Text>
+          )}
 
           {ordering ? (
             <>
@@ -631,12 +640,8 @@ function SessionView({
             </View>
           ) : null}
 
-          {!ordering && !order && offered.length === 0 ? (
-            <Text style={styles.hint}>
-              {session.window === 'UPCOMING'
-                ? 'Het aanbod verschijnt hier zodra het bestellen opengaat.'
-                : 'Bestellen is gesloten voor deze dag.'}
-            </Text>
+          {!ordering && !order && offered.length === 0 && session.window !== 'UPCOMING' ? (
+            <Text style={styles.hint}>Bestellen is gesloten voor deze dag.</Text>
           ) : null}
         </View>
       </ScrollView>
@@ -669,6 +674,168 @@ function SessionView({
           </View>
         </View>
       ) : null}
+    </View>
+  );
+}
+
+/**
+ * Tot het bestellen opengaat: hoe lang nog, groot, en de drie momenten eronder
+ * (opent, sluit, afhalen). Daaronder de schakelaar voor het bericht wanneer het
+ * opent (`theokot.open`, dezelfde als onder Meer › Meldingen). Loopt de klok af,
+ * dan haalt het scherm het aanbod op.
+ */
+function Countdown({
+  session,
+  locale,
+  onOpened,
+}: {
+  session: AppTheokotSession;
+  locale: AppLocale;
+  onOpened: () => void;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+  const opensAt = new Date(session.orderOpenAt).getTime();
+  const left = opensAt - now;
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 20_000);
+    return () => clearInterval(id);
+  }, []);
+  // Eén keer verversen zodra het open zou moeten zijn; de server beslist.
+  const fired = useRef(false);
+  useEffect(() => {
+    if (left <= 0 && !fired.current) {
+      fired.current = true;
+      onOpened();
+    }
+  }, [left, onOpened]);
+
+  const minutes = Math.max(0, Math.ceil(left / 60_000));
+  const days = Math.floor(minutes / (24 * 60));
+  const hours = Math.floor((minutes % (24 * 60)) / 60);
+  const mins = minutes % 60;
+  const parts: { value: number; unit: string }[] =
+    days > 0
+      ? [
+          { value: days, unit: days === 1 ? 'dag' : 'dagen' },
+          { value: hours, unit: 'uur' },
+        ]
+      : hours > 0
+        ? [
+            { value: hours, unit: 'uur' },
+            { value: mins, unit: mins === 1 ? 'minuut' : 'minuten' },
+          ]
+        : [{ value: mins, unit: mins === 1 ? 'minuut' : 'minuten' }];
+  const moment = (iso: string) => `${formatDay(iso, locale)}, ${formatTime(iso, locale)}`;
+  const steps = [
+    { title: 'Bestellen opent', detail: moment(session.orderOpenAt) },
+    { title: 'Bestellen sluit', detail: moment(session.orderCloseAt) },
+    {
+      title: 'Afhalen met je studentenkaart',
+      detail: `${formatDay(session.pickupStart, locale)}, ${formatTimeRange(session.pickupStart, session.pickupEnd, locale)}`,
+    },
+  ];
+
+  return (
+    <>
+      <View style={styles.countdown}>
+        <View
+          style={styles.countdownTop}
+          accessible
+          accessibilityLabel={`Bestellen voor ${weekdayOf(session.date, locale)} opent over ${parts.map((part) => `${part.value} ${part.unit}`).join(' en ')}`}
+        >
+          <Text style={styles.countdownLabel}>
+            Bestellen voor {weekdayOf(session.date, locale)} {formatDate(session.date, locale)} opent{' '}
+            {left > 0 ? 'over' : 'nu'}
+          </Text>
+          {left > 0 ? (
+            <View style={styles.countdownRow}>
+              {parts.map((part) => (
+                <View key={part.unit} style={styles.countdownPart}>
+                  <Text style={styles.countdownValue}>{part.value}</Text>
+                  <Text style={styles.countdownUnit}>{part.unit}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </View>
+        <View>
+          {steps.map((step, index) => (
+            <View key={step.title} style={styles.step}>
+              <View style={styles.stepRail}>
+                <View style={[styles.stepDot, index === 0 && styles.stepDotFirst]} />
+                {index < steps.length - 1 ? <View style={styles.stepLine} /> : null}
+              </View>
+              <View style={[styles.stepText, index < steps.length - 1 && styles.stepTextGap]}>
+                <Text style={styles.stepTitle}>{step.title}</Text>
+                <Text style={styles.hint}>{step.detail}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+      <OpenAlert />
+    </>
+  );
+}
+
+/** "Meld het als het opent": het onderwerp `theokot.open`, en zo nodig push aan. */
+function OpenAlert() {
+  const { locale, viewer } = useApp();
+  const settings = useResource(
+    'meldingen',
+    () => fetchNotificationSettings(locale),
+    `${locale}:${viewer?.id ?? 'anon'}`,
+    viewer !== null,
+  );
+  const [choice, setChoice] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  if (!viewer || !settings.data) return null;
+
+  const stored = settings.data.topics.find((entry) => entry.topic === 'theokot.open')?.enabled ?? true;
+  const on = choice ?? (stored && pushIsOn());
+
+  const toggle = async (next: boolean) => {
+    setBusy(true);
+    setChoice(next);
+    try {
+      if (next && !pushIsOn()) {
+        const ok = await enablePush();
+        if (!ok) {
+          setChoice(false);
+          Alert.alert(
+            'Meldingen staan uit',
+            'Zet meldingen voor de app aan in de instellingen van je telefoon, en probeer dan opnieuw.',
+          );
+          return;
+        }
+      }
+      await setNotificationTopic('theokot.open', next);
+    } catch {
+      setChoice(!next);
+      Alert.alert('Niet opgeslagen', 'Die instelling kon niet bewaard worden. Probeer opnieuw.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <View style={styles.alertRow}>
+      <View style={styles.alertIcon}>
+        <Bell size={18} color={COLORS.navy} />
+      </View>
+      <View style={styles.flex}>
+        <Text style={styles.stepTitle}>Meld het als het opent</Text>
+        <Text style={styles.hint}>Eén bericht wanneer je kan bestellen</Text>
+      </View>
+      <Switch
+        value={on}
+        disabled={busy}
+        onValueChange={(next) => void toggle(next)}
+        trackColor={{ true: COLORS.yellow, false: COLORS.line2 }}
+        thumbColor={COLORS.surface}
+        accessibilityLabel="Melding wanneer het bestellen opent"
+      />
     </View>
   );
 }
@@ -762,6 +929,60 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   when: { ...TYPE.small, fontSize: 14, lineHeight: 20, color: COLORS.body },
+  countdown: {
+    gap: SPACING.lg,
+    padding: SPACING.lg + 4,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
+  },
+  countdownTop: { gap: 4 },
+  countdownLabel: { ...TYPE.small, fontFamily: FONTS.semibold, color: COLORS.muted },
+  countdownRow: { flexDirection: 'row', alignItems: 'baseline', gap: SPACING.md, flexWrap: 'wrap' },
+  countdownPart: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  countdownValue: {
+    fontFamily: FONTS.bold,
+    fontSize: 44,
+    lineHeight: 50,
+    letterSpacing: -1.6,
+    color: COLORS.navy,
+    fontVariant: ['tabular-nums'],
+  },
+  countdownUnit: { fontFamily: FONTS.semibold, fontSize: 16, color: COLORS.body },
+  step: { flexDirection: 'row', gap: SPACING.md },
+  stepRail: { width: 14, alignItems: 'center' },
+  stepDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: COLORS.line2,
+    backgroundColor: COLORS.surface,
+  },
+  // Het eerstvolgende moment: geel met een navy rand.
+  stepDotFirst: { borderWidth: 3, borderColor: COLORS.navy, backgroundColor: COLORS.yellow },
+  stepLine: { flex: 1, width: 2, backgroundColor: COLORS.line2 },
+  stepText: { flex: 1, gap: 1, marginTop: -2 },
+  stepTextGap: { paddingBottom: SPACING.md },
+  stepTitle: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink },
+  alertRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    paddingVertical: 14,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
+  },
+  alertIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.yellow,
+  },
 
   // Op Broodjes is alles één vlak: kaarten met een dun randje en zonder schaduw,
   // want de schaduwen kleurden de grond rond de dagen en de kaarten grijzer.
