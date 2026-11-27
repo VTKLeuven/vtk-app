@@ -1,4 +1,4 @@
-import { Image, type ImageSource } from 'expo-image';
+import { type ImageSource } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { setStatusBarStyle } from 'expo-status-bar';
 import { ChevronLeft } from 'lucide-react-native';
@@ -7,6 +7,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import type { AppImageCrop } from '../api/contract';
+import { CroppedPhoto } from './CroppedPhoto';
 import { CARD_SHADOW } from './HomeSection';
 
 export type HeadTab<T extends string> = {
@@ -191,9 +193,12 @@ export function PhotoHead({
   back = true,
   backLabel = 'Terug',
   height = 260,
+  crop,
   children,
 }: {
   image: ImageSource | number;
+  /** De uitsnede van een eventfoto; zonder snijdt de foto rond het midden. */
+  crop?: AppImageCrop | null;
   title: string;
   kicker?: string | null;
   subtitle?: string | null;
@@ -213,13 +218,7 @@ export function PhotoHead({
     <View>
       <View style={[photo.frame, { height: height + insets.top }]}>
         {/* Een foto uit de app zelf staat er meteen; enkel een foto van het net vloeit in. */}
-        <Image
-          source={image}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          transition={typeof image === 'number' ? 0 : 150}
-          cachePolicy="memory-disk"
-        />
+        <CroppedPhoto source={image} crop={crop} kind="hero" />
         {showBack ? (
           <Pressable
             accessibilityRole="button"

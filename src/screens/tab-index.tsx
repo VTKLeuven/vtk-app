@@ -8,6 +8,7 @@ import { fetchToday } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { AlmaToday } from '../components/AlmaToday';
 import { HomeHero, shortWhen } from '../components/HomeHero';
+import { CroppedPhoto } from '../components/CroppedPhoto';
 import { CARD_SHADOW, HomeSection } from '../components/HomeSection';
 import { PageHead } from '../components/PageHead';
 import { UpcomingLessonsList, useUpcomingLessons } from '../components/planning/UpcomingLessons';
@@ -268,7 +269,7 @@ function EventRow({
     >
       <View style={styles.eventThumb}>
         {event.imageUrl ? (
-          <Image cachePolicy="memory-disk" source={{ uri: event.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} />
+          <CroppedPhoto source={{ uri: event.imageUrl }} crop={event.imageCrop} kind="focus" transition={120} />
         ) : null}
       </View>
       <View style={styles.eventText}>

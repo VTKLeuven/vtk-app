@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { Star } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -6,6 +5,7 @@ import type { AppCalendarEvent, AppLocale } from '../api/contract';
 import { formatTime } from '../format';
 import { displayStart, momentsSummary } from '../moments';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { CroppedPhoto } from './CroppedPhoto';
 import { DatePin } from './DatePin';
 import { CARD_SHADOW } from './HomeSection';
 
@@ -61,7 +61,7 @@ export function EventTile({
     >
       <View style={[styles.shot, { aspectRatio: compact ? 2.3 : 16 / 9 }]}>
         {event.imageUrl ? (
-          <Image cachePolicy="memory-disk" source={{ uri: event.imageUrl }} style={styles.photo} contentFit="cover" transition={120} />
+          <CroppedPhoto source={{ uri: event.imageUrl }} crop={event.imageCrop} kind="focus" transition={120} />
         ) : null}
         <View style={styles.pin}>
           <DatePin iso={start} locale={locale} shadow />
@@ -134,7 +134,6 @@ const styles = StyleSheet.create({
   },
   pressed: { borderColor: COLORS.line2, opacity: 0.92 },
   shot: { backgroundColor: COLORS.paper2 },
-  photo: { ...StyleSheet.absoluteFill },
   // Hangt aan de foto en steekt er onderuit, zoals op de site.
   pin: { position: 'absolute', right: SPACING.lg, bottom: -24, zIndex: 1 },
   body: { paddingHorizontal: SPACING.lg, paddingTop: 10, paddingBottom: 12, gap: 4 },

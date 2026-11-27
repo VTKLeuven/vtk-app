@@ -147,6 +147,7 @@ export default function EventScreen() {
         // De affiche over de volle breedte, met de gele datumpin op de rand.
         <PhotoHead
           image={{ uri: event.imageUrl }}
+          crop={event.imageCrop}
           title={event.title}
           subtitle={event.groupName}
           pin={<DatePin iso={leadMoment(event)?.start ?? event.start} locale={locale} shadow />}

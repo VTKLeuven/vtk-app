@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { useFocusEffect } from 'expo-router';
 import { MapPin } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -21,6 +20,7 @@ import { formatDay, formatTime } from '../format';
 import { leadMoment } from '../moments';
 import { addDays } from '../planning/grid';
 import { COLORS, FONTS, RADIUS, SPACING } from '../theme/tokens';
+import { CroppedPhoto } from './CroppedPhoto';
 import { useStatusBar } from './PageHead';
 import { PatternBand } from './PatternBand';
 
@@ -218,7 +218,7 @@ function Slide({
     >
       <View style={styles.photo}>
         {event.imageUrl ? (
-          <Image cachePolicy="memory-disk" source={{ uri: event.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+          <CroppedPhoto source={{ uri: event.imageUrl }} crop={event.imageCrop} kind="hero" transition={200} />
         ) : (
           <PatternBand />
         )}
