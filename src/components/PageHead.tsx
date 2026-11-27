@@ -63,6 +63,7 @@ export function PageHead<T extends string = string>({
   backLabel = 'Terug',
   tabs,
   compact = false,
+  inline = false,
   children,
 }: {
   title: string;
@@ -77,6 +78,11 @@ export function PageHead<T extends string = string>({
   tabs?: { options: HeadTab<T>[]; value: T; onChange: (next: T) => void; scroll?: boolean };
   /** Een lagere kop; zie hierboven. */
   compact?: boolean;
+  /**
+   * De kleinste kop: de terugknop en de titel op één regel, zonder regel erboven
+   * of eronder. Voor een scherm dat elke pixel nodig heeft, zoals Beheer.
+   */
+  inline?: boolean;
   /** Extra inhoud onderaan de kop, op papier. */
   children?: React.ReactNode;
 }) {
@@ -84,6 +90,31 @@ export function PageHead<T extends string = string>({
   const router = useRouter();
   const showBack = back && router.canGoBack();
   useStatusBar('dark');
+
+  if (inline) {
+    return (
+      <View style={[styles.head, styles.headInline, { paddingTop: insets.top + SPACING.xs }]}>
+        <View style={styles.inlineRow}>
+          {showBack ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={backLabel}
+              onPress={() => router.back()}
+              hitSlop={8}
+              style={({ pressed }) => [styles.back, styles.backInline, pressed && styles.pressed]}
+            >
+              <ChevronLeft color={COLORS.yellow} size={21} strokeWidth={2.4} />
+            </Pressable>
+          ) : null}
+          <Text accessibilityRole="header" numberOfLines={1} style={[styles.title, styles.titleInline]}>
+            {title}
+          </Text>
+          {right ? <View style={styles.right}>{right}</View> : null}
+        </View>
+        {children ? <View style={styles.inlineChildren}>{children}</View> : null}
+      </View>
+    );
+  }
 
   return (
     <View
@@ -322,6 +353,11 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 32,
   },
   headCompact: { paddingBottom: SPACING.md },
+  headInline: { paddingBottom: SPACING.md, borderBottomLeftRadius: 26, borderBottomRightRadius: 26 },
+  inlineRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: 44 },
+  inlineChildren: { marginTop: SPACING.md },
+  backInline: { marginBottom: 0 },
+  titleInline: { flex: 1, fontSize: 26, lineHeight: 30, letterSpacing: -0.8 },
   back: {
     flexDirection: 'row',
     alignItems: 'center',

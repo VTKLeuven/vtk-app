@@ -57,6 +57,8 @@ export const TAB_ROUTES = {
     'bestellen',
     'peilingen',
     'alma',
+    // De openingsuren van de cursusdienst op Home openen de tijdsloten.
+    'cudi-tijdsloten',
   ],
   kalender: ['evenement/[id]', 'ticket/[slug]',
     'ticket-bestellen/[slug]', 'mijn-tickets', 'meldingen',
@@ -131,6 +133,12 @@ const PREFIX: Record<TabName, string> = {
 };
 
 /** Een adres dat op zichzelf al een tab is: `/tickets?tab=mijne`, `/kalender`. */
+/** `/studies`, `/tickets`: het tabscherm zelf, geen scherm erin. */
+function isTabRootPath(pathname: string): boolean {
+  const segments = pathname.split('/').filter(Boolean);
+  return segments.length === 1 && isTabRoot(segments[0]);
+}
+
 function isTabRoot(first: string): first is TabName {
   return first in PREFIX && first !== '(home)';
 }
@@ -210,10 +218,19 @@ export function useTabRouter() {
      * nodig zodra er een querystring bij hoort: geef je die als één string mee,
      * dan komt het vraagteken in het pad terecht en vindt de router niets.
      */
-    const resolve = (target: TabTarget): TabTarget =>
-      typeof target === 'string'
-        ? resolveTabHref(target, tab)
-        : { ...target, pathname: resolveTabHref(target.pathname, tab) };
+    const resolve = (target: TabTarget): TabTarget => {
+      if (typeof target === 'string') return resolveTabHref(target, tab);
+      const pathname = resolveTabHref(target.pathname, tab);
+      // Een tabblad van een tab openen (`/studies` met `tab: 'cudi'`): met een
+      // volgnummer erbij, zodat dezelfde opdracht een tweede keer ook werkt nadat
+      // je daar zelf van tabblad wisselde. Zonder zag `useTabParam` twee keer
+      // "cudi" en deed het niets; zie daar.
+      const params =
+        target.params && 'tab' in target.params && !('n' in target.params) && isTabRootPath(pathname)
+          ? { ...target.params, n: String(Date.now()) }
+          : target.params;
+      return { ...target, pathname, params };
+    };
 
     /**
      * `withAnchor`: komt het scherm in een stack die nog niet bestaat, dan ligt

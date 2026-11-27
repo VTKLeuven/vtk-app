@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { ChevronDown, ChevronRight, ChevronUp, ExternalLink, LockKeyhole, Search, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, SvgXml } from 'react-native-svg';
 
 import { ApiError } from '../api/client';
 import type { AppAdminBoDue, AppAdminLink, AppAdminSection, AppAdminTile } from '../api/contract';
@@ -45,7 +45,7 @@ import { CARD_SHADOW } from '../components/HomeSection';
  */
 export default function BeheerScreen() {
   const router = useTabRouter();
-  const { locale, viewer } = useApp();
+  const { locale } = useApp();
   const resource = useResource('beheer', () => fetchAdminDashboard(locale), locale);
   const [door, setDoor] = useState<{ busy: boolean; message: string | null; ok: boolean }>({
     busy: false,
@@ -99,11 +99,10 @@ export default function BeheerScreen() {
     ) : null;
 
   const head = (
-    <PageHead
-      kicker="Admin"
-      title="Dashboard"
-      subtitle={viewer ? `Welkom, ${viewer.name.split(' ')[0]}.` : 'De admin van vtk.be'}
-    >
+    // Zo laag mogelijk (eind november 2026): de terugknop en "Dashboard" op één
+    // regel, zonder "Admin" erboven of een welkom eronder, zodat er zoveel
+    // mogelijk van het dashboard in beeld past.
+    <PageHead title="Dashboard" inline>
       {nav}
     </PageHead>
   );
@@ -285,7 +284,8 @@ function NavMenu({
               onPress={() => onToggle(section.key)}
               style={({ pressed }) => [styles.menuGroup, pressed && styles.pressed]}
             >
-              <Text style={[styles.menuGroupLabel, expanded && styles.menuGroupOpen]}>{section.label}</Text>
+              <NavIcon svg={section.icon} active={expanded} />
+              <Text style={[styles.menuGroupLabel, styles.flex, expanded && styles.menuGroupOpen]}>{section.label}</Text>
               {expanded ? <ChevronUp size={18} color={COLORS.ink} /> : <ChevronDown size={18} color={COLORS.muted} />}
             </Pressable>
             {expanded ? (
@@ -310,11 +310,26 @@ function NavLink({ link, onOpen }: { link: AppAdminLink; onOpen: (link: AppAdmin
       onPress={() => onOpen(link)}
       style={({ pressed }) => [styles.menuLink, pressed && styles.menuLinkPressed]}
     >
+      <NavIcon svg={link.icon} />
       <Text style={styles.menuLinkLabel} numberOfLines={1}>
         {link.label}
       </Text>
       {link.external ? <ExternalLink size={14} color={COLORS.muted} /> : null}
     </Pressable>
+  );
+}
+
+/**
+ * Het pictogram uit de zijbalk van /admin, als SVG-tekst van de server
+ * (`lib/admin-nav-icons.tsx` op de site): dezelfde tekens als op de site, en geen
+ * tweede lijst die hier zou moeten meelopen. Een oudere server stuurt er geen.
+ */
+function NavIcon({ svg, active = false }: { svg?: string | null; active?: boolean }) {
+  if (!svg) return null;
+  return (
+    <View style={styles.navIcon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <SvgXml xml={svg} width={18} height={18} color={active ? COLORS.ink : COLORS.body} />
+    </View>
   );
 }
 
@@ -351,6 +366,7 @@ function SearchResults({
             onPress={() => onOpen(link)}
             style={({ pressed }) => [styles.menuLink, pressed && styles.menuLinkPressed]}
           >
+            <NavIcon svg={link.icon} />
             <View style={styles.flex}>
               <Text style={styles.menuLinkLabel} numberOfLines={1}>
                 {link.label}
@@ -560,9 +576,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
     paddingBottom: SPACING.xs,
   },
+  navIcon: { width: 20, alignItems: 'center' },
   menuGroup: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: SPACING.sm + 2,
     justifyContent: 'space-between',
     minHeight: 48,
     paddingHorizontal: SPACING.sm,
@@ -579,7 +597,7 @@ const styles = StyleSheet.create({
   menuLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
+    gap: SPACING.sm + 2,
     minHeight: 44,
     paddingHorizontal: SPACING.md,
     borderRadius: RADIUS.pill,

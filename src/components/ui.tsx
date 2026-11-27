@@ -172,13 +172,16 @@ export function Empty({
   title,
   hint,
   action,
+  flush = false,
 }: {
   title: string;
   hint?: string;
   action?: { label: string; onPress: () => void };
+  /** Zonder eigen marge links en rechts, voor in een scherm dat die al heeft. */
+  flush?: boolean;
 }) {
   return (
-    <View style={styles.state}>
+    <View style={[styles.state, flush && styles.stateFlush]}>
       <Text style={styles.stateTitle}>{title}</Text>
       {hint ? <Text style={styles.stateHint}>{hint}</Text> : null}
       {action ? <Button label={action.label} onPress={action.onPress} variant="ghost" /> : null}
@@ -398,6 +401,7 @@ const styles = StyleSheet.create({
   buttonLabelOnDarkGhost: { color: COLORS.onDark },
 
   state: { padding: SPACING.xl, gap: SPACING.md, alignItems: 'flex-start' },
+  stateFlush: { paddingHorizontal: 0 },
   loading: {
     flex: 1,
     minHeight: 160,

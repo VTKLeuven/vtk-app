@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import { ChevronRight, Soup } from 'lucide-react-native';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { AppAlmaRestaurant } from '../api/contract';
@@ -10,11 +11,13 @@ import { useTabRouter } from '../navigation';
 import { useApp } from '../state/app';
 import { COLORS, FONTS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW, HomeSection } from './HomeSection';
+import { PhotoViewer, type ViewerPhoto } from './PhotoViewer';
 
 /**
  * De Alma's op Home, onder je lessen: per restaurant of het open is en wat er
  * vandaag warm op het menu staat (of welke soep, waar geen warme maaltijden zijn).
- * Een tik opent het volledige menu van dat restaurant.
+ * Een tik opent het volledige menu van dat restaurant; een tik op de foto toont
+ * die meteen in het groot, zoals op het Alma-scherm.
  *
  * Haalt zijn eigen gegevens, los van `/vandaag`: alma.be is een andere bron die
  * trager of plat kan zijn, en dan hoort Home niet mee te wachten. Lukt het niet
@@ -26,6 +29,7 @@ export function AlmaToday() {
   const router = useTabRouter();
   const resource = useResource('alma', () => fetchAlma(locale), locale);
   const restaurants = resource.data?.restaurants ?? [];
+  const [viewing, setViewing] = useState<ViewerPhoto | null>(null);
   if (restaurants.length === 0 || restaurants.every((restaurant) => restaurant.unavailable)) return null;
 
   const open = (slug?: string) =>
@@ -43,9 +47,16 @@ export function AlmaToday() {
             restaurant={restaurant}
             last={index === restaurants.length - 1}
             onPress={() => open(restaurant.slug)}
+            onPhoto={setViewing}
           />
         ))}
       </View>
+      <PhotoViewer
+        photos={viewing ? [viewing] : []}
+        index={viewing ? 0 : null}
+        onIndexChange={() => undefined}
+        onClose={() => setViewing(null)}
+      />
     </HomeSection>
   );
 }
@@ -54,21 +65,23 @@ function Row({
   restaurant,
   last,
   onPress,
+  onPhoto,
 }: {
   restaurant: AppAlmaRestaurant;
   last: boolean;
   onPress: () => void;
+  onPhoto: (photo: ViewerPhoto) => void;
 }) {
   const status = almaStatusLine(restaurant);
   const highlights = almaHighlights(restaurant);
   const dishes = highlights?.dishes.map((dish) => dish.name).join(' · ') ?? null;
   const line = highlights?.kind === 'soep' ? `Soep: ${dishes}` : dishes;
   // De foto van het gerecht van de dag; anders die van het eerste gerecht met een foto.
-  const photo =
-    highlights?.dishes.find((dish) => dish.imageUrl)?.imageUrl ??
-    restaurant.menu.flatMap((section) => section.groups.flatMap((group) => group.dishes)).find((dish) => dish.imageUrl)
-      ?.imageUrl ??
+  const photoDish =
+    highlights?.dishes.find((dish) => dish.imageUrl) ??
+    restaurant.menu.flatMap((section) => section.groups.flatMap((group) => group.dishes)).find((dish) => dish.imageUrl) ??
     null;
+  const photo = photoDish?.imageUrl ?? null;
 
   return (
     <Pressable
@@ -77,13 +90,21 @@ function Row({
       onPress={onPress}
       style={({ pressed }) => [styles.row, !last && styles.divider, pressed && styles.pressed]}
     >
-      <View style={styles.photo}>
-        {photo ? (
+      {photo && photoDish ? (
+        <Pressable
+          accessibilityRole="imagebutton"
+          accessibilityLabel={`Foto van ${photoDish.name} in het groot`}
+          onPress={() => onPhoto({ id: photoDish.id, url: photo, filename: photoDish.name })}
+          hitSlop={4}
+          style={({ pressed }) => [styles.photo, pressed && styles.photoPressed]}
+        >
           <Image cachePolicy="memory-disk" source={{ uri: photo }} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} />
-        ) : (
+        </Pressable>
+      ) : (
+        <View style={styles.photo}>
           <Soup color={COLORS.muted} size={22} />
-        )}
-      </View>
+        </View>
+      )}
       <View style={styles.text}>
         <View style={styles.head}>
           <Text style={styles.name} numberOfLines={1}>
@@ -130,5 +151,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  photoPressed: { opacity: 0.75 },
   dishes: { ...TYPE.small, color: COLORS.body },
 });

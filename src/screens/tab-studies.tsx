@@ -30,12 +30,12 @@ import { useTrackView } from '../usage';
  * pil die er de ene keer wel en de andere keer niet staat, leert niemand vinden.
  */
 export default function StudiesScreen() {
-  const params = useLocalSearchParams<{ tab?: string }>();
+  const params = useLocalSearchParams<{ tab?: string; n?: string }>();
   const { bootstrap } = useApp();
   const [tab, setTab] = useState<StudiesTab>(() =>
     (STUDIES_TABS as readonly string[]).includes(params.tab ?? '') ? (params.tab as StudiesTab) : 'blokken',
   );
-  useTabParam<StudiesTab>(params.tab, STUDIES_TABS, setTab);
+  useTabParam<StudiesTab>(params.tab, STUDIES_TABS, setTab, params.n);
   useTrackView(`studies:${tab}`);
 
   const abilities = bootstrap?.abilities;

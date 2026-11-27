@@ -1,7 +1,7 @@
 import * as WebBrowser from 'expo-web-browser';
 import { useLocalSearchParams } from 'expo-router';
-import { ChevronRight, FileText, Star } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight, FileText, Star } from 'lucide-react-native';
+import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { AppBurgieclanCourse, AppBurgieclanDocument } from '../../api/contract';
@@ -9,10 +9,11 @@ import { fetchBurgieclanCourse, fetchBurgieclanFile, setBurgieclanFavorite } fro
 import { messageFor, useResource } from '../../api/useResource';
 import { YellowHead, YellowHeadButton } from '../../components/YellowHead';
 import { EvaluationsView } from '../../components/studies/BurgieclanEvaluations';
-import { CardList, Empty, ErrorState, Loading, MarginRegister, StaleNotice } from '../../components/ui';
+import { Empty, ErrorState, Loading, MarginRegister, StaleNotice } from '../../components/ui';
 import { formatShortDate } from '../../format';
 import { useApp } from '../../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
+import { CARD_SHADOW } from '../../components/HomeSection';
 
 type View_ = 'documenten' | 'evaluaties';
 
@@ -34,15 +35,9 @@ export default function VakScreen() {
   const [favorite, setFavorite] = useState<boolean | null>(null);
   const [starBusy, setStarBusy] = useState(false);
   const [opening, setOpening] = useState<number | null>(null);
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
 
   const detail = resource.data;
-  const categories = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const document of detail?.documents ?? []) {
-      counts.set(document.category, (counts.get(document.category) ?? 0) + 1);
-    }
-    return [...counts.entries()].map(([name, count]) => ({ name, count }));
-  }, [detail]);
 
   // De naam komt mee van de lijst, zodat de kop niet van "Vak" naar de echte naam springt.
   if (resource.loading && !detail) {
@@ -150,46 +145,82 @@ export default function VakScreen() {
       >
         {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
 
-        {grouped.map(({ name, items }) => (
-            <View key={name} style={styles.group}>
-              {categories.length > 1 ? <Text style={styles.kicker}>{name}</Text> : null}
-              <CardList>
-                {items.map((document) => (
-                  <Pressable
-                    key={document.id}
-                    accessibilityRole="button"
-                    accessibilityLabel={document.hasFile ? `${document.name} openen` : `${document.name}, geen bestand`}
-                    disabled={!document.hasFile || opening !== null}
-                    onPress={() => void open(document)}
-                    style={({ pressed }) => [styles.row, pressed && styles.pressed, !document.hasFile && styles.dim]}
-                  >
-                    <View style={styles.icon}>
-                      <FileText size={18} color={COLORS.navy} />
-                    </View>
-                    <View style={styles.flex}>
-                      <Text style={styles.name} numberOfLines={2}>
-                        {document.name}
-                      </Text>
-                      <Text style={styles.meta} numberOfLines={1}>
-                        {documentMeta(document, locale)}
-                      </Text>
-                      {document.underReview || !document.hasFile ? (
-                        <View style={styles.flags}>
-                          {document.underReview ? <Text style={styles.flag}>Wacht op goedkeuring</Text> : null}
-                          {!document.hasFile ? <Text style={styles.flag}>Geen bestand</Text> : null}
-                        </View>
-                      ) : null}
-                    </View>
-                    {opening === document.id ? (
-                      <ActivityIndicator color={COLORS.navy} />
-                    ) : (
-                      <ChevronRight color={COLORS.muted} size={18} />
-                    )}
-                  </Pressable>
-                ))}
-              </CardList>
+        {/* Per soort (examens, oefenzittingen, samenvattingen) een kaart die je
+            openklapt, standaard dicht zoals de rubrieken van de evaluaties. Met
+            maar één soort staat die meteen open. */}
+        {grouped.map(({ name, items }) => {
+          const expanded = grouped.length === 1 || openGroups.has(name);
+          return (
+            <View key={name} style={styles.groupCard}>
+              {grouped.length > 1 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded }}
+                  accessibilityLabel={`${name}, ${items.length} ${items.length === 1 ? 'document' : 'documenten'}`}
+                  onPress={() =>
+                    setOpenGroups((current) => {
+                      const next = new Set(current);
+                      if (next.has(name)) next.delete(name);
+                      else next.add(name);
+                      return next;
+                    })
+                  }
+                  style={({ pressed }) => [styles.groupHead, pressed && styles.pressed]}
+                >
+                  <View style={styles.flex}>
+                    <Text style={styles.groupName}>{name}</Text>
+                    <Text style={styles.meta}>
+                      {items.length} {items.length === 1 ? 'document' : 'documenten'}
+                    </Text>
+                  </View>
+                  <View style={[styles.chevron, expanded && styles.chevronOpen]}>
+                    <ChevronDown size={17} color={expanded ? COLORS.yellow : COLORS.ink} />
+                  </View>
+                </Pressable>
+              ) : null}
+              {expanded
+                ? items.map((document, index) => (
+                    <Pressable
+                      key={document.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={document.hasFile ? `${document.name} openen` : `${document.name}, geen bestand`}
+                      disabled={!document.hasFile || opening !== null}
+                      onPress={() => void open(document)}
+                      style={({ pressed }) => [
+                        styles.row,
+                        (index > 0 || grouped.length > 1) && styles.rowDivider,
+                        pressed && styles.pressed,
+                        !document.hasFile && styles.dim,
+                      ]}
+                    >
+                      <View style={styles.icon}>
+                        <FileText size={18} color={COLORS.navy} />
+                      </View>
+                      <View style={styles.flex}>
+                        <Text style={styles.name} numberOfLines={2}>
+                          {document.name}
+                        </Text>
+                        <Text style={styles.meta} numberOfLines={1}>
+                          {documentMeta(document, locale)}
+                        </Text>
+                        {document.underReview || !document.hasFile ? (
+                          <View style={styles.flags}>
+                            {document.underReview ? <Text style={styles.flag}>Wacht op goedkeuring</Text> : null}
+                            {!document.hasFile ? <Text style={styles.flag}>Geen bestand</Text> : null}
+                          </View>
+                        ) : null}
+                      </View>
+                      {opening === document.id ? (
+                        <ActivityIndicator color={COLORS.navy} />
+                      ) : (
+                        <ChevronRight color={COLORS.muted} size={18} />
+                      )}
+                    </Pressable>
+                  ))
+                : null}
             </View>
-          ))}
+          );
+        })}
 
         {documents.length > 0 ? (
           <MarginRegister
@@ -214,7 +245,9 @@ function subtitleFor(course: AppBurgieclanCourse): string | null {
   const parts = [
     course.credits ? `${course.credits} studiepunten` : null,
     course.semesters.length > 0 ? course.semesters.join(', ') : null,
-    course.professors.length > 0 ? course.professors.slice(0, 2).join(', ') : null,
+    // Geen docenten meer (eind november 2026): Burgieclan geeft er hun u-nummer
+    // van, en "u0012345" zegt niemand iets. Een echte naam mag blijven.
+    ...course.professors.filter((professor) => !/^[ur]\d{5,}$/i.test(professor.trim())).slice(0, 2),
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(' · ') : null;
 }
@@ -246,13 +279,25 @@ function formatSize(bytes: number): string {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
-  content: { padding: SPACING.xl - 4, gap: SPACING.xl, paddingBottom: SPACING.xxl },
+  content: { padding: SPACING.xl - 4, gap: SPACING.md, paddingBottom: SPACING.xxl },
   flex: { flex: 1 },
   pressed: { opacity: 0.6 },
   dim: { opacity: 0.5 },
   title: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },
-  group: { gap: SPACING.sm },
+  groupCard: { backgroundColor: COLORS.surface, borderRadius: 20, overflow: 'hidden', ...CARD_SHADOW },
+  groupHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: 64, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md },
+  groupName: { fontFamily: FONTS.bold, fontSize: 16, lineHeight: 21, color: COLORS.ink },
+  chevron: {
+    width: 32,
+    height: 32,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.paper2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chevronOpen: { backgroundColor: COLORS.ink, transform: [{ rotate: '180deg' }] },
+  rowDivider: { borderTopWidth: 1, borderTopColor: COLORS.line },
   kicker: {
     fontFamily: FONTS.bold,
     fontSize: 11.5,
@@ -266,6 +311,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.md,
     paddingVertical: 12,
+    paddingHorizontal: SPACING.lg,
   },
   icon: {
     width: 36,

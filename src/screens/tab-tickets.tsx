@@ -63,13 +63,13 @@ type Tab = 'kopen' | 'mijne';
  */
 export default function TicketsScreen() {
   const router = useTabRouter();
-  const params = useLocalSearchParams<{ tab?: string }>();
+  const params = useLocalSearchParams<{ tab?: string; n?: string }>();
   const { locale, viewer, bootstrap } = useApp();
   const [tab, setTab] = useState<Tab>(() => {
     if (params.tab === 'kopen' || params.tab === 'mijne') return params.tab;
     return viewer ? 'mijne' : 'kopen';
   });
-  useTabParam<Tab>(params.tab, ['kopen', 'mijne'], setTab);
+  useTabParam<Tab>(params.tab, ['kopen', 'mijne'], setTab, params.n);
   useTrackView(`tickets:${tab}`);
 
   const sales = useResource('tickets', () => fetchTicketEvents(locale), locale, tab === 'kopen');
@@ -190,6 +190,7 @@ function SalesList({
     >
       {resource.data.length === 0 ? (
         <Empty
+          flush
           title="Momenteel geen ticketverkoop"
           hint="Nieuwe events verschijnen hier zodra de verkoop opengaat. Duid in de kalender aan wat je interesseert, dan krijg je een bericht."
         />
@@ -327,6 +328,7 @@ function MyTickets({
       >
         {upcoming.length === 0 ? (
           <Empty
+            flush
             title={past.length > 0 ? 'Geen tickets voor wat er komt' : 'Nog geen tickets'}
             hint="Wat je koopt, komt hier te staan en blijft ook zonder netwerk zichtbaar."
             action={{ label: 'Naar de verkoop', onPress: onShop }}

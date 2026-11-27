@@ -414,7 +414,12 @@ function Menu({ restaurant, date }: { restaurant: AppAlmaRestaurant; date: strin
                   {group.title ? <Text style={styles.groupTitle}>{group.title.toUpperCase()}</Text> : null}
                   <CardList>
                     {dishes.map((dish) => (
-                      <Dish key={dish.id} dish={dish} onPress={dish.imageUrl ? () => openPhoto(dish) : undefined} />
+                      <Dish
+                        key={dish.id}
+                        dish={dish}
+                        thumb={group.dishes.some((candidate) => candidate.imageUrl)}
+                        onPress={dish.imageUrl ? () => openPhoto(dish) : undefined}
+                      />
                     ))}
                   </CardList>
                 </View>
@@ -438,7 +443,16 @@ function Menu({ restaurant, date }: { restaurant: AppAlmaRestaurant; date: strin
   );
 }
 
-function Dish({ dish, onPress }: { dish: AppAlmaDish; onPress?: () => void }) {
+function Dish({
+  dish,
+  thumb,
+  onPress,
+}: {
+  dish: AppAlmaDish;
+  /** Of er een vakje voor de foto staat: enkel wanneer iets in de groep een foto heeft. */
+  thumb: boolean;
+  onPress?: () => void;
+}) {
   const price = almaPrice(dish.prices.kuleuven);
   const diet = dish.diet ? DIET[dish.diet] : null;
   const meta = dish.protein ?? '';
@@ -454,7 +468,9 @@ function Dish({ dish, onPress }: { dish: AppAlmaDish; onPress?: () => void }) {
     >
       {/* Alma's foto's zijn meestal PNG's met een doorzichtige achtergrond: daar
           hoort geen grijs vlak achter. Zonder foto blijft het vakje leeg, zodat
-          de namen onder elkaar blijven staan. */}
+          de namen onder elkaar blijven staan; heeft niets in de groep een foto
+          (drank, broodjes), dan staat er geen vakje en begint de naam links. */}
+      {thumb ? (
       <View style={[styles.thumb, dish.imageUrl && !/\.png(?:$|\?)/i.test(dish.imageUrl) ? styles.thumbFilled : null]}>
         {dish.imageUrl ? (
           <Image cachePolicy="memory-disk"
@@ -465,6 +481,7 @@ function Dish({ dish, onPress }: { dish: AppAlmaDish; onPress?: () => void }) {
           />
         ) : null}
       </View>
+      ) : null}
       <View style={styles.dishText}>
         <Text style={styles.dishName}>{dish.name}</Text>
         {diet || meta ? (
@@ -658,13 +675,14 @@ const styles = StyleSheet.create({
   dish: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.md,
+    gap: 10,
     paddingVertical: 12,
   },
-  // Groot genoeg om te zien wat het is: er is plaats genoeg naast de naam.
+  // Groot genoeg om te zien wat het is, maar niet zo breed dat de namen ver van
+  // de rand beginnen (tot eind november 2026 84 breed).
   thumb: {
-    width: 84,
-    height: 64,
+    width: 64,
+    height: 52,
     borderRadius: RADIUS.sm,
     overflow: 'hidden',
   },

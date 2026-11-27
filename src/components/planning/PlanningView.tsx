@@ -69,6 +69,9 @@ const SNAP = 15;
 /** De weergave die iemand het laatst koos; in de blok wil je niet elke keer opnieuw naar Blok. */
 const MODE_KEY = 'planning-weergave';
 
+/** De laatste opdracht van Home die al toegepast is; zie `focus`. */
+let appliedFocus: string | null = null;
+
 function storedMode(): PlanningMode | null {
   const value = getPref(MODE_KEY);
   return value && (PLANNING_MODES as readonly string[]).includes(value) ? (value as PlanningMode) : null;
@@ -105,8 +108,15 @@ export const PlanningView = memo(function PlanningView({
   onOpenEvent,
   onOpenCourse,
   onOpenStudies,
+  focus,
 }: {
   locale: AppLocale;
+  /**
+   * Een opdracht van buitenaf, van Home: open de week, en met `session` meteen
+   * het venster van die les. `nonce` maakt twee tikken op dezelfde les twee
+   * opdrachten.
+   */
+  focus?: { session?: string; nonce: string } | null;
   /**
    * De gele kop van Kalender, met wat deze weergave erin zet: de dagen die je ziet
    * in de week, de voortgang per vak. De planning tekent hem zelf, omdat de week
@@ -146,6 +156,19 @@ export const PlanningView = memo(function PlanningView({
   const [settings, setSettings] = useState(false);
   const [relinking, setRelinking] = useState(false);
   const [showHidden, setShowHiddenState] = useState(() => getPref(SHOW_HIDDEN_KEY) === '1');
+
+  // Van Home: naar de week, en de les die je aantikte meteen open. Niet bewaard
+  // als voorkeur; wie Blok koos, krijgt Blok de volgende keer weer.
+  const focusNonce = focus?.nonce;
+  const focusSession = focus?.session;
+  useEffect(() => {
+    // Eén keer per opdracht: het adres houdt ze vast, en wie daarna naar
+    // Evenementen en terug gaat, wil die les niet opnieuw open zien springen.
+    if (!focusNonce || focusNonce === appliedFocus) return;
+    appliedFocus = focusNonce;
+    setChosenMode('week');
+    setSelection(focusSession ? { kind: 'session', id: focusSession } : null);
+  }, [focusNonce, focusSession]);
 
   // Terug op dit scherm (na een evenement in je planning gezet te hebben): opnieuw.
   const reload = resource.reload;
@@ -313,8 +336,11 @@ export const PlanningView = memo(function PlanningView({
       <View style={styles.root}>
         <ScrollView style={styles.root} refreshControl={refresh}>
           <View style={styles.overscroll} />
-          {renderHead(
-            overview ? (
+          {renderHead(null)}
+          {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
+          {modeBar(settingsButton)}
+          <View style={styles.overview}>
+            {overview ? (
               <Progress
                 eyebrow={eyebrow}
                 totals={overview.totals}
@@ -325,11 +351,7 @@ export const PlanningView = memo(function PlanningView({
                     : null
                 }
               />
-            ) : null,
-          )}
-          {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
-          {modeBar(settingsButton)}
-          <View style={styles.overview}>
+            ) : null}
             {!overview ? (
               <Empty
                 title="Nog geen lessen"
@@ -1143,10 +1165,11 @@ const styles = StyleSheet.create({
   // De dagen die je ziet, in de gele kop, met bladeren en Vandaag.
   navButtons: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 
-  // De voortgang per vak en per semester, in de gele kop (voorstel P1).
-  progress: { gap: SPACING.sm },
+  // De voortgang per vak en per semester, onder de weergaven als inhoud van het
+  // tabblad (tot eind november 2026 stond ze in de gele kop).
+  progress: { gap: SPACING.sm, paddingHorizontal: 4, paddingTop: SPACING.xs, paddingBottom: SPACING.sm },
   progressTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm },
-  progressEyebrow: { flexShrink: 1, fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.navy },
+  progressEyebrow: { flexShrink: 1, fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.muted },
   progressTitle: { fontFamily: FONTS.bold, fontSize: 17, letterSpacing: -0.3, color: COLORS.navy },
   progressBar: {
     flexDirection: 'row',
@@ -1158,7 +1181,7 @@ const styles = StyleSheet.create({
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendSwatch: { width: 8, height: 8, borderRadius: 2 },
-  legendLabel: { fontFamily: FONTS.semibold, fontSize: 12, color: COLORS.navy },
+  legendLabel: { fontFamily: FONTS.semibold, fontSize: 12, color: COLORS.body },
 
   // Trekt de gele kop door wanneer je op iOS omlaag trekt.
   overscroll: {

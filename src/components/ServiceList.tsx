@@ -1,8 +1,16 @@
 import { Image } from 'expo-image';
+import { CalendarClock, ChevronRight, Sandwich } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { AppLocale, AppServiceStatus } from '../api/contract';
+import { fetchCudiTimeslots, fetchTheokot } from '../api/endpoints';
+import { useResource } from '../api/useResource';
+import { formatDayShort, formatTime } from '../format';
+import { dayKeyOf, todayKey } from '../monthGrid';
+import { useTabRouter } from '../navigation';
+import { addDays } from '../planning/grid';
+import { useApp } from '../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from './HomeSection';
 
@@ -31,7 +39,9 @@ const LOGO_HEIGHT = 34;
  * course shop is, en de naam van de server zegt het ("Course Shop").
  *
  * Open staat in het groen ("Open tot 18:00"), dicht in het grijs. Tik een tegel
- * aan en de week klapt eronder open.
+ * aan en de week klapt eronder open. Bij het Theokot staat daar ook je broodje
+ * (wanneer je het kan halen) of anders een knop naar Broodjes, bij de cursusdienst
+ * je tijdslot of anders een knop om er een te kiezen (november 2026).
  *
  * **Het rekenwerk gebeurt op de server** (`lib/app-api/serviceStatus.ts`), op de
  * klok van Brussel; hier wordt enkel de regel getoond die de server stuurt.
@@ -95,6 +105,8 @@ export function ServiceList({ services, locale }: { services: AppServiceStatus[]
             </View>
           ))}
           {expanded.note ? <Text style={styles.note}>{expanded.note}</Text> : null}
+          {expanded.key === 'theokot' ? <TheokotNext locale={locale} /> : null}
+          {expanded.key === 'cursusdienst' ? <CudiSlot locale={locale} /> : null}
           {expanded.live ? (
             <Text style={styles.note}>
               {locale === 'en'
@@ -105,6 +117,121 @@ export function ServiceList({ services, locale }: { services: AppServiceStatus[]
         </View>
       ) : null}
     </View>
+  );
+}
+
+/** "vandaag", "morgen" of "di 2 dec", voor een afhaalmoment of een tijdslot. */
+function dayWord(iso: string, locale: AppLocale): string {
+  const key = dayKeyOf(iso);
+  const today = todayKey();
+  if (key === today) return locale === 'en' ? 'today' : 'vandaag';
+  if (key === addDays(today, 1)) return locale === 'en' ? 'tomorrow' : 'morgen';
+  return formatDayShort(iso, locale).replace(/\./g, '');
+}
+
+/**
+ * Je eerstvolgende broodje, met wanneer je het kan halen; zonder bestelling een
+ * knop naar Broodjes. Dezelfde gegevens en cache als het scherm Broodjes.
+ */
+function TheokotNext({ locale }: { locale: AppLocale }) {
+  const router = useTabRouter();
+  const { viewer } = useApp();
+  const resource = useResource('theokot', () => fetchTheokot(locale), locale, viewer !== null);
+  const now = Date.now();
+  const next =
+    resource.data?.sessions
+      .filter((session) => session.order && new Date(session.pickupEnd).getTime() > now)
+      .sort((a, b) => a.pickupStart.localeCompare(b.pickupStart))[0] ?? null;
+
+  if (next?.order) {
+    const count = next.order.lines.reduce((sum, line) => sum + line.quantity, 0);
+    const what = count === 1 ? 'Je broodje' : `Je ${count} broodjes`;
+    return (
+      <ExtraLink
+        icon={<Sandwich size={18} color={COLORS.navy} />}
+        title={`${what}: ${dayWord(next.pickupStart, locale)} van ${formatTime(next.pickupStart, locale)} tot ${formatTime(next.pickupEnd, locale)}`}
+        detail="Af te halen aan het Theokot met je studentenkaart"
+        onPress={() => router.push('/broodjes')}
+      />
+    );
+  }
+  return (
+    <ExtraLink
+      icon={<Sandwich size={18} color={COLORS.navy} />}
+      title="Broodjes bestellen"
+      detail={viewer ? 'Bestel en haal af met je studentenkaart' : 'Log in om te bestellen'}
+      onPress={() => router.push('/broodjes')}
+    />
+  );
+}
+
+/**
+ * Je tijdslot bij de cursusdienst, of een knop om er een te kiezen. Werkt de
+ * cursusdienst zonder tijdsloten, dan staat hier niets.
+ */
+function CudiSlot({ locale }: { locale: AppLocale }) {
+  const router = useTabRouter();
+  const { viewer } = useApp();
+  const resource = useResource(
+    'cudi-tijdsloten',
+    () => fetchCudiTimeslots(locale),
+    `${locale}:${viewer?.id ?? 'anon'}`,
+    viewer !== null,
+  );
+  const data = resource.data;
+  if (viewer && (!data || !data.available || !data.enabled)) return null;
+
+  const mine = data?.mine.find((slot) => new Date(slot.end).getTime() > Date.now()) ?? null;
+  return (
+    <ExtraLink
+      icon={<CalendarClock size={18} color={COLORS.navy} />}
+      title={
+        mine
+          ? `Je tijdslot: ${dayWord(mine.start, locale)} van ${formatTime(mine.start, locale)} tot ${formatTime(mine.end, locale)}`
+          : 'Nog geen tijdslot gereserveerd'
+      }
+      detail={mine ? 'Tik om een ander uur te kiezen' : 'Kies een tijdslot om je cursussen af te halen'}
+      action={mine ? undefined : 'Reserveer'}
+      onPress={() => router.push(viewer ? '/cudi-tijdsloten' : '/inloggen')}
+    />
+  );
+}
+
+/** Een regel onder de uren die naar een scherm leidt. */
+function ExtraLink({
+  icon,
+  title,
+  detail,
+  action,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  detail: string;
+  /** Een navy knop rechts in plaats van het pijltje. */
+  action?: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${detail}`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.extra, pressed && styles.pressed]}
+    >
+      <View style={styles.extraIcon}>{icon}</View>
+      <View style={styles.extraText}>
+        <Text style={styles.extraTitle}>{title}</Text>
+        <Text style={styles.extraDetail}>{detail}</Text>
+      </View>
+      {action ? (
+        <View style={styles.extraButton}>
+          <Text style={styles.extraButtonLabel}>{action}</Text>
+        </View>
+      ) : (
+        <ChevronRight size={18} color={COLORS.muted} />
+      )}
+    </Pressable>
   );
 }
 
@@ -164,4 +291,33 @@ const styles = StyleSheet.create({
   scheduleDay: { ...TYPE.small, color: COLORS.body },
   scheduleHours: { ...TYPE.small, color: COLORS.ink, fontVariant: ['tabular-nums'] },
   note: { ...TYPE.small, fontSize: 12, color: COLORS.muted, marginTop: 4 },
+  extra: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    marginTop: SPACING.sm,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.line,
+  },
+  extraIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.yellow,
+  },
+  extraText: { flex: 1, gap: 2 },
+  extraTitle: { fontFamily: FONTS.semibold, fontSize: 14, lineHeight: 19, color: COLORS.ink },
+  extraDetail: { ...TYPE.small, fontSize: 12, color: COLORS.muted },
+  extraButton: {
+    height: 34,
+    paddingHorizontal: 14,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.navy,
+  },
+  extraButtonLabel: { fontFamily: FONTS.bold, fontSize: 13, color: COLORS.yellow },
 });

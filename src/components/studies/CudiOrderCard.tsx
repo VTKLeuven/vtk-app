@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import type { AppCudiOrder, AppCudiOrdering, AppLocale } from '../../api/contract';
 import { formatDayShort, formatEuro, formatShortDate, formatTime } from '../../format';
-import { COLORS, FONTS, PLANNING, RADIUS, SPACING, TYPE } from '../../theme/tokens';
+import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW } from '../HomeSection';
 import { Button } from '../ui';
 
@@ -123,13 +123,14 @@ type Tone = { bg: string; ink: string };
 
 /**
  * De kleuren van een bestelling: dezelfde tinten als elders in de app voor
- * "klaar" (groen), "wachten" (amber), "mis" (rood) en "afgehandeld" (het blauw
- * van de planning). Geen nieuwe kleuren; zie `src/theme/tokens.ts`.
+ * "klaar" (groen), "wachten" (amber), "mis" (rood), en navy voor "afgehandeld"
+ * en "te betalen" (tot eind november 2026 het lichtblauw van de planning, dat hier
+ * vreemd afstak). Geen nieuwe kleuren; zie `src/theme/tokens.ts`.
  */
 export const TONES = {
   ok: { bg: COLORS.okBg, ink: COLORS.okInk },
   waiting: { bg: COLORS.lowBg, ink: COLORS.lowInk },
-  info: { bg: PLANNING.lectureBg, ink: PLANNING.lectureText },
+  info: { bg: COLORS.paper2, ink: COLORS.navy },
   danger: { bg: COLORS.dangerBg, ink: COLORS.dangerInk },
   quiet: { bg: COLORS.paper2, ink: COLORS.muted },
 } as const satisfies Record<string, Tone>;

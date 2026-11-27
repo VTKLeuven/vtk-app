@@ -37,8 +37,12 @@ export default function PaginaScreen() {
 
   return (
     <>
-      <PageHead title={page.title} subtitle={page.excerpt} kicker={page.category?.label} />
+      {/* De kop schuift mee weg (eind november 2026): op een lange pagina hoeft
+          de titel niet in beeld te blijven. De foto staat los van het geel, als
+          kaart met afgeronde hoeken, en niet meer er recht tegenaan. */}
       <ScrollView contentContainerStyle={styles.content} style={styles.root}>
+        <View style={styles.overscroll} />
+        <PageHead title={page.title} subtitle={page.excerpt} kicker={page.category?.label} />
         {page.imageUrl ? (
           <Image cachePolicy="memory-disk" source={{ uri: page.imageUrl }} style={styles.photo} contentFit="cover" />
         ) : null}
@@ -101,7 +105,15 @@ function formatBytes(bytes: number): string {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
   content: { paddingBottom: SPACING.xxl },
-  photo: { width: '100%', height: 200, backgroundColor: COLORS.paper2 },
+  // Wat boven de kop verschijnt als je op iOS omlaag trekt: geel, zoals de kop.
+  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
+  photo: {
+    height: 190,
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.lg,
+    borderRadius: 20,
+    backgroundColor: COLORS.paper2,
+  },
   prose: { padding: SPACING.lg },
   block: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.lg, gap: SPACING.sm },
   section: { ...TYPE.sectionTitle, color: COLORS.ink, marginBottom: SPACING.xs },

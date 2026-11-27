@@ -70,7 +70,8 @@ export function UpcomingLessonsList({
   onOpen,
 }: {
   upcoming: UpcomingLessons;
-  onOpen: () => void;
+  /** Zonder `uid` de week; met, meteen het venster van die les. */
+  onOpen: (uid?: string) => void;
 }) {
   const { lessons, today, now } = upcoming;
   if (lessons.length === 0) return null;
@@ -78,7 +79,7 @@ export function UpcomingLessonsList({
   return (
     <HomeSection
       title={lessons.every((session) => session.date === today) ? 'Je lessen vandaag' : 'Je volgende lessen'}
-      link={{ label: 'Planning', accessibilityLabel: 'Naar je planning', onPress: onOpen }}
+      link={{ label: 'Planning', accessibilityLabel: 'Naar je planning', onPress: () => onOpen() }}
     >
       <View style={styles.card}>
         {lessons.map((session, index) => (
@@ -88,7 +89,7 @@ export function UpcomingLessonsList({
             current={session.date === today && session.startMin <= now}
             day={session.date === today ? null : dayLabel(session.date, today)}
             last={index === lessons.length - 1}
-            onPress={onOpen}
+            onPress={() => onOpen(session.uid)}
           />
         ))}
       </View>

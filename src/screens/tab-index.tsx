@@ -30,7 +30,9 @@ import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 
 /** Zoveel evenementen staan er onder "Ook binnenkort"; de rest staat in Kalender. */
-const MAX_LATER = 8;
+const MAX_LATER = 30;
+/** Zo ver kijkt Home vooruit: de strook toont er zeven dagen van, "Ook binnenkort" de rest. */
+const AHEAD_DAYS = 60;
 
 /**
  * Home: **vandaag**.
@@ -65,11 +67,12 @@ export default function HomeScreen() {
   // Vandaag op de klok van de server: een telefoon die op de verkeerde dag staat,
   // zou anders een andere week tonen.
   const day = todayKey(resource.data ? new Date(resource.data.now) : new Date());
-  // De evenementen van de hele week, voor de strook. `/vandaag` geeft er enkel de
-  // eerstvolgende tien; met een drukke week viel de rest van de strook weg.
+  // De evenementen van de komende twee maanden: de week voor de strook, de rest
+  // voor "Ook binnenkort". `/vandaag` geeft er enkel de eerstvolgende tien; met een
+  // drukke week viel de rest van de strook weg, en de schuiflijst stopte na acht.
   const week = useResource(
     'home-week',
-    () => fetchCalendar(locale, { tot: addDays(day, WEEK_DAYS) }),
+    () => fetchCalendar(locale, { tot: addDays(day, Math.max(WEEK_DAYS, AHEAD_DAYS)) }),
     `${locale}:${day}`,
   );
 
@@ -92,10 +95,11 @@ export default function HomeScreen() {
   // Vanaf morgen: wat vandaag gebeurt, staat al in de kop.
   const later = useMemo(
     () =>
-      (resource.data?.upcomingEvents ?? [])
+      [...(week.data?.events ?? resource.data?.upcomingEvents ?? [])]
         .filter((event) => dayKeyOf(displayStart(event)) > day)
+        .sort((a, b) => displayStart(a).localeCompare(displayStart(b)))
         .slice(0, MAX_LATER),
-    [resource.data, day],
+    [week.data, resource.data, day],
   );
 
   if (resource.loading) return <Loading label="VTK openen" />;
@@ -181,7 +185,13 @@ export default function HomeScreen() {
             rooster of zonder komende lessen tekent dit niets. */}
         <UpcomingLessonsList
           upcoming={upcoming}
-          onOpen={() => router.push({ pathname: '/kalender', params: { tab: 'planning' } })}
+          onOpen={(uid) =>
+            // Altijd Planning in de week, ook wie Kalender op Evenementen liet staan.
+            router.push({
+              pathname: '/kalender',
+              params: { tab: 'planning', week: '1', n: String(Date.now()), les: uid ?? '' },
+            })
+          }
         />
 
         {/* Wat op jou wacht, tussen je lessen en de Alma's: na "wat heb ik nu"
@@ -205,7 +215,7 @@ export default function HomeScreen() {
             )}
             {bakske ? (
               <LinkCard
-                title="Het nieuwste 't Bakske"
+                title="Het nieuwste bakske"
                 detail={bakske.issue ?? bakske.title}
                 photo={bakske.coverUrl ? { uri: mediaUrl(bakske.coverUrl) as string } : null}
                 external={!bakske.pages?.length}

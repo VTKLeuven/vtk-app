@@ -49,8 +49,14 @@ export default function CategorieScreen() {
 
   return (
     <>
-      <PageHead title={category.label} subtitle={category.intro} />
       <FlatList
+        // De kop schuift mee weg, zoals op een pagina; de lijst heeft haar eigen marge.
+        ListHeaderComponent={
+          <View style={styles.headWrap}>
+            <View style={styles.overscroll} />
+            <PageHead title={category.label} subtitle={category.intro} />
+          </View>
+        }
         data={rows}
         keyExtractor={(row) => (row.kind === 'page' ? `p:${row.page.slug}` : `l:${row.link.id}`)}
         style={styles.root}
@@ -108,6 +114,8 @@ export default function CategorieScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
   list: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxl },
+  headWrap: { marginHorizontal: -SPACING.lg, marginTop: -SPACING.lg, marginBottom: SPACING.xs },
+  overscroll: { position: 'absolute', top: -1000, left: 0, right: 0, height: 1000, backgroundColor: COLORS.yellow },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

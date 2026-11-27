@@ -397,12 +397,51 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
                   <Text style={styles.hint}>
                     {search.catalog.searchedAll ? 'In het hele aanbod van de cursusdienst.' : 'In de vakken op je profiel.'}
                   </Text>
-                  <SubjectList
-                    catalog={search.catalog}
-                    cart={cart}
-                    orderingOpen={ordering.open}
-                    onQuantity={setQuantity}
-                  />
+                  {/* Eerst wat voor iedereen is, dan je eigen vakken, dan de rest
+                      van het aanbod. Welke vakken van jou zijn, zegt de catalogus
+                      zonder zoekterm ("Voor jouw vakken"). */}
+                  {search.catalog.general.length > 0 ? (
+                    <>
+                      <Text style={styles.searchGroup}>Algemeen</Text>
+                      <GeneralGroups
+                        groups={search.catalog.general}
+                        cart={cart}
+                        orderingOpen={ordering.open}
+                        onQuantity={setQuantity}
+                      />
+                    </>
+                  ) : null}
+                  {(() => {
+                    const ownIds = new Set((catalog.data?.subjects ?? []).map((subject) => subject.id));
+                    const own = search.catalog.subjects.filter((subject) => ownIds.has(subject.id));
+                    const other = search.catalog.subjects.filter((subject) => !ownIds.has(subject.id));
+                    return (
+                      <>
+                        {own.length > 0 ? (
+                          <>
+                            <Text style={styles.searchGroup}>Je vakken</Text>
+                            <SubjectList
+                              catalog={{ ...search.catalog, subjects: own }}
+                              cart={cart}
+                              orderingOpen={ordering.open}
+                              onQuantity={setQuantity}
+                            />
+                          </>
+                        ) : null}
+                        {other.length > 0 ? (
+                          <>
+                            <Text style={styles.searchGroup}>{own.length > 0 || ownIds.size > 0 ? 'Andere vakken' : 'Vakken'}</Text>
+                            <SubjectList
+                              catalog={{ ...search.catalog, subjects: other }}
+                              cart={cart}
+                              orderingOpen={ordering.open}
+                              onQuantity={setQuantity}
+                            />
+                          </>
+                        ) : null}
+                      </>
+                    );
+                  })()}
                   {search.catalog.subjects.length === 0 && search.catalog.general.length === 0 ? (
                     <Text style={styles.hint}>Niets gevonden voor {`“${query.trim()}”`}.</Text>
                   ) : null}
@@ -433,13 +472,12 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
           </View>
         ) : null}
 
-        {!data.gate && shown && shown.general.length > 0 ? (
+        {!data.gate && !searching && shown && shown.general.length > 0 ? (
           <View style={styles.block}>
             <Pressable
               accessibilityRole="button"
-              accessibilityState={{ expanded: searching || generalOpen }}
+              accessibilityState={{ expanded: generalOpen }}
               onPress={() => setGeneralOpen((value) => !value)}
-              disabled={searching}
               style={({ pressed }) => [styles.collapse, pressed && styles.pressed]}
             >
               <View style={styles.flex}>
@@ -449,34 +487,11 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
                   {shown.general.map((group) => group.type.toLocaleLowerCase('nl')).join(', ')}
                 </Text>
               </View>
-              {!searching ? (
-                <ChevronDown
-                  size={20}
-                  color={COLORS.muted}
-                  style={generalOpen ? styles.chevronOpen : undefined}
-                />
-              ) : null}
+              <ChevronDown size={20} color={COLORS.muted} style={generalOpen ? styles.chevronOpen : undefined} />
             </Pressable>
-            {searching || generalOpen
-              ? shown.general.map((group) => (
-                  <View key={group.type} style={styles.subject}>
-                    <View style={styles.subjectHead}>
-                      <Text style={styles.subjectName}>{group.type}</Text>
-                    </View>
-                    <CardList>
-                      {group.articles.map((article) => (
-                        <ArticleRow
-                          key={article.id}
-                          article={article}
-                          quantity={cart[article.id] ?? 0}
-                          orderingOpen={ordering.open}
-                          onQuantity={(q) => setQuantity(article, q)}
-                        />
-                      ))}
-                    </CardList>
-                  </View>
-                ))
-              : null}
+            {generalOpen ? (
+              <GeneralGroups groups={shown.general} cart={cart} orderingOpen={ordering.open} onQuantity={setQuantity} />
+            ) : null}
           </View>
         ) : null}
 
@@ -745,6 +760,42 @@ function TimeslotCard({
   );
 }
 
+/** Het algemene materiaal (syllabi voor iedereen, labojassen), per soort. */
+function GeneralGroups({
+  groups,
+  cart,
+  orderingOpen,
+  onQuantity,
+}: {
+  groups: AppCudiCatalog['general'];
+  cart: Cart;
+  orderingOpen: boolean;
+  onQuantity: (article: AppCudiArticle, quantity: number) => void;
+}) {
+  return (
+    <>
+      {groups.map((group) => (
+        <View key={group.type} style={styles.subject}>
+          <View style={styles.subjectHead}>
+            <Text style={styles.subjectName}>{group.type}</Text>
+          </View>
+          <CardList>
+            {group.articles.map((article) => (
+              <ArticleRow
+                key={article.id}
+                article={article}
+                quantity={cart[article.id] ?? 0}
+                orderingOpen={orderingOpen}
+                onQuantity={(q) => onQuantity(article, q)}
+              />
+            ))}
+          </CardList>
+        </View>
+      ))}
+    </>
+  );
+}
+
 function SubjectList({
   catalog,
   cart,
@@ -934,6 +985,8 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.6 },
   spinner: { alignSelf: 'flex-start', marginVertical: SPACING.md },
   search: { margin: 0, marginBottom: 0 },
+  // De delen van een zoekresultaat: algemeen, je vakken, andere vakken.
+  searchGroup: { ...TYPE.kicker, color: COLORS.muted, marginTop: SPACING.sm },
   title: { ...TYPE.cardTitle, color: COLORS.ink },
   body: { ...TYPE.body, color: COLORS.body },
   hint: { ...TYPE.small, color: COLORS.muted },

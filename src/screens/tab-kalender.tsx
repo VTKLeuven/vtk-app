@@ -67,7 +67,12 @@ export default function KalenderScreen() {
   // om eerst in te loggen, zodat je weet dat je er je lessenrooster in krijgt.
   const planningTab = viewer === null || planningAvailable;
 
-  const params = useLocalSearchParams<{ tab?: string; n?: string }>();
+  // `week=1` (van Home): de planning in de week, en met `les` meteen die les open.
+  const params = useLocalSearchParams<{ tab?: string; n?: string; week?: string; les?: string }>();
+  const focus = useMemo(
+    () => (params.week === '1' && params.n ? { session: params.les, nonce: params.n } : null),
+    [params.week, params.n, params.les],
+  );
   const [chosen, setChosen] = useState<Tab | null>(() =>
     params.tab === 'planning' || params.tab === 'agenda' || params.tab === 'mijn' ? params.tab : null,
   );
@@ -179,6 +184,7 @@ export default function KalenderScreen() {
         {viewer ? (
           <PlanningView
             locale={locale}
+            focus={focus}
             renderHead={(extra) => (
               <YellowHead title="Kalender" tabs={tabs} right={bell}>
                 {extra}
