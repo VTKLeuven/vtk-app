@@ -31,7 +31,7 @@ export type HeadTab<T extends string> = {
  * Home) is de app licht: de titel staat op de grond van het scherm, knoppen zijn
  * witte ronde vlakjes met een zachte schaduw, en de tabbladen zijn pillen, zwart
  * voor wat open staat en wit voor de rest. **Bouw geen tweede soort
- * schermopener**; Home is de enige uitzondering (`HomeHero`).
+ * schermopener**; Home is de enige uitzondering (`WeekHero`, het gele vlak).
  *
  * **De terugknop hoort hier en nergens anders.** De schermen draaien met
  * `headerShown: false`, dus er is geen systeemkop die er een tekent. Zonder deze

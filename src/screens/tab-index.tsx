@@ -1,56 +1,58 @@
 import { Image } from 'expo-image';
-import { Coins, ExternalLink, QrCode } from 'lucide-react-native';
+import { ExternalLink, QrCode } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { AppCalendarEvent, AppLocale } from '../api/contract';
-import { fetchToday } from '../api/endpoints';
+import { fetchCalendar, fetchToday } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { AlmaToday } from '../components/AlmaToday';
-import { HomeHero, shortWhen } from '../components/HomeHero';
 import { CroppedPhoto } from '../components/CroppedPhoto';
 import { CARD_SHADOW, HomeSection } from '../components/HomeSection';
-import { PageHead } from '../components/PageHead';
 import { UpcomingLessonsList, useUpcomingLessons } from '../components/planning/UpcomingLessons';
 import { Prose } from '../components/Prose';
+import { RewardCoins } from '../components/RewardCoins';
 import { ServiceList } from '../components/ServiceList';
 import { KURT_URL } from '../components/planning/BlokView';
 import { LinkCard, TaskCard } from '../components/TaskCard';
 import { Button, Card, ErrorState, Loading, StaleNotice } from '../components/ui';
-import { formatDay, formatVouchers } from '../format';
+import { WEEK_DAYS, WeekHero } from '../components/WeekHero';
+import { formatDayShort, formatTime, formatVouchers } from '../format';
+import { dayKeyOf, todayKey } from '../monthGrid';
+import { displayStart } from '../moments';
+import { addDays } from '../planning/grid';
 import { askPushOnce } from '../push';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 
-/** Zoveel evenementen staan er onder "Aankomende evenementen"; de rest staat in Kalender. */
-const MAX_EVENTS = 6;
+/** Zoveel evenementen staan er onder "Ook binnenkort"; de rest staat in Kalender. */
+const MAX_LATER = 8;
 
 /**
  * Home: **vandaag**.
  *
  * Dit scherm beantwoordt de twee vragen waarmee iemand de app opent: *wat is er
- * open* en *wat wacht er op mij*, en daarnaast wat VTK vandaag doet.
+ * open* en *wat wacht er op mij*, en daarnaast wat VTK deze week doet.
  *
- * De opbouw is voorstel F1 van november 2026, "foto voorop":
+ * De opbouw is voorstel G.1 van november 2026, "geel vlak". De volgorde ligt vast:
  *
- * - bovenaan de aankomende evenementen als foto over de volle breedte, die om de
- *   zeven seconden doorschuiven en die je zelf kan vegen (`HomeHero`), met de groet
- *   en je knoppen erbovenop;
- * - Theokot, cudi en 't ElixIr als één witte balk (`ServiceList`);
- * - je volgende drie lessen in één kaart (`UpcomingLessonsList`), voor wie een
- *   lessenrooster koppelde;
- * - "Voor jou" als witte kaarten (`TaskCard`), de broodjes met een foto, en
- *   altijd een kaart naar KURT voor een bibplaats;
- * - de vier Alma's op campus Arenberg (`AlmaToday`): open of niet en wat er
- *   warm op het menu staat;
- * - de aankomende evenementen nog eens als lijst, en "Snel naar".
+ * - bovenaan een geel vlak met het logo, je naam en je bonnetjes, "Deze week bij
+ *   VTK", een strook met de komende zeven dagen en de evenementen van de gekozen
+ *   dag als kaarten die je opzij veegt (`WeekHero`);
+ * - Theokot, cudi en 't ElixIr als drie witte tegels met hun logo (`ServiceList`);
+ * - je lessen in één kaart (`UpcomingLessonsList`), voor wie een lessenrooster
+ *   koppelde. **Daar staat enkel les**: broodjes en shiften horen onder "Voor jou";
+ * - "Voor jou" als witte kaarten (`TaskCard`), en altijd een kaart naar KURT;
+ * - de vier Alma's op campus Arenberg (`AlmaToday`);
+ * - "Ook binnenkort": de evenementen vanaf morgen als schuiflijst. Wat de kop
+ *   vandaag al toont, staat hier niet nog eens;
+ * - "Snel naar".
  *
- * Dit is het enige scherm dat niet met de navy `PageHead` opent, en dat is een
- * keuze: Home is het scherm dat je het vaakst ziet, en daar draagt een foto van
- * wat er vandaag gebeurt meer dan een patroon. Zonder aankomende evenementen valt
- * het terug op de gewone kop.
+ * Tot dan (voorstel F1) opende Home met een foto over de volle breedte die om de
+ * zeven seconden doorschoof. Geel is hier meer dan een accent; dat is een keuze
+ * voor dit ene scherm en geen nieuwe regel voor de rest van de app.
  */
 export default function HomeScreen() {
   const router = useTabRouter();
@@ -58,11 +60,31 @@ export default function HomeScreen() {
   const resource = useResource('vandaag', () => fetchToday(locale), locale);
   const upcoming = useUpcomingLessons(locale, Boolean(viewer) && bootstrap?.abilities?.planning === true);
 
+  // Vandaag op de klok van de server: een telefoon die op de verkeerde dag staat,
+  // zou anders een andere week tonen.
+  const day = todayKey(resource.data ? new Date(resource.data.now) : new Date());
+  // De evenementen van de hele week, voor de strook. `/vandaag` geeft er enkel de
+  // eerstvolgende tien; met een drukke week viel de rest van de strook weg.
+  const week = useResource(
+    'home-week',
+    () => fetchCalendar(locale, { tot: addDays(day, WEEK_DAYS) }),
+    `${locale}:${day}`,
+  );
+
   // Eén keer vanzelf om meldingen vragen, zodra je ingelogd op Home staat (`push.ts`).
   const viewerId = viewer?.id ?? null;
   useEffect(() => {
     if (viewerId) void askPushOnce();
   }, [viewerId]);
+
+  // Vanaf morgen: wat vandaag gebeurt, staat al in de kop.
+  const later = useMemo(
+    () =>
+      (resource.data?.upcomingEvents ?? [])
+        .filter((event) => dayKeyOf(displayStart(event)) > day)
+        .slice(0, MAX_LATER),
+    [resource.data, day],
+  );
 
   if (resource.loading) return <Loading label="VTK openen" />;
   if (!resource.data) {
@@ -73,48 +95,38 @@ export default function HomeScreen() {
 
   const today = resource.data;
   const greeting = today.greetingName ? `Dag ${today.greetingName}` : 'VTK Leuven';
-  const events = today.upcomingEvents.slice(0, MAX_EVENTS);
+  // Tot de week binnen is, de eerstvolgende evenementen van `/vandaag`.
+  const weekEvents = week.data?.events ?? today.upcomingEvents;
 
-  const dayLabel = formatDay(today.now, locale);
-  const kicker = dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1);
-
-  /** De knoppen rechtsboven: halfwit op een foto, wit met een schaduw op papier. */
-  const actions = (onPhoto: boolean) =>
-    viewer ? (
-      <View style={styles.headActions}>
-        {today.canScanTickets || today.canAcceptVouchers ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Een code scannen"
-            onPress={() => router.push('/scannen')}
-            hitSlop={6}
-            style={({ pressed }) => [
-              styles.round,
-              onPhoto ? styles.light : styles.glass,
-              pressed && styles.pressedHead,
-            ]}
-          >
-            <QrCode color={COLORS.ink} size={19} />
-          </Pressable>
-        ) : null}
+  /** Rechtsboven op het geel: scannen voor wie dat mag, en je bonnetjes. */
+  const actions = viewer ? (
+    <View style={styles.headActions}>
+      {today.canScanTickets || today.canAcceptVouchers ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Bonnetjes, ${formatVouchers(today.vouchers ?? 0, locale)} openstaand`}
-          onPress={() => router.push('/bonnetjes')}
+          accessibilityLabel="Een code scannen"
+          onPress={() => router.push('/scannen')}
           hitSlop={6}
-          style={({ pressed }) => [
-            styles.pill,
-            onPhoto ? styles.light : styles.glass,
-            pressed && styles.pressedHead,
-          ]}
+          style={({ pressed }) => [styles.round, pressed && styles.pressedHead]}
         >
-          <Coins color={COLORS.ink} size={17} />
-          <Text style={styles.pillText}>
-            {formatVouchers(today.vouchers ?? 0, locale)}
-          </Text>
+          <QrCode color={COLORS.yellow} size={19} />
         </Pressable>
-      </View>
-    ) : undefined;
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Bonnetjes, ${formatVouchers(today.vouchers ?? 0, locale)} openstaand`}
+        onPress={() => router.push('/bonnetjes')}
+        hitSlop={6}
+        style={({ pressed }) => [styles.pill, pressed && styles.pressedHead]}
+      >
+        <RewardCoins
+          display={formatVouchers(today.vouchers ?? 0, locale)}
+          label={`${formatVouchers(today.vouchers ?? 0, locale)} bonnetjes`}
+          onDark
+        />
+      </Pressable>
+    </View>
+  ) : undefined;
 
   return (
     <View style={styles.root}>
@@ -124,9 +136,10 @@ export default function HomeScreen() {
         refreshControl={
           <RefreshControl
             refreshing={resource.refreshing}
-            tintColor={COLORS.onDark}
+            tintColor={COLORS.navy}
             onRefresh={() => {
               void resource.refresh();
+              void week.reload();
               void upcoming.resource.reload();
               void refreshApp();
             }}
@@ -134,24 +147,20 @@ export default function HomeScreen() {
         }
       >
         <View style={styles.overscroll} />
-        {events.length > 0 ? (
-          <HomeHero
-            events={events}
-            locale={locale}
-            greeting={greeting}
-            initial={today.greetingName ? today.greetingName.charAt(0).toUpperCase() : null}
-            actions={actions(true)}
-            onOpen={(id) => router.push(`/evenement/${id}`)}
-          />
-        ) : (
-          <PageHead title={greeting} kicker={kicker} back={false} right={actions(false)} />
-        )}
+        <WeekHero
+          events={weekEvents}
+          today={day}
+          locale={locale}
+          greeting={greeting}
+          actions={actions}
+          onOpen={(id) => router.push(`/evenement/${id}`)}
+        />
 
         {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
 
         {today.services.length > 0 ? (
           <View style={styles.services}>
-            <ServiceList services={today.services} />
+            <ServiceList services={today.services} locale={locale} />
           </View>
         ) : null}
 
@@ -198,9 +207,10 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
-        {events.length > 0 ? (
+        {later.length > 0 ? (
           <HomeSection
-            title="Aankomende evenementen"
+            title="Ook binnenkort"
+            bleed
             link={{
               label: 'Kalender',
               accessibilityLabel: 'Naar de evenementen in de kalender',
@@ -208,16 +218,21 @@ export default function HomeScreen() {
               onPress: () => router.push({ pathname: '/kalender', params: { tab: 'agenda', n: String(Date.now()) } }),
             }}
           >
-            <View style={styles.eventList}>
-              {events.map((event) => (
-                <EventRow
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.laterList}
+            >
+              {later.map((event) => (
+                <LaterCard
                   key={event.id}
                   event={event}
+                  today={day}
                   locale={locale}
                   onPress={() => router.push(`/evenement/${event.id}`)}
                 />
               ))}
-            </View>
+            </ScrollView>
           </HomeSection>
         ) : null}
 
@@ -250,40 +265,47 @@ export default function HomeScreen() {
   );
 }
 
-/** Een evenement als rij: de affiche klein links, daarnaast wanneer, wat en waar. */
-function EventRow({
+/** Een evenement in "Ook binnenkort": de affiche met de dag in het geel erop, daaronder wat en wanneer. */
+function LaterCard({
   event,
+  today,
   locale,
   onPress,
 }: {
   event: AppCalendarEvent;
+  today: string;
   locale: AppLocale;
   onPress: () => void;
 }) {
-  const when = shortWhen(event, locale);
+  const start = displayStart(event);
+  const key = dayKeyOf(start);
+  const badge = (key === addDays(today, 1) ? 'Morgen' : formatDayShort(start, locale))
+    .replace(/\./g, '')
+    .toUpperCase();
+  const meta = [event.allDay ? null : formatTime(start, locale), event.location].filter(Boolean).join(' · ');
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={[event.title, when, event.location].filter(Boolean).join(', ')}
+      accessibilityLabel={[event.title, badge.toLowerCase(), meta].filter(Boolean).join(', ')}
       onPress={onPress}
-      style={({ pressed }) => [styles.eventRow, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.later, pressed && styles.pressed]}
     >
-      <View style={styles.eventThumb}>
+      <View style={styles.laterPhoto}>
         {event.imageUrl ? (
           <CroppedPhoto source={{ uri: event.imageUrl }} crop={event.imageCrop} kind="focus" transition={120} />
         ) : null}
+        <View style={styles.laterBadge}>
+          <Text style={styles.laterBadgeText}>{badge}</Text>
+        </View>
       </View>
-      <View style={styles.eventText}>
-        <Text style={styles.eventWhen}>{when}</Text>
-        <Text style={styles.eventTitle} numberOfLines={1}>
-          {event.title}
+      <Text style={styles.laterTitle} numberOfLines={1}>
+        {event.title}
+      </Text>
+      {meta ? (
+        <Text style={styles.laterMeta} numberOfLines={1}>
+          {meta}
         </Text>
-        {event.location ? (
-          <Text style={styles.eventWhere} numberOfLines={1}>
-            {event.location}
-          </Text>
-        ) : null}
-      </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -355,51 +377,63 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.paper },
   scroll: { flex: 1 },
   content: { paddingBottom: SPACING.xxl },
-  // Vangt het omlaag trekken op iOS op: daar verschijnt dan navy in plaats van papier.
+  // Vangt het omlaag trekken op iOS op: daar verschijnt dan geel in plaats van papier.
   overscroll: {
     position: 'absolute',
     top: -1000,
     left: 0,
     right: 0,
     height: 1000,
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.yellow,
   },
 
   headActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  round: { width: 44, height: 44, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
+  // Navy op het geel, zoals de bonnetjes op de site naast een navy knop staan.
+  round: {
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.navy,
+  },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
     height: 44,
-    paddingHorizontal: 14,
+    paddingLeft: 16,
+    paddingRight: 12,
     borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.navy,
   },
-  // Op een foto: wit, zodat het op elke affiche leesbaar blijft.
-  light: { backgroundColor: 'rgba(255,255,255,0.92)' },
-  // Op papier, zonder foto: wit met de schaduw van de kaarten.
-  glass: { backgroundColor: COLORS.surface, ...CARD_SHADOW },
-  pillText: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink },
-  pressedHead: { opacity: 0.6 },
+  pressedHead: { opacity: 0.7 },
 
   services: { marginTop: SPACING.xl - 4, paddingHorizontal: SPACING.lg },
   stack: { gap: 10 },
   block: { marginTop: SPACING.xl + 2, paddingHorizontal: SPACING.lg },
   pressed: { opacity: 0.7 },
 
-  eventList: { gap: SPACING.md, paddingHorizontal: SPACING.xs },
-  eventRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  eventThumb: {
-    width: 96,
-    height: 60,
-    borderRadius: 12,
+  laterList: { gap: SPACING.md, paddingHorizontal: SPACING.lg },
+  later: { width: 200, gap: 4 },
+  laterPhoto: {
+    height: 128,
+    borderRadius: 18,
     overflow: 'hidden',
     backgroundColor: COLORS.paper2,
+    marginBottom: 4,
   },
-  eventText: { flex: 1, gap: 2 },
-  eventWhen: { fontFamily: FONTS.semibold, fontSize: 12, color: COLORS.ink, fontVariant: ['tabular-nums'] },
-  eventTitle: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink },
-  eventWhere: { ...TYPE.small, color: COLORS.muted },
+  laterBadge: {
+    position: 'absolute',
+    top: SPACING.sm,
+    left: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderRadius: 7,
+    backgroundColor: COLORS.yellow,
+  },
+  laterBadgeText: { fontFamily: FONTS.bold, fontSize: 11, letterSpacing: 0.3, color: COLORS.navy },
+  laterTitle: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink, paddingHorizontal: 2 },
+  laterMeta: { ...TYPE.small, color: COLORS.muted, paddingHorizontal: 2 },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md },
   aanbod: {

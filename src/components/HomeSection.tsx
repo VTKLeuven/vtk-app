@@ -15,25 +15,30 @@ export const CARD_SHADOW = {
 } as const;
 
 /**
- * Een kop op Home: een klein woord in kapitalen ("JE VOLGENDE LESSEN") en
- * eventueel een link rechts. Bewust stiller dan `SectionHeading`: op Home dragen
- * de foto's en de kaarten het scherm, en een gele lijn onder elke kop deed daar
- * te veel.
+ * Een deel van Home met zijn kop: een korte titel in navy ("Voor jou", "Ook
+ * binnenkort") en eventueel een link rechts. Voorstel G.1 van november 2026; tot
+ * dan was de kop een klein woord in kapitalen, maar onder het gele vlak verdween
+ * dat.
+ *
+ * `bleed` laat de inhoud tot tegen de rand van het scherm lopen, voor een lijst
+ * die je opzij veegt; de kop houdt zijn marge.
  */
 export function HomeSection({
   title,
   link,
+  bleed = false,
   children,
 }: {
   title: string;
   link?: { label: string; accessibilityLabel: string; onPress: () => void };
+  bleed?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <View style={styles.section}>
-      <View style={styles.head}>
+    <View style={[styles.section, bleed && styles.bleed]}>
+      <View style={[styles.head, bleed && styles.headBleed]}>
         <Text accessibilityRole="header" style={styles.title}>
-          {title.toUpperCase()}
+          {title}
         </Text>
         {link ? (
           <Pressable
@@ -52,13 +57,15 @@ export function HomeSection({
 }
 
 const styles = StyleSheet.create({
-  section: { marginTop: SPACING.xl + 2, paddingHorizontal: SPACING.lg, gap: SPACING.md },
+  section: { marginTop: SPACING.xl + 4, paddingHorizontal: SPACING.lg, gap: SPACING.md },
+  bleed: { paddingHorizontal: 0 },
   head: {
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.xs,
   },
-  title: { fontFamily: FONTS.semibold, fontSize: 11, letterSpacing: 1.4, color: COLORS.muted },
+  headBleed: { paddingHorizontal: SPACING.lg + SPACING.xs },
+  title: { fontFamily: FONTS.bold, fontSize: 22, letterSpacing: -0.5, color: COLORS.navy },
   link: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.navy },
 });

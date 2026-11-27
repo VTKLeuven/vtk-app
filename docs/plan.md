@@ -813,3 +813,30 @@ contract, en de app toont ze in de fotoviewer (`MagazineReader` in
 viewer kreeg daarvoor `ViewerPhoto` in plaats van `AppPhoto`. Een nummer zonder
 `pages` (net geüpload, of een oudere server) opent nog als pdf. Links in een
 nummer werken in de lezer niet; op de site wel.
+
+## November 2026: Home in het geel (voorstel G.1)
+
+Na vier ronden ontwerpen op een canvas werd voorstel G.1 gekozen: een Home die
+navy en geel meer laat zien. Wat er veranderde:
+
+- **Bovenaan een geel vlak** (`WeekHero`) in plaats van de foto die om de zeven
+  seconden doorschoof (`HomeHero`, nu weg). Links het logo in navy met "Dag
+  <naam>" ernaast, rechts je bonnetjes als de muntjes van de site. Daaronder
+  "Deze week bij VTK", een strook met de komende zeven dagen als vierkante
+  dagjes (bolletjes voor het aantal evenementen) en de evenementen van de
+  gekozen dag als kaarten die je opzij veegt. Vandaag staat open. De week komt
+  uit `/kalender` met `tot`, want `/vandaag` geeft er maar tien.
+- **De openingsuren** zijn drie witte tegels met het logo van de plek erin
+  (`assets/openingsuren/`, ingekleurd uit de witte logo's van de site). De naam
+  staat er enkel in het Engels onder: een international weet niet dat cudi de
+  course shop is.
+- **Vaste volgorde**: hero, openingsuren, lessen, Voor jou, Alma, Ook binnenkort,
+  Snel naar. Broodjes en shiften staan nooit tussen je lessen.
+- **Ook binnenkort** is een schuiflijst die bij morgen begint; wat vandaag
+  gebeurt, staat al in de kop.
+- De koppen op Home (`HomeSection`) zijn een korte titel in navy in plaats van
+  een klein woord in kapitalen, en `RewardCoins` kreeg het VTK-stempel op de
+  munt, zoals op de site.
+
+Geel als vlak is een uitzondering voor Home, geen nieuwe regel; zie regel 8 in
+`AGENTS.md`.

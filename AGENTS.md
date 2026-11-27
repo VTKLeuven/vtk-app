@@ -144,13 +144,20 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
      `src/components/HomeSection.tsx`, radius 20) in plaats van kaarten met een
      haarlijnrand. Een lijst is één kaart met haarlijnen tussen de rijen
      (`CardList` in `ui.tsx`), geen register met haarlijnen op papier.
-   - **Koppen van een deel** (`SectionHeading`, `HomeSection`) zijn een klein
-     woord in kapitalen, gedempt, zonder gele lijn.
-   - De statusbalk staat donker; enkel Home zet hem licht zolang de foto bovenaan
-     in beeld is.
-   Home opent niet met `PageHead` maar met de aankomende evenementen als foto die
-   om de zeven seconden doorschuift (`HomeHero`); zonder evenementen valt het
-   terug op `PageHead`. Een scherm met een eigen beeld (een evenement, een ticket,
+   - **Koppen van een deel** (`SectionHeading`) zijn een klein woord in
+     kapitalen, gedempt, zonder gele lijn. Op Home is `HomeSection` een korte
+     titel in navy ("Voor jou", "Ook binnenkort").
+   - De statusbalk staat donker, ook op Home.
+   **Home is de uitzondering op "geel enkel als accent"** (voorstel G.1, november
+   2026): het opent met een geel vlak (`WeekHero`) met het logo en je naam, je
+   bonnetjes als muntjes, "Deze week bij VTK", een strook met de komende zeven
+   dagen (vierkante dagjes) en de evenementen van de gekozen dag als kaarten die
+   je opzij veegt. De volgorde daaronder ligt vast: openingsuren (drie witte
+   tegels met het logo van de plek, `ServiceList`; de naam staat er enkel in het
+   Engels onder, want een international weet niet dat cudi de course shop is),
+   je lessen, "Voor jou", Alma, "Ook binnenkort" (de evenementen vanaf morgen als
+   schuiflijst) en "Snel naar". **Broodjes en shiften staan nooit tussen je
+   lessen.** Een scherm met een eigen beeld (een evenement, een ticket,
    de broodjes) opent met `PhotoHead`: de foto over de volle breedte en de titel
    op papier eronder. **De transportplanning (`vervoer.tsx`) volgt de app, maar
    haar agenda is exact die van logistiek.vtk.be** (drie dagen naast elkaar, de

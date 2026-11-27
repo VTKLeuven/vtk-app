@@ -1,54 +1,80 @@
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { AppServiceStatus } from '../api/contract';
-import { COLORS, FONTS, SPACING, TYPE } from '../theme/tokens';
+import type { AppLocale, AppServiceStatus } from '../api/contract';
+import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from './HomeSection';
+
+/**
+ * De logo's van de drie diensten, zoals de openingsurenband op de site ze toont
+ * (`apps/web/public/openingsuren/`), maar ingekleurd voor wit: daar staan ze wit op
+ * navy. Het wit werd navy, het rood van Theokot bleef rood. Dat van 't ElixIr komt
+ * uit de grote versie van de fakbar (`apps/fakbar/public/elixir-logo.png`), omdat
+ * het kleine op deze maat korrelig werd.
+ */
+const LOGOS: Record<AppServiceStatus['key'], { source: number; ratio: number }> = {
+  theokot: { source: require('../../assets/openingsuren/theokot.png'), ratio: 125 / 76 },
+  cursusdienst: { source: require('../../assets/openingsuren/cursusdienst.png'), ratio: 128 / 92 },
+  elixir: { source: require('../../assets/openingsuren/elixir.png'), ratio: 208 / 120 },
+};
+
+const LOGO_HEIGHT = 34;
 
 /**
  * Theokot, cursusdienst en 't ElixIr: open of niet, en tot hoe laat.
  *
- * Eén witte balk met drie kolommen onder de kop van Home (voorstel F1 van november
- * 2026). Tot dan stonden ze als tijdlijn op een gedeelde as in de navy kop; die las
- * moeilijk en nam het halve scherm. Open staat in het groen ("Open tot 18:00"),
- * dicht in het grijs; geen bolletjes. Tik een dienst aan en de week klapt open, in
- * dezelfde balk.
+ * Drie witte tegels onder de gele kop van Home (voorstel G.1 van november 2026),
+ * met in elke tegel het logo van de plek en daaronder de toestand, alles in het
+ * midden. De naam staat al in het logo en staat er in het Nederlands dus niet nog
+ * eens onder. **In het Engels wel**: een international weet niet dat "cudi" de
+ * course shop is, en de naam van de server zegt het ("Course Shop").
+ *
+ * Open staat in het groen ("Open tot 18:00"), dicht in het grijs. Tik een tegel
+ * aan en de week klapt eronder open.
  *
  * **Het rekenwerk gebeurt op de server** (`lib/app-api/serviceStatus.ts`), op de
  * klok van Brussel; hier wordt enkel de regel getoond die de server stuurt.
  */
-export function ServiceList({ services }: { services: AppServiceStatus[] }) {
+export function ServiceList({ services, locale }: { services: AppServiceStatus[]; locale: AppLocale }) {
   const [open, setOpen] = useState<string | null>(null);
   const expanded = services.find((service) => service.key === open) ?? null;
 
   if (services.length === 0) return null;
 
   return (
-    <View style={styles.card}>
+    <View style={styles.wrap}>
       <View style={styles.row}>
-        {services.map((service, index) => {
+        {services.map((service) => {
           const hasSchedule = service.entries.length > 0;
           const isOpen = open === service.key;
+          const logo = LOGOS[service.key];
+          const status = statusLine(service, locale);
           return (
             <Pressable
               key={service.key}
               accessibilityRole={hasSchedule ? 'button' : 'text'}
               accessibilityState={hasSchedule ? { expanded: isOpen } : undefined}
-              accessibilityLabel={`${service.name}, ${statusLine(service)}`}
+              accessibilityLabel={`${service.name}, ${status}`}
               disabled={!hasSchedule}
               onPress={() => setOpen(isOpen ? null : service.key)}
-              style={({ pressed }) => [
-                styles.cell,
-                index > 0 && styles.cellDivider,
-                isOpen && styles.cellOpen,
-                pressed && styles.pressed,
-              ]}
+              style={({ pressed }) => [styles.tile, isOpen && styles.tileOpen, pressed && styles.pressed]}
             >
-              <Text style={styles.name} numberOfLines={1}>
-                {shortName(service)}
-              </Text>
+              {logo ? (
+                <Image
+                  source={logo.source}
+                  style={{ height: LOGO_HEIGHT, width: LOGO_HEIGHT * logo.ratio }}
+                  contentFit="contain"
+                  accessible={false}
+                />
+              ) : null}
+              {!logo || locale === 'en' ? (
+                <Text style={styles.name} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                  {service.name}
+                </Text>
+              ) : null}
               <Text style={[styles.status, service.openNow && styles.statusOpen]} numberOfLines={1}>
-                {statusLine(service)}
+                {status}
               </Text>
             </Pressable>
           );
@@ -70,7 +96,11 @@ export function ServiceList({ services }: { services: AppServiceStatus[] }) {
           ))}
           {expanded.note ? <Text style={styles.note}>{expanded.note}</Text> : null}
           {expanded.live ? (
-            <Text style={styles.note}>Live gemeten; dat kan van het rooster afwijken.</Text>
+            <Text style={styles.note}>
+              {locale === 'en'
+                ? 'Measured live; this can differ from the schedule.'
+                : 'Live gemeten; dat kan van het rooster afwijken.'}
+            </Text>
           ) : null}
         </View>
       ) : null}
@@ -78,15 +108,19 @@ export function ServiceList({ services }: { services: AppServiceStatus[] }) {
   );
 }
 
-/** In een derde van de breedte past "Cursusdienst" niet; iedereen zegt toch cudi. */
-function shortName(service: AppServiceStatus): string {
-  return service.key === 'cursusdienst' ? 'Cudi' : service.name;
-}
-
-/** "Open tot 14:00", "Opent 18:00", "Opent do 12:00": de regel van de server, als zin. */
-function statusLine(service: AppServiceStatus): string {
+/**
+ * "Open tot 14:00", "Opent 18:00", "Opent do 12:00": de regel van de server, als
+ * zin. In het Engels stuurt de server "until 18:00" en "tue 12:35".
+ */
+function statusLine(service: AppServiceStatus, locale: AppLocale): string {
   const detail = service.detail.trim();
   if (service.unavailable) return detail;
+  if (locale === 'en') {
+    if (service.openNow) return detail.startsWith('until') ? `Open ${detail}` : 'Open now';
+    if (detail === 'closed') return 'Closed';
+    if (detail.startsWith('opens')) return `O${detail.slice(1)}`;
+    return `Opens ${detail}`;
+  }
   if (service.openNow) {
     return detail.startsWith('tot') ? `Open ${detail}` : 'Nu open';
   }
@@ -96,22 +130,34 @@ function statusLine(service: AppServiceStatus): string {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: COLORS.surface, borderRadius: 18, ...CARD_SHADOW },
-  row: { flexDirection: 'row' },
-  cell: { flex: 1, gap: 2, paddingVertical: SPACING.md, paddingHorizontal: 14 },
-  cellDivider: { borderLeftWidth: 1, borderLeftColor: COLORS.line },
-  cellOpen: { backgroundColor: COLORS.paper2 },
+  wrap: { gap: SPACING.sm },
+  row: { flexDirection: 'row', gap: SPACING.sm },
+  tile: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    paddingVertical: 14,
+    paddingHorizontal: SPACING.sm,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: COLORS.surface,
+    backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
+  },
+  // De tegel waarvan de week openstaat, krijgt een navy rand.
+  tileOpen: { borderColor: COLORS.navy },
   pressed: { opacity: 0.7 },
-  name: { fontFamily: FONTS.bold, fontSize: 14, color: COLORS.ink },
-  status: { fontFamily: FONTS.medium, fontSize: 12, color: COLORS.muted },
+  name: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.ink, textAlign: 'center', marginBottom: -4 },
+  status: { fontFamily: FONTS.medium, fontSize: 12, color: COLORS.muted, textAlign: 'center' },
   statusOpen: { fontFamily: FONTS.semibold, color: COLORS.okInk },
   schedule: {
     gap: 6,
-    paddingHorizontal: SPACING.lg,
+    padding: SPACING.lg,
     paddingTop: SPACING.md,
-    paddingBottom: SPACING.lg,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.line,
+    borderRadius: RADIUS.md + 2,
+    backgroundColor: COLORS.surface,
+    ...CARD_SHADOW,
   },
   scheduleTitle: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.ink, marginBottom: 2 },
   scheduleRow: { flexDirection: 'row', justifyContent: 'space-between', gap: SPACING.md },
