@@ -16,6 +16,11 @@ niet opnieuw moet beginnen. Pas het hier aan wanneer je het daar aanpast.
 
 **What's New in This Version** (per versie, verplicht vanaf de tweede):
 
+- **1.3.0**: Je ticket gaat nu rechtstreeks naar Apple Wallet, zonder witte pagina erna.
+  De studietimer loopt door als je je telefoon weglegt, en de vakken waaraan je werkt
+  beheer je zelf. Bij de Alma's staan ook Alma 1, Alma 2 en Gasthuisberg; tik op een
+  gerecht voor de foto. De cursusdienst toont de openingsuren bovenaan, en de affiches
+  op Home worden beter bijgesneden.
 - **1.2.0**: Een volledig nieuw ontwerp. Home opent met de evenementen van vandaag, wat er
   open is en je volgende lessen. Nieuw: de menu's van de Alma's, tijdsloten bij de
   cursusdienst, vakevaluaties van Burgieclan, en je tickets met de affiche van het
