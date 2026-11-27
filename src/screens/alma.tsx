@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { ChevronDown, Clock } from 'lucide-react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -20,6 +21,7 @@ import type { AppAlma, AppAlmaDish, AppAlmaRestaurant } from '../api/contract';
 import { fetchAlma } from '../api/endpoints';
 import { messageFor, useResource, type Resource } from '../api/useResource';
 import { almaClock, almaPrice, almaStatusLine } from '../alma';
+import { CARD_SHADOW } from '../components/HomeSection';
 import { YellowHead } from '../components/YellowHead';
 import { PhotoViewer, type ViewerPhoto } from '../components/PhotoViewer';
 import { CardList, Empty, ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice } from '../components/ui';
@@ -82,6 +84,8 @@ export default function AlmaScreen() {
     [data],
   );
   const [index, setIndex] = useState(0);
+  // De uren van de week staan standaard dicht.
+  const [hoursOpen, setHoursOpen] = useState(false);
   const pager = useRef<FlatList<string>>(null);
   const goTo = (next: number) => {
     if (next < 0 || next >= pages.length) return;
@@ -170,7 +174,14 @@ export default function AlmaScreen() {
         windowSize={3}
         onMomentumScrollEnd={(event) => setIndex(Math.round(event.nativeEvent.contentOffset.x / width))}
         renderItem={({ item }) => (
-          <DayPage date={item} width={width} slug={slug} today={item === data.date ? base : null} />
+          <DayPage
+            date={item}
+            width={width}
+            slug={slug}
+            today={item === data.date ? base : null}
+            hoursOpen={hoursOpen}
+            onToggleHours={() => setHoursOpen((current) => !current)}
+          />
         )}
       />
     </View>
@@ -186,10 +197,15 @@ function DayPage({
   width,
   slug,
   today,
+  hoursOpen,
+  onToggleHours,
 }: {
   date: string;
   width: number;
   slug: Slug;
+  /** Of de uren van de week openstaan; geldt voor elke dag tegelijk. */
+  hoursOpen: boolean;
+  onToggleHours: () => void;
   /** De gegevens van vandaag, al opgehaald; `null` voor een andere dag. */
   today: Resource<AppAlma> | null;
 }) {
@@ -212,7 +228,7 @@ function DayPage({
         <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
       ) : (
         <>
-          <WeekHours restaurant={restaurant} selected={date} />
+          <WeekHours restaurant={restaurant} selected={date} open={hoursOpen} onToggle={onToggleHours} />
           <Text accessibilityRole="header" style={styles.dayHeading}>
             {dayHeading(date)}
           </Text>
@@ -483,61 +499,105 @@ function hoursDay(date: string): string {
   return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)} ${day}/${month}`;
 }
 
+/** "11:30–14:00, 17:30–19:30", of `null` voor gesloten. */
+function windowsText(windows: { start: number; end: number | null }[]): string | null {
+  if (windows.length === 0) return null;
+  return windows.map((window) => `${almaClock(window.start)}–${almaClock(window.end ?? window.start)}`).join(', ');
+}
+
 /**
- * De openingsuren van het gekozen restaurant voor de hele week, als één tabel
- * bovenaan elke dag: een rij per dag, een kolom per soort (warme maaltijden,
- * snacks). Tot november 2026 stonden ze onderaan, onder het hele menu, en vond
- * niemand ze. De dag die je bekijkt staat in het vet.
+ * De openingsuren van het gekozen restaurant voor de week, bovenaan elke dag en
+ * standaard dichtgeklapt: dicht zie je de uren van de dag die je bekijkt, open
+ * de hele week. Eén regel per dag met de uren van de eerste soort (de warme
+ * maaltijden); een tweede soort (snacks) die elke open dag dezelfde uren heeft,
+ * staat er één keer onder, anders als een kleine regel per dag. Tot november 2026
+ * was dit een tabel met een kolom per soort, en dat was te druk.
  */
-function WeekHours({ restaurant, selected }: { restaurant: AppAlmaRestaurant; selected: string }) {
+function WeekHours({
+  restaurant,
+  selected,
+  open,
+  onToggle,
+}: {
+  restaurant: AppAlmaRestaurant;
+  selected: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const kinds = restaurant.hours.filter((kind) => kind.days.length > 0);
   if (kinds.length === 0) return null;
+  const [primary, ...others] = kinds;
   const dates = [...new Set(kinds.flatMap((kind) => kind.days.map((day) => day.date)))].sort();
+  const windowsOf = (kind: (typeof kinds)[number], date: string) =>
+    kind.days.find((day) => day.date === date)?.windows ?? [];
+
+  // Een andere soort met elke open dag dezelfde uren: één zin onderaan.
+  const steady = others.map((kind) => {
+    const texts = [...new Set(dates.map((date) => windowsText(windowsOf(kind, date))).filter(Boolean))];
+    return { kind, steady: texts.length === 1 ? texts[0] : null };
+  });
+
+  const selectedText = windowsText(windowsOf(primary, selected));
 
   return (
     <View style={styles.section}>
-      <SectionHeading>Openingsuren</SectionHeading>
-      <CardList>
-        {kinds.length > 1 ? (
-          <View key="kop" style={styles.hoursRow}>
-            <View style={styles.hoursDayCell} />
-            {kinds.map((kind) => (
-              <Text key={kind.kind} style={[styles.hoursCell, styles.hoursKind]} numberOfLines={2}>
-                {kind.kind}
+      <View style={styles.hoursCard}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: open }}
+          accessibilityLabel={`Openingsuren van ${restaurant.name}, ${open ? 'dichtklappen' : 'de hele week tonen'}`}
+          onPress={onToggle}
+          style={({ pressed }) => [styles.hoursHead, pressed && styles.pressed]}
+        >
+          <Clock color={COLORS.navy} size={18} />
+          <View style={styles.flex}>
+            <Text style={styles.hoursTitle}>Openingsuren</Text>
+            {!open ? (
+              <Text style={styles.hoursSummary} numberOfLines={1}>
+                {dayHeading(selected)}: {selectedText ?? 'gesloten'}
               </Text>
-            ))}
+            ) : null}
+          </View>
+          <ChevronDown color={COLORS.navy} size={20} style={open ? styles.chevronOpen : undefined} />
+        </Pressable>
+
+        {open ? (
+          <View style={styles.hoursBody}>
+            {dates.map((date) => {
+              const current = date === selected;
+              const text = windowsText(windowsOf(primary, date));
+              const extra = steady
+                .filter((item) => item.steady === null)
+                .map((item) => ({ label: item.kind.kind, text: windowsText(windowsOf(item.kind, date)) }))
+                .filter((item) => item.text);
+              return (
+                <View key={date} style={styles.hoursRow}>
+                  <Text style={[styles.hoursDay, current && styles.hoursToday]}>{hoursDay(date)}</Text>
+                  <View style={styles.hoursRight}>
+                    <Text style={[styles.hoursValue, !text && styles.hoursClosed, current && styles.hoursToday]}>
+                      {text ?? 'Gesloten'}
+                    </Text>
+                    {extra.map((item) => (
+                      <Text key={item.label} style={styles.hoursExtra}>
+                        {item.label} {item.text}
+                      </Text>
+                    ))}
+                  </View>
+                </View>
+              );
+            })}
+            {others.length > 0 ? (
+              <Text style={styles.hoursNote}>
+                {`Hierboven: ${primary.kind.toLowerCase()}. `}
+                {steady
+                  .filter((item) => item.steady)
+                  .map((item) => `${item.kind.kind}: ${item.steady} op de dagen dat het open is.`)
+                  .join(' ')}
+              </Text>
+            ) : null}
           </View>
         ) : null}
-        {dates.map((date) => {
-          const current = date === selected;
-          return (
-            <View key={date} style={styles.hoursRow}>
-              <Text style={[styles.hoursDay, styles.hoursDayCell, current && styles.hoursToday]}>{hoursDay(date)}</Text>
-              {kinds.map((kind) => {
-                const windows = kind.days.find((day) => day.date === date)?.windows ?? [];
-                return (
-                  <Text
-                    key={kind.kind}
-                    style={[
-                      styles.hoursCell,
-                      styles.hoursValue,
-                      windows.length === 0 && styles.hoursClosed,
-                      current && styles.hoursToday,
-                    ]}
-                  >
-                    {windows.length === 0
-                      ? 'Gesloten'
-                      : windows
-                          .map((window) => `${almaClock(window.start)}–${almaClock(window.end ?? window.start)}`)
-                          .join('\n')}
-                  </Text>
-                );
-              })}
-            </View>
-          );
-        })}
-      </CardList>
-      {kinds.length === 1 ? <Text style={styles.hoursNote}>{kinds[0].kind}</Text> : null}
+      </View>
     </View>
   );
 }
@@ -601,9 +661,10 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
     paddingVertical: 12,
   },
+  // Groot genoeg om te zien wat het is: er is plaats genoeg naast de naam.
   thumb: {
-    width: 52,
-    height: 40,
+    width: 84,
+    height: 64,
     borderRadius: RADIUS.sm,
     overflow: 'hidden',
   },
@@ -632,16 +693,23 @@ const styles = StyleSheet.create({
   },
   more: { paddingVertical: SPACING.sm },
   moreText: { fontFamily: FONTS.semibold, fontSize: 14, color: COLORS.navy },
-  hoursRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: SPACING.md,
-    paddingVertical: 10,
+  hoursCard: { backgroundColor: COLORS.surface, borderRadius: 20, ...CARD_SHADOW },
+  hoursHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.lg },
+  hoursTitle: { fontFamily: FONTS.semibold, fontSize: 15, color: COLORS.ink },
+  hoursSummary: { ...TYPE.small, color: COLORS.muted, marginTop: 2, fontVariant: ['tabular-nums'] },
+  chevronOpen: { transform: [{ rotate: '180deg' }] },
+  hoursBody: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.line2,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.lg,
   },
-  hoursDayCell: { width: 72 },
-  hoursCell: { flex: 1, textAlign: 'right' },
-  hoursKind: { ...TYPE.small, fontSize: 12, color: COLORS.muted },
-  hoursNote: { ...TYPE.small, fontSize: 12, color: COLORS.muted, paddingHorizontal: SPACING.xs },
+  hoursRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingVertical: 7 },
+  hoursRight: { alignItems: 'flex-end', gap: 2 },
+  hoursExtra: { ...TYPE.small, fontSize: 12, color: COLORS.muted, fontVariant: ['tabular-nums'] },
+  hoursNote: { ...TYPE.small, fontSize: 12, color: COLORS.muted, marginTop: SPACING.sm },
+  flex: { flex: 1 },
   hoursDay: { ...TYPE.body, fontSize: 14, color: COLORS.body },
   hoursValue: {
     fontFamily: FONTS.semibold,

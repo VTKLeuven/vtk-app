@@ -129,12 +129,11 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
   const count = lines.reduce((sum, line) => sum + line.quantity, 0);
 
   const hours = overview.data?.hours ?? null;
-  // Je eerstvolgende tijdslot, als je er een hebt.
-  const mySlot = (timeslots.data?.mine ?? []).find((slot) => new Date(slot.end) > new Date()) ?? null;
   /**
-   * De gele kop: het logo van de cursusdienst met wanneer ze open is, en altijd de
-   * knop naar de tijdsloten wanneer cudi daarmee werkt. Tot november 2026 stond
-   * die knop enkel in de kaart van wat klaarligt; nu vind je hem zonder te zoeken.
+   * De gele kop: het logo van de cursusdienst met wanneer ze open is, en rechts
+   * al je bestellingen. De knop naar de tijdsloten stond hier ook, maar dan stond
+   * hij twee keer op het scherm; hij staat in de kaart eronder (`ReadyCard` of
+   * `TimeslotCard`), die er altijd is wanneer cudi met tijdsloten werkt.
    */
   const head = (
     <YellowHead
@@ -159,22 +158,6 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
           {hours && !hours.unavailable ? hoursLine(hours.openNow, hours.detail) : 'Je cursussen reserveren en afhalen'}
         </Text>
       </View>
-      {viewer && timeslots.data?.enabled ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={mySlot ? 'Je tijdslot bekijken of wijzigen' : 'Een tijdslot reserveren'}
-          onPress={() => router.push('/cudi-tijdsloten')}
-          style={({ pressed }) => [styles.slotButton, pressed && styles.pressed]}
-        >
-          <CalendarClock color={COLORS.yellow} size={18} />
-          <Text style={styles.slotLabel} numberOfLines={1}>
-            {mySlot
-              ? `Je tijdslot: ${formatDayShort(mySlot.start, locale)} ${formatTime(mySlot.start, locale)}`
-              : 'Tijdslot reserveren'}
-          </Text>
-          <ChevronRight color={COLORS.yellow} size={18} />
-        </Pressable>
-      ) : null}
     </YellowHead>
   );
 
@@ -393,17 +376,6 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
             onPay={() => void pay(order)}
           />
         ))}
-
-        {data.orders.length > 0 ? (
-          <Pressable
-            accessibilityRole="link"
-            onPress={() => router.push('/cudi-bestellingen')}
-            style={({ pressed }) => [styles.history, pressed && styles.pressed]}
-          >
-            <Text style={styles.body}>{open.length > 0 ? 'Al je bestellingen' : 'Je vorige bestellingen'}</Text>
-            <ChevronRight size={18} color={COLORS.muted} />
-          </Pressable>
-        ) : null}
 
         {!data.gate ? (
           <View style={styles.block}>
@@ -957,16 +929,6 @@ const styles = StyleSheet.create({
   headRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   headLogo: { width: 53, height: 38 },
   headStatus: { flex: 1, fontFamily: FONTS.bold, fontSize: 15, color: COLORS.navy },
-  slotButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    height: 48,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: RADIUS.pill,
-    backgroundColor: COLORS.navy,
-  },
-  slotLabel: { flex: 1, fontFamily: FONTS.bold, fontSize: 15, color: COLORS.yellow },
   flex: { flex: 1 },
   block: { gap: SPACING.md },
   pressed: { opacity: 0.6 },
@@ -978,16 +940,6 @@ const styles = StyleSheet.create({
   meta: { ...TYPE.small, color: COLORS.body },
   readyText: { color: COLORS.okInk, fontFamily: FONTS.semibold },
   waitText: { color: COLORS.lowInk },
-
-  history: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 48,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: COLORS.line2,
-  },
 
   readyHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   readyLines: { borderTopWidth: 1, borderTopColor: COLORS.line2 },

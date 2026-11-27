@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
+  FadeIn,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -78,7 +79,10 @@ export function PhotoViewer({
     <Modal
       visible={index !== null}
       transparent
-      animationType="fade"
+      // Geen animatie van de modal zelf: die vervaagde ook bij het sluiten, en dan
+      // bleef een foto na een tik nog een halve tel staan. Openen vervaagt hieronder
+      // zelf, sluiten is meteen.
+      animationType="none"
       onRequestClose={onClose}
       // Zonder dit staat de statusbalk op Android over de foto.
       statusBarTranslucent
@@ -89,14 +93,16 @@ export function PhotoViewer({
           en zonder dat er iets in de logs verschijnt. */}
       <GestureHandlerRootView style={styles.root}>
         {index !== null ? (
-          <Pager
-            photos={photos}
-            initialIndex={index}
-            index={index}
-            onIndexChange={onIndexChange}
-            onClose={onClose}
-            actions={actions}
-          />
+          <Animated.View entering={FadeIn.duration(140)} style={styles.root}>
+            <Pager
+              photos={photos}
+              initialIndex={index}
+              index={index}
+              onIndexChange={onIndexChange}
+              onClose={onClose}
+              actions={actions}
+            />
+          </Animated.View>
         ) : null}
       </GestureHandlerRootView>
     </Modal>
@@ -425,9 +431,12 @@ function ZoomablePhoto({
       mode.value = 0;
     });
 
+  // `maxDelay` kort: een enkele tik (sluiten) wacht tot een dubbeltik uitblijft,
+  // en met de standaard van een halve seconde voelde wegtikken traag aan.
   const doubleTap = Gesture.Tap()
     .numberOfTaps(2)
     .maxDuration(250)
+    .maxDelay(180)
     .onEnd((event) => {
       if (savedScale.value > 1.01) {
         scale.value = withTiming(1);

@@ -24,9 +24,9 @@ const NATIVE_ROUTES: Record<string, string> = {
   '/pocs': '/pocs',
   '/tickets': '/tickets',
   '/media': '/media',
-  // `/fotos` is op de site een omleiding naar `/media`; hier komt ze op hetzelfde
-  // scherm uit, zodat een oud menu-item niet in een browser eindigt.
-  '/fotos': '/media',
+  // `/fotos` is op de site een omleiding naar `/media`; in de app staan de foto's
+  // sinds november 2026 op een eigen scherm, en daar hoort dit adres.
+  '/fotos': '/albums',
   // De webscanner. Wie de app heeft, hoort niet in een browser te belanden voor
   // iets waar hier een scherm voor bestaat.
   '/scan': '/deur',

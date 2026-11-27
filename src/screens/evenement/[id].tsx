@@ -6,11 +6,12 @@ import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { baseUrl } from '../../api/client';
-import { fetchCalendarEvent, setEventInterest } from '../../api/endpoints';
+import { fetchCalendarEvent, fetchTicketEvent, setEventInterest } from '../../api/endpoints';
 import { messageFor, useResource } from '../../api/useResource';
 import { Prose } from '../../components/Prose';
 import { DatePin } from '../../components/DatePin';
 import { HeadButton, PageHead, PhotoHead } from '../../components/PageHead';
+import { TicketOrderBar, TicketTypes, useTicketSelection } from '../../components/TicketShop';
 import { Button, CardList, ErrorState, Loading, SectionHeading } from '../../components/ui';
 import { addEventToDeviceCalendar, addResultMessage } from '../../deviceCalendar';
 import { formatDayShort, formatEventWhen, formatTimeRange } from '../../format';
@@ -20,6 +21,7 @@ import { usePlanning } from '../../planning/usePlanning';
 import { useApp } from '../../state/app';
 import { getPref, setPref } from '../../storage';
 import { useTabRouter } from '../../navigation';
+import { encodeQuantities } from '../../ticketOrder';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW } from '../../components/HomeSection';
 
@@ -30,7 +32,10 @@ import { CARD_SHADOW } from '../../components/HomeSection';
  * paginakop met de titel, de affiche als plaat zonder waas eronder, de feiten als
  * gelabelde rijen (geen kaart) en "Over dit event" met de gele lijn.
  *
- * Tickets openen het native verkoopscherm. Inschrijven gaat nog naar de site: een
+ * **Hangt er een ticketverkoop aan, dan staan de tickets hier zelf** (november
+ * 2026), met de stappers en de balk onderaan, zoals de eventpagina op de site.
+ * De ticketpagina van die verkoop toont omgekeerd deze pagina (`ticket/[slug]`).
+ * Inschrijven gaat nog naar de site: een
  * formulier met eigen validatie is fase 4 werk, en een knop naar de echte pagina
  * is tot dan eerlijker dan geen knop.
  *
@@ -67,9 +72,14 @@ const MOMENTS_VISIBLE = 7;
 const SAVE_EXPLAINED = 'evenement:uitleg-bewaren';
 
 export default function EventScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  return <EventView id={id} />;
+}
+
+/** Eén evenement, ook getekend door de ticketpagina van een gekoppelde verkoop. */
+export function EventView({ id }: { id: string }) {
   const router = useTabRouter();
   const { locale, viewer, bootstrap } = useApp();
-  const { id } = useLocalSearchParams<{ id: string }>();
   const [addingToCalendar, setAddingToCalendar] = useState(false);
   const [allDays, setAllDays] = useState(false);
   // De uitleg bij "in je agenda" en "in je planning" staat er tot je hem wegtikt;
@@ -82,6 +92,15 @@ export default function EventScreen() {
     () => fetchCalendarEvent(locale, id),
     `${locale}:${id}`,
   );
+  // De gekoppelde ticketverkoop, met dezelfde cache als de ticketpagina.
+  const ticketSlug = resource.data?.ticketSlug ?? null;
+  const ticket = useResource(
+    `ticket:${ticketSlug}`,
+    () => fetchTicketEvent(locale, ticketSlug as string),
+    `${locale}:${ticketSlug}`,
+    ticketSlug !== null,
+  );
+  const selection = useTicketSelection(ticket.data);
 
   if (resource.loading) return <Loading />;
   if (!resource.data) {
@@ -141,250 +160,266 @@ export default function EventScreen() {
   const themes = event.categories.map((category) => category.name).join(', ');
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <View style={styles.overscroll} />
-      {event.imageUrl ? (
-        // De affiche over de volle breedte, met de gele datumpin op de rand.
-        <PhotoHead
-          image={{ uri: event.imageUrl }}
-          crop={event.imageCrop}
-          title={event.title}
-          subtitle={event.groupName}
-          pin={<DatePin iso={leadMoment(event)?.start ?? event.start} locale={locale} shadow />}
-        />
-      ) : (
-        <PageHead title={event.title} subtitle={event.groupName} />
-      )}
-
-      <View style={styles.body}>
-        <CardList>
-          <Fact label="Wanneer">
-            {series && upcomingMoments.length > 0 ? (
-              <View style={styles.moments}>
-                {shownMoments.map((moment, index) => (
-                  <View key={moment.start} style={styles.momentRow}>
-                    <Text style={[styles.momentDay, index === 0 && styles.momentNext]}>
-                      {formatDayShort(moment.start, locale)}
-                    </Text>
-                    <View style={styles.momentText}>
-                      <Text style={styles.momentTime}>
-                        {event.allDay ? '' : formatTimeRange(moment.start, moment.end, locale)}
-                        {moment.label ? `${event.allDay ? '' : ', '}${moment.label}` : ''}
-                      </Text>
-                      {moment.location ? (
-                        <Text style={styles.momentPlace}>{moment.location}</Text>
-                      ) : null}
-                    </View>
-                  </View>
-                ))}
-                {upcomingMoments.length > MOMENTS_VISIBLE ? (
-                  <Pressable accessibilityRole="button" onPress={() => setAllDays(!allDays)} hitSlop={8}>
-                    <Text style={styles.momentsToggle}>
-                      {allDays ? 'Minder dagen' : `Toon alle ${upcomingMoments.length} dagen`}
-                    </Text>
-                  </Pressable>
-                ) : null}
-              </View>
-            ) : (
-              <Text style={styles.factText}>
-                {formatEventWhen(event.start, event.end, event.allDay, locale)}
-              </Text>
-            )}
-          </Fact>
-          {event.location ? (
-            <Fact label="Waar">
-              <Text style={styles.factText}>{event.location}</Text>
-            </Fact>
-          ) : null}
-          {themes ? (
-            <Fact label="Thema">
-              <Text style={styles.factText}>{themes}</Text>
-            </Fact>
-          ) : null}
-        </CardList>
-
-        {event.ticketSlug ? (
-          <Button label="Tickets" onPress={() => router.push(`/ticket/${event.ticketSlug}`)} />
-        ) : null}
-        {event.formSlug ? (
-          <Button
-            label="Inschrijven"
-            variant={event.ticketSlug ? 'ghost' : 'primary'}
-            onPress={() =>
-              void WebBrowser.openBrowserAsync(`${baseUrl()}/formulieren/${event.formSlug}`)
-            }
+    <View style={styles.root}>
+      <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+        <View style={styles.overscroll} />
+        {event.imageUrl ? (
+          // De affiche over de volle breedte, met de gele datumpin op de rand.
+          <PhotoHead
+            image={{ uri: event.imageUrl }}
+            crop={event.imageCrop}
+            title={event.title}
+            subtitle={event.groupName}
+            pin={<DatePin iso={leadMoment(event)?.start ?? event.start} locale={locale} shadow />}
           />
-        ) : null}
-
-        {viewer ? (
-          <View style={styles.actions}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ selected: event.interested }}
-              accessibilityLabel={event.interested ? 'Uit mijn lijst halen' : 'In mijn lijst zetten'}
-              onPress={toggleInterest}
-              style={({ pressed }) => [
-                styles.action,
-                event.interested ? styles.actionActive : styles.actionPrimary,
-                pressed && styles.actionPressed,
-              ]}
-            >
-              <Star
-                color={event.interested ? COLORS.ink : COLORS.paper}
-                fill={event.interested ? COLORS.ink : 'transparent'}
-                size={17}
-              />
-              <Text style={[styles.actionLabel, !event.interested && styles.actionLabelPrimary]}>
-                {event.interested ? 'In mijn lijst' : 'Ik ga misschien'}
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {/* De server beslist over de drempel en stuurt hieronder niets mee zolang
-            die niet gehaald is; zo tonen de app en de site hetzelfde getal. */}
-        {event.interestedCount || (viewer && event.interested) ? (
-          <Text style={styles.note}>
-            {event.interestedCount
-              ? locale === 'en'
-                ? `${event.interestedCount} going. `
-                : `${event.interestedCount} studenten komen. `
-              : ''}
-            {viewer && event.interested
-              ? 'Je krijgt een dag vooraf een bericht. Dit is geen inschrijving en geen ticket.'
-              : ''}
-          </Text>
-        ) : null}
-
-        {event.url ? (
-          // De redacteur kiest zelf wat er op deze knop staat ("Inschrijflink",
-          // "Ticketverkoop"); de server stuurt ze al in de juiste taal mee. Bij de
-          // andere handelingen bovenaan en niet onder de beschrijving: wie zich
-          // wil registreren, zocht die knop onderaan de pagina.
-          <Button
-            label={event.urlLabel ?? 'Meer info'}
-            variant="ghost"
-            onPress={() => void WebBrowser.openBrowserAsync(event.url as string)}
-          />
-        ) : null}
-
-        {/* Twee verschillende plaatsen. De eerste keer met een zin uitleg per plaats,
-            want als twee knoppen zonder meer was het verschil niet te zien; wie het
-            gelezen heeft, krijgt daarna enkel de twee knoppen en een (i). */}
-        {explain ? (
-          <CardList>
-            <SaveRow
-              icon={Smartphone}
-              label="In de agenda van je telefoon"
-              hint="Eén afspraak in Apple of Google Agenda, met een herinnering. Daarna staat ze los van de app."
-              action="Toevoegen"
-              busy={addingToCalendar}
-              onPress={() => void addToCalendar()}
-            />
-            {plannable ? (
-              <SaveRow
-                icon={inPlanning ? CalendarCheck : CalendarPlus}
-                label={inPlanning ? 'Staat in je planning' : 'In je planning, naast je lessen'}
-                hint={
-                  inPlanning
-                    ? 'Onder Kalender > Planning en in de agenda die je planning exporteert.'
-                    : 'Komt onder Kalender > Planning tussen je lessen, en in de agenda die je planning exporteert.'
-                }
-                action={inPlanning ? 'Weghalen' : 'Toevoegen'}
-                active={inPlanning}
-                busy={planning.busy}
-                onPress={togglePlanning}
-              />
-            ) : null}
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                setPref(SAVE_EXPLAINED, '1');
-                setExplain(false);
-              }}
-              hitSlop={6}
-              style={({ pressed }) => [styles.gotIt, pressed && styles.actionPressed]}
-            >
-              <Text style={styles.gotItLabel}>Begrepen, niet meer uitleggen</Text>
-            </Pressable>
-          </CardList>
         ) : (
-          <View style={styles.saveButtons}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="In de agenda van je telefoon zetten"
-              accessibilityState={{ busy: addingToCalendar }}
-              disabled={addingToCalendar}
-              onPress={() => void addToCalendar()}
-              style={({ pressed }) => [styles.saveButton, (pressed || addingToCalendar) && styles.actionPressed]}
-            >
-              <Smartphone color={COLORS.ink} size={18} />
-              <Text style={styles.saveButtonLabel} numberOfLines={1}>
-                In je agenda
-              </Text>
-            </Pressable>
-            {plannable ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={inPlanning ? 'Uit je planning halen' : 'In je planning zetten, naast je lessen'}
-                accessibilityState={{ selected: inPlanning, busy: planning.busy }}
-                disabled={planning.busy}
-                onPress={togglePlanning}
-                style={({ pressed }) => [
-                  styles.saveButton,
-                  inPlanning && styles.saveButtonActive,
-                  (pressed || planning.busy) && styles.actionPressed,
-                ]}
-              >
-                {inPlanning ? <CalendarCheck color={COLORS.ink} size={18} /> : <CalendarPlus color={COLORS.ink} size={18} />}
-                <Text style={styles.saveButtonLabel} numberOfLines={1}>
-                  {inPlanning ? 'In je planning' : 'In planning'}
-                </Text>
-              </Pressable>
-            ) : null}
-            <HeadButton accessibilityLabel="Wat is het verschil?" onPress={() => setExplain(true)}>
-              <Info color={COLORS.ink} size={19} />
-            </HeadButton>
-          </View>
+          <PageHead title={event.title} subtitle={event.groupName} />
         )}
 
-        {event.description ? (
-          <View style={styles.about}>
-            <SectionHeading>Over dit event</SectionHeading>
-            <Prose>{event.description}</Prose>
-          </View>
-        ) : null}
-
-        {event.isAlumniEvent && event.attendees.length > 0 ? (
-          <View style={styles.about}>
-            <SectionHeading>{locale === 'en' ? 'Who is coming' : 'Wie er komt'}</SectionHeading>
-            <Text style={styles.note}>
-              {locale === 'en'
-                ? 'Only those who chose to be visible. The counter above counts everyone.'
-                : 'Alleen wie zelf aangaf zichtbaar te willen zijn. De teller hierboven telt iedereen.'}
-            </Text>
-            <CardList>
-              {event.attendees.map((attendee) => (
-                <View key={attendee.key} style={styles.attendee}>
-                  <Text style={[styles.attendeeName, !attendee.name && styles.attendeeAnon]}>
-                    {attendee.name ?? (locale === 'en' ? 'Anonymous' : 'Anoniem')}
-                  </Text>
-                  <Text style={styles.attendeeMeta}>
-                    {[
-                      attendee.graduationYear ? String(attendee.graduationYear) : null,
-                      attendee.wasInVtk ? 'VTK' : null,
-                    ]
-                      .filter(Boolean)
-                      .join(', ') || '-'}
-                  </Text>
+        <View style={styles.body}>
+          <CardList>
+            <Fact label="Wanneer">
+              {series && upcomingMoments.length > 0 ? (
+                <View style={styles.moments}>
+                  {shownMoments.map((moment, index) => (
+                    <View key={moment.start} style={styles.momentRow}>
+                      <Text style={[styles.momentDay, index === 0 && styles.momentNext]}>
+                        {formatDayShort(moment.start, locale)}
+                      </Text>
+                      <View style={styles.momentText}>
+                        <Text style={styles.momentTime}>
+                          {event.allDay ? '' : formatTimeRange(moment.start, moment.end, locale)}
+                          {moment.label ? `${event.allDay ? '' : ', '}${moment.label}` : ''}
+                        </Text>
+                        {moment.location ? (
+                          <Text style={styles.momentPlace}>{moment.location}</Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  ))}
+                  {upcomingMoments.length > MOMENTS_VISIBLE ? (
+                    <Pressable accessibilityRole="button" onPress={() => setAllDays(!allDays)} hitSlop={8}>
+                      <Text style={styles.momentsToggle}>
+                        {allDays ? 'Minder dagen' : `Toon alle ${upcomingMoments.length} dagen`}
+                      </Text>
+                    </Pressable>
+                  ) : null}
                 </View>
-              ))}
-            </CardList>
-          </View>
-        ) : null}
+              ) : (
+                <Text style={styles.factText}>
+                  {formatEventWhen(event.start, event.end, event.allDay, locale)}
+                </Text>
+              )}
+            </Fact>
+            {event.location ? (
+              <Fact label="Waar">
+                <Text style={styles.factText}>{event.location}</Text>
+              </Fact>
+            ) : null}
+            {themes ? (
+              <Fact label="Thema">
+                <Text style={styles.factText}>{themes}</Text>
+              </Fact>
+            ) : null}
+          </CardList>
 
-      </View>
-    </ScrollView>
+          {ticket.data ? (
+            <TicketTypes event={ticket.data} selection={selection} onNeedsLogin={() => router.push('/inloggen')} />
+          ) : event.ticketSlug && !ticket.loading ? (
+            // De verkoop kon niet geladen worden: dan toch de weg naar de ticketpagina.
+            <Button label="Tickets" onPress={() => router.push(`/ticket/${event.ticketSlug}`)} />
+          ) : null}
+          {event.formSlug ? (
+            <Button
+              label="Inschrijven"
+              variant={event.ticketSlug ? 'ghost' : 'primary'}
+              onPress={() =>
+                void WebBrowser.openBrowserAsync(`${baseUrl()}/formulieren/${event.formSlug}`)
+              }
+            />
+          ) : null}
+
+          {viewer ? (
+            <View style={styles.actions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ selected: event.interested }}
+                accessibilityLabel={event.interested ? 'Uit mijn lijst halen' : 'In mijn lijst zetten'}
+                onPress={toggleInterest}
+                style={({ pressed }) => [
+                  styles.action,
+                  event.interested ? styles.actionActive : styles.actionPrimary,
+                  pressed && styles.actionPressed,
+                ]}
+              >
+                <Star
+                  color={event.interested ? COLORS.ink : COLORS.paper}
+                  fill={event.interested ? COLORS.ink : 'transparent'}
+                  size={17}
+                />
+                <Text style={[styles.actionLabel, !event.interested && styles.actionLabelPrimary]}>
+                  {event.interested ? 'In mijn lijst' : 'Ik ga misschien'}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {/* De server beslist over de drempel en stuurt hieronder niets mee zolang
+              die niet gehaald is; zo tonen de app en de site hetzelfde getal. */}
+          {event.interestedCount || (viewer && event.interested) ? (
+            <Text style={styles.note}>
+              {event.interestedCount
+                ? locale === 'en'
+                  ? `${event.interestedCount} going. `
+                  : `${event.interestedCount} studenten komen. `
+                : ''}
+              {viewer && event.interested
+                ? 'Je krijgt een dag vooraf een bericht. Dit is geen inschrijving en geen ticket.'
+                : ''}
+            </Text>
+          ) : null}
+
+          {event.url ? (
+            // De redacteur kiest zelf wat er op deze knop staat ("Inschrijflink",
+            // "Ticketverkoop"); de server stuurt ze al in de juiste taal mee. Bij de
+            // andere handelingen bovenaan en niet onder de beschrijving: wie zich
+            // wil registreren, zocht die knop onderaan de pagina.
+            <Button
+              label={event.urlLabel ?? 'Meer info'}
+              variant="ghost"
+              onPress={() => void WebBrowser.openBrowserAsync(event.url as string)}
+            />
+          ) : null}
+
+          {/* Twee verschillende plaatsen. De eerste keer met een zin uitleg per plaats,
+              want als twee knoppen zonder meer was het verschil niet te zien; wie het
+              gelezen heeft, krijgt daarna enkel de twee knoppen en een (i). */}
+          {explain ? (
+            <CardList>
+              <SaveRow
+                icon={Smartphone}
+                label="In de agenda van je telefoon"
+                hint="Eén afspraak in Apple of Google Agenda, met een herinnering. Daarna staat ze los van de app."
+                action="Toevoegen"
+                busy={addingToCalendar}
+                onPress={() => void addToCalendar()}
+              />
+              {plannable ? (
+                <SaveRow
+                  icon={inPlanning ? CalendarCheck : CalendarPlus}
+                  label={inPlanning ? 'Staat in je planning' : 'In je planning, naast je lessen'}
+                  hint={
+                    inPlanning
+                      ? 'Onder Kalender > Planning en in de agenda die je planning exporteert.'
+                      : 'Komt onder Kalender > Planning tussen je lessen, en in de agenda die je planning exporteert.'
+                  }
+                  action={inPlanning ? 'Weghalen' : 'Toevoegen'}
+                  active={inPlanning}
+                  busy={planning.busy}
+                  onPress={togglePlanning}
+                />
+              ) : null}
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  setPref(SAVE_EXPLAINED, '1');
+                  setExplain(false);
+                }}
+                hitSlop={6}
+                style={({ pressed }) => [styles.gotIt, pressed && styles.actionPressed]}
+              >
+                <Text style={styles.gotItLabel}>Begrepen, niet meer uitleggen</Text>
+              </Pressable>
+            </CardList>
+          ) : (
+            <View style={styles.saveButtons}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="In de agenda van je telefoon zetten"
+                accessibilityState={{ busy: addingToCalendar }}
+                disabled={addingToCalendar}
+                onPress={() => void addToCalendar()}
+                style={({ pressed }) => [styles.saveButton, (pressed || addingToCalendar) && styles.actionPressed]}
+              >
+                <Smartphone color={COLORS.ink} size={18} />
+                <Text style={styles.saveButtonLabel} numberOfLines={1}>
+                  In je agenda
+                </Text>
+              </Pressable>
+              {plannable ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={inPlanning ? 'Uit je planning halen' : 'In je planning zetten, naast je lessen'}
+                  accessibilityState={{ selected: inPlanning, busy: planning.busy }}
+                  disabled={planning.busy}
+                  onPress={togglePlanning}
+                  style={({ pressed }) => [
+                    styles.saveButton,
+                    inPlanning && styles.saveButtonActive,
+                    (pressed || planning.busy) && styles.actionPressed,
+                  ]}
+                >
+                  {inPlanning ? <CalendarCheck color={COLORS.ink} size={18} /> : <CalendarPlus color={COLORS.ink} size={18} />}
+                  <Text style={styles.saveButtonLabel} numberOfLines={1}>
+                    {inPlanning ? 'In je planning' : 'In planning'}
+                  </Text>
+                </Pressable>
+              ) : null}
+              <HeadButton accessibilityLabel="Wat is het verschil?" onPress={() => setExplain(true)}>
+                <Info color={COLORS.ink} size={19} />
+              </HeadButton>
+            </View>
+          )}
+
+          {event.description ? (
+            <View style={styles.about}>
+              <SectionHeading>Over dit event</SectionHeading>
+              <Prose>{event.description}</Prose>
+            </View>
+          ) : null}
+
+          {event.isAlumniEvent && event.attendees.length > 0 ? (
+            <View style={styles.about}>
+              <SectionHeading>{locale === 'en' ? 'Who is coming' : 'Wie er komt'}</SectionHeading>
+              <Text style={styles.note}>
+                {locale === 'en'
+                  ? 'Only those who chose to be visible. The counter above counts everyone.'
+                  : 'Alleen wie zelf aangaf zichtbaar te willen zijn. De teller hierboven telt iedereen.'}
+              </Text>
+              <CardList>
+                {event.attendees.map((attendee) => (
+                  <View key={attendee.key} style={styles.attendee}>
+                    <Text style={[styles.attendeeName, !attendee.name && styles.attendeeAnon]}>
+                      {attendee.name ?? (locale === 'en' ? 'Anonymous' : 'Anoniem')}
+                    </Text>
+                    <Text style={styles.attendeeMeta}>
+                      {[
+                        attendee.graduationYear ? String(attendee.graduationYear) : null,
+                        attendee.wasInVtk ? 'VTK' : null,
+                      ]
+                        .filter(Boolean)
+                        .join(', ') || '-'}
+                    </Text>
+                  </View>
+                ))}
+              </CardList>
+            </View>
+          ) : null}
+
+        </View>
+      </ScrollView>
+      {ticket.data && ticketSlug ? (
+        <TicketOrderBar
+          selection={selection}
+          onOrder={() =>
+            router.push({
+              pathname: `/ticket-bestellen/${ticketSlug}`,
+              params: { aantallen: encodeQuantities(selection.quantities) },
+            })
+          }
+        />
+      ) : null}
+    </View>
   );
 }
 

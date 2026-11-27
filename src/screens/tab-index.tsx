@@ -1,11 +1,12 @@
 import { Image } from 'expo-image';
-import { ExternalLink, QrCode } from 'lucide-react-native';
+import { ExternalLink, QrCode, Sandwich } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import type { AppCalendarEvent, AppLocale } from '../api/contract';
-import { fetchCalendar, fetchToday } from '../api/endpoints';
+import type { AppCalendarEvent, AppLocale, AppPublication } from '../api/contract';
+import { mediaUrl } from '../api/client';
+import { fetchCalendar, fetchMedia, fetchToday } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
 import { AlmaToday } from '../components/AlmaToday';
 import { CroppedPhoto } from '../components/CroppedPhoto';
@@ -15,7 +16,8 @@ import { Prose } from '../components/Prose';
 import { RewardCoins } from '../components/RewardCoins';
 import { ServiceList } from '../components/ServiceList';
 import { KURT_URL } from '../components/planning/BlokView';
-import { LinkCard, TaskCard } from '../components/TaskCard';
+import { MagazineReader } from '../components/MagazineReader';
+import { LinkCard, TaskCard, THEOKOT_CARD_PHOTO } from '../components/TaskCard';
 import { Button, Card, ErrorState, Loading, StaleNotice } from '../components/ui';
 import { WEEK_DAYS, WeekHero } from '../components/WeekHero';
 import { formatDayShort, formatTime, formatVouchers } from '../format';
@@ -70,6 +72,16 @@ export default function HomeScreen() {
     () => fetchCalendar(locale, { tot: addDays(day, WEEK_DAYS) }),
     `${locale}:${day}`,
   );
+
+  // Het nieuwste Bakske, voor de kaart onder "Voor jou". Dezelfde cache als het
+  // mediascherm, dus wie daarna naar Media gaat, wacht niet.
+  const media = useResource('media', () => fetchMedia(locale), locale);
+  const bakske = media.data?.publications.find((item) => item.kind === 'bakske') ?? null;
+  const [reading, setReading] = useState<{ publication: AppPublication; page: number } | null>(null);
+  const openMagazine = (item: AppPublication) => {
+    if (item.pages?.length) setReading({ publication: item, page: 0 });
+    else if (item.url) void WebBrowser.openBrowserAsync(item.url);
+  };
 
   // Eén keer vanzelf om meldingen vragen, zodra je ingelogd op Home staat (`push.ts`).
   const viewerId = viewer?.id ?? null;
@@ -141,6 +153,7 @@ export default function HomeScreen() {
               void resource.refresh();
               void week.reload();
               void upcoming.resource.reload();
+              void media.reload();
               void refreshApp();
             }}
           />
@@ -178,6 +191,27 @@ export default function HomeScreen() {
             {today.tasks.map((task, index) => (
               <TaskCard key={`${task.kind}-${task.at ?? index}`} task={task} />
             ))}
+            {/* De broodjes staan hier altijd, tenzij er al een taak over je
+                broodje staat. Niet meer onder "Snel naar": twee keer is één te veel. */}
+            {today.tasks.some((task) => task.kind === 'theokot-order' || task.kind === 'theokot-pickup') ? null : (
+              <LinkCard
+                title="Broodjes bestellen"
+                detail="Bij het Theokot, af te halen met je studentenkaart."
+                icon={Sandwich}
+                photo={THEOKOT_CARD_PHOTO}
+                external={false}
+                onPress={() => router.push('/broodjes')}
+              />
+            )}
+            {bakske ? (
+              <LinkCard
+                title="Het nieuwste 't Bakske"
+                detail={bakske.issue ?? bakske.title}
+                photo={bakske.coverUrl ? { uri: mediaUrl(bakske.coverUrl) as string } : null}
+                external={!bakske.pages?.length}
+                onPress={() => openMagazine(bakske)}
+              />
+            ) : null}
             <LinkCard
               title="Een bibplaats nodig?"
               detail="Reserveer een plaats in een bib van KU Leuven via KURT."
@@ -244,6 +278,7 @@ export default function HomeScreen() {
               router.push(query ? { pathname, params: Object.fromEntries(new URLSearchParams(query)) } : pathname);
             }}
             onExternal={(url) => void WebBrowser.openBrowserAsync(url)}
+            mediaCover={bakske?.coverUrl ? mediaUrl(bakske.coverUrl) : null}
           />
         </HomeSection>
 
@@ -261,6 +296,13 @@ export default function HomeScreen() {
         ) : null}
 
       </ScrollView>
+
+      <MagazineReader
+        publication={reading?.publication ?? null}
+        page={reading?.page ?? null}
+        onPageChange={(page) => setReading((current) => (current ? { ...current, page } : current))}
+        onClose={() => setReading(null)}
+      />
     </View>
   );
 }
@@ -326,9 +368,10 @@ const SHORTCUTS: {
   photo: number;
   external?: boolean;
 }[] = [
-  { key: 'broodjes', label: 'Broodjes', to: '/broodjes', photo: require('../../assets/snel/theokot.jpg') },
   { key: 'shiften', label: 'Shiften', to: '/shiften', photo: require('../../assets/snel/shiften.jpg') },
-  { key: 'media', label: "Foto's", to: '/media', photo: require('../../assets/snel/sport.jpg') },
+  { key: 'fotos', label: "Foto's", to: '/albums', photo: require('../../assets/snel/sport.jpg') },
+  // De foto van Media is de kaft van het nieuwste Bakske (zie `Shortcuts`); dit is de terugval.
+  { key: 'media', label: 'Media', to: '/media', photo: require('../../assets/snel/sport.jpg') },
   {
     key: 'cursusdienst',
     label: 'Cursusdienst',
@@ -340,9 +383,12 @@ const SHORTCUTS: {
 function Shortcuts({
   onOpen,
   onExternal,
+  mediaCover,
 }: {
   onOpen: (route: string) => void;
   onExternal: (url: string) => void;
+  /** De kaft van het nieuwste Bakske, als foto bij Media. */
+  mediaCover?: string | null;
 }) {
   return (
     <View style={styles.grid}>
@@ -354,7 +400,13 @@ function Shortcuts({
           onPress={() => (item.external ? onExternal(item.to) : onOpen(item.to))}
           style={({ pressed }) => [styles.aanbod, pressed && styles.aanbodPressed]}
         >
-          <Image cachePolicy="memory-disk" source={item.photo} style={styles.aanbodPhoto} contentFit="cover" />
+          <Image
+            cachePolicy="memory-disk"
+            source={item.key === 'media' && mediaCover ? { uri: mediaCover } : item.photo}
+            style={styles.aanbodPhoto}
+            contentFit="cover"
+            contentPosition="top"
+          />
           <View style={styles.aanbodBody}>
             <View style={styles.aanbodTitle}>
               <Text style={styles.aanbodLabel} numberOfLines={1}>

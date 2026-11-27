@@ -106,8 +106,7 @@ export default function AlbumsScreen() {
   return (
     <>
       <PageHead
-        title="Albums"
-        backLabel="Media"
+        title="Foto's"
         right={
           <Pressable
             accessibilityRole="button"

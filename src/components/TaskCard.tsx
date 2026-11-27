@@ -105,23 +105,43 @@ export function TaskCard({ task }: { task: AppTodayTask }) {
 }
 
 /**
- * Een vaste kaart onder "Voor jou" die naar een andere site wijst, zoals KURT
- * voor een bibplaats. Dezelfde vorm als een taak, met het pijltje naar buiten:
- * het is geen scherm van de app en opent dus in de browser.
+ * Een vaste kaart onder "Voor jou": KURT voor een bibplaats, de broodjes, het
+ * nieuwste Bakske. Dezelfde vorm als een taak. Wat naar een andere site gaat
+ * (`external`) krijgt het pijltje naar buiten; een scherm van de app een gewone
+ * pijl. `photo` zet een beeld links in plaats van het icoon (de foto van het
+ * Theokot, de kaft van het Bakske).
  */
-export function LinkCard({ title, detail, onPress }: { title: string; detail: string; onPress: () => void }) {
+export function LinkCard({
+  title,
+  detail,
+  onPress,
+  icon: Icon = BookOpen,
+  external = true,
+  photo,
+}: {
+  title: string;
+  detail: string;
+  onPress: () => void;
+  icon?: React.ComponentType<{ color: string; size: number }>;
+  external?: boolean;
+  photo?: number | { uri: string } | null;
+}) {
   return (
     <Pressable
-      accessibilityRole="link"
+      accessibilityRole={external ? 'link' : 'button'}
       accessibilityLabel={`${title}, ${detail}`}
-      accessibilityHint="Opent in de browser"
+      accessibilityHint={external ? 'Opent in de browser' : undefined}
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.card, photo ? styles.cardPhoto : null, pressed && styles.pressed]}
     >
-      <View style={styles.icon}>
-        <BookOpen color={COLORS.ink} size={20} />
-      </View>
-      <View style={styles.text}>
+      {photo ? (
+        <Image cachePolicy="memory-disk" source={photo} style={styles.photo} contentFit="cover" contentPosition="top" />
+      ) : (
+        <View style={styles.icon}>
+          <Icon color={COLORS.ink} size={20} />
+        </View>
+      )}
+      <View style={[styles.text, photo ? styles.textPhoto : null]}>
         <Text style={styles.title} numberOfLines={2}>
           {title}
         </Text>
@@ -129,10 +149,19 @@ export function LinkCard({ title, detail, onPress }: { title: string; detail: st
           {detail}
         </Text>
       </View>
-      <ExternalLink color={COLORS.muted} size={17} />
+      {external ? (
+        <ExternalLink color={COLORS.muted} size={17} />
+      ) : (
+        <View style={photo ? styles.chevronPhoto : null}>
+          <ChevronRight color={COLORS.muted} size={18} />
+        </View>
+      )}
     </Pressable>
   );
 }
+
+/** De foto van de Theokot-ploeg, voor de kaart naar de broodjes. */
+export const THEOKOT_CARD_PHOTO = THEOKOT_PHOTO;
 
 const styles = StyleSheet.create({
   card: {
@@ -158,6 +187,7 @@ const styles = StyleSheet.create({
   iconHighlight: { backgroundColor: COLORS.yellow },
   text: { flex: 1, gap: 3 },
   textPhoto: { justifyContent: 'center', paddingVertical: SPACING.md, paddingRight: SPACING.md },
+  chevronPhoto: { alignSelf: 'center', paddingRight: SPACING.md },
   title: { fontFamily: FONTS.bold, fontSize: 16, lineHeight: 21, letterSpacing: -0.3, color: COLORS.ink },
   detail: { ...TYPE.small, color: COLORS.muted },
   action: {

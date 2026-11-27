@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
-import { ChevronRight, Play } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { Play } from 'lucide-react-native';
+import { useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -19,20 +19,12 @@ import type { AppAftermovie, AppPublication } from '../api/contract';
 import { mediaUrl } from '../api/client';
 import { fetchMedia } from '../api/endpoints';
 import { messageFor, useResource } from '../api/useResource';
-import { AlbumFeature, AlbumTile } from '../components/AlbumCard';
 import { PageHead } from '../components/PageHead';
 import { PatternBand } from '../components/PatternBand';
-import { PhotoViewer, type ViewerPhoto } from '../components/PhotoViewer';
+import { MagazineReader } from '../components/MagazineReader';
 import { Empty, ErrorState, Loading, SectionHeading, StaleNotice } from '../components/ui';
 import { useApp } from '../state/app';
-import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
-
-/** Hoeveel albums er na het grote in de rij staan voor je doorklikt naar alle. */
-const RECENT = 8;
-
-/** De breedte van een staande albumtegel; smal genoeg dat de volgende meekijkt. */
-const TILE = 132;
 
 const KIND_LABEL: Record<AppPublication['kind'], string> = {
   bakske: "'t Bakske",
@@ -43,22 +35,18 @@ const KIND_LABEL: Record<AppPublication['kind'], string> = {
 const KINDS: AppPublication['kind'][] = ['bakske', 'ir-reeel'];
 
 /**
- * Media: fotoalbums, aftermovies en de magazines, in de drie banden van /media.
+ * Media: de magazines en de aftermovies. Sinds eind november 2026 staan de
+ * fotoalbums niet meer hier maar op een eigen scherm (`albums.tsx`, "Foto's"):
+ * wie Foto's aantikte, kwam hier uit en moest dan nog zoeken.
  *
- * - **Foto's** op papier: het nieuwste album groot, als evenementtegel met de gele
- *   datumpin, daarna een rij staande covers en een weg naar alle albums. Dit
- *   scherm toont bewust niet het hele archief: tweehonderd covers in een
- *   `ScrollView` monteren allemaal tegelijk, en dan raken de aftermovies en de
- *   magazines eronder in de praktijk onbereikbaar. Zoeken en filteren gebeurt
- *   in `albums.tsx`.
+ * - **Magazines** eerst, want die lees je elke week.
  * - **Aftermovies** op een navy band met het technische patroon, zoals op de
  *   site: posters in 16:9 met een gele afspeelknop.
- * - **Magazines** op lichtblauw, als een plank: het laatste nummer van elk blad
+ * - De magazines op lichtblauw, als een plank: het laatste nummer van elk blad
  *   met zijn kaft, de oudere nummers als kleine kaften in een rij. Een lijst met
  *   elk nummer onder elkaar groeit elke week en zegt niets over wat erin staat.
  */
 export default function MediaScreen() {
-  const router = useTabRouter();
   const { locale } = useApp();
   const resource = useResource('media', () => fetchMedia(locale), locale);
 
@@ -69,14 +57,11 @@ export default function MediaScreen() {
     );
   }
 
-  const { albums, aftermovies, publications } = resource.data;
-  const [newest, ...rest] = albums;
-  const recent = rest.slice(0, RECENT);
-  const thisYear = new Date().getFullYear();
+  const { aftermovies, publications } = resource.data;
 
   return (
     <>
-      <PageHead title="Media" />
+      <PageHead title="Media" subtitle="'t Bakske, Ir.Reëel en de aftermovies" />
       <ScrollView
         style={styles.root}
         refreshControl={
@@ -92,54 +77,11 @@ export default function MediaScreen() {
           </View>
         ) : null}
 
-        <View style={styles.photos}>
-          <SectionHeading
-            right={
-              albums.length > recent.length + 1 ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Alle ${albums.length} albums`}
-                  onPress={() => router.push('/albums')}
-                  hitSlop={10}
-                  style={({ pressed }) => [styles.all, pressed && styles.pressed]}
-                >
-                  <Text style={styles.allLabel}>Alle {albums.length}</Text>
-                  <ChevronRight color={COLORS.navy} size={16} />
-                </Pressable>
-              ) : undefined
-            }
-          >
-            {"Foto's"}
-          </SectionHeading>
-
-          {newest ? (
-            <>
-              <AlbumFeature album={newest} />
-              {recent.length > 0 ? (
-                <FlatList
-                  data={recent}
-                  keyExtractor={(album) => album.slug}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.bleed}
-                  contentContainerStyle={styles.strip}
-                  renderItem={({ item }) => (
-                    <AlbumTile
-                      album={item}
-                      withYear={!item.date || new Date(item.date).getFullYear() !== thisYear}
-                      style={styles.tile}
-                    />
-                  )}
-                />
-              ) : null}
-            </>
-          ) : (
-            <Empty title="Geen albums" hint="Albums verschijnen hier zodra ze publiek staan." />
-          )}
-        </View>
-
-        {aftermovies.length > 0 ? <Aftermovies movies={aftermovies} /> : null}
         {publications.length > 0 ? <Magazines publications={publications} /> : null}
+        {aftermovies.length > 0 ? <Aftermovies movies={aftermovies} /> : null}
+        {publications.length === 0 && aftermovies.length === 0 ? (
+          <Empty title="Nog niets" hint="Magazines en aftermovies verschijnen hier zodra ze online staan." />
+        ) : null}
       </ScrollView>
     </>
   );
@@ -286,44 +228,6 @@ function Magazines({ publications }: { publications: AppPublication[] }) {
 }
 
 /**
- * De lezer: elke bladzijde als beeld in de fotoviewer, dus vegen om te bladeren,
- * knijpen of dubbeltikken om te lezen, en omlaag vegen om te sluiten. De
- * bladzijden tekent de server uit de pdf (`pages` in het contract).
- */
-function MagazineReader({
-  publication,
-  page,
-  onPageChange,
-  onClose,
-}: {
-  publication: AppPublication | null;
-  page: number | null;
-  onPageChange: (page: number) => void;
-  onClose: () => void;
-}) {
-  const pages = useMemo<ViewerPhoto[]>(
-    () =>
-      (publication?.pages ?? []).map((url, index, all) => ({
-        id: `${publication?.id}-${index + 1}`,
-        url: mediaUrl(url) as string,
-        // De kaft hangt al in de cache van de plank; bladzijde 1 staat er zo meteen.
-        thumbUrl: index === 0 ? mediaUrl(publication?.coverUrl ?? null) : null,
-        filename: `Bladzijde ${index + 1} van ${all.length}`,
-      })),
-    [publication],
-  );
-
-  return (
-    <PhotoViewer
-      photos={pages}
-      index={pages.length > 0 ? page : null}
-      onIndexChange={onPageChange}
-      onClose={onClose}
-    />
-  );
-}
-
-/**
  * De kaft: bladzijde 1, waarvan we de bovenkant tonen, zoals de site in het
  * nieuws doet. Een nummer van voor de kaften krijgt een blanco blad met de naam,
  * zodat de plank geen gat heeft.
@@ -367,19 +271,10 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.85 },
   stale: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg },
 
-  photos: {
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.xl,
-    paddingBottom: SPACING.xl + 4,
-    gap: SPACING.lg,
-  },
-  all: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingBottom: 6 },
-  allLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.navy },
   // Een rij loopt tot tegen de rand van het scherm, zodat de laatste tegel
   // zichtbaar doorloopt in plaats van afgesneden te lijken.
   bleed: { marginHorizontal: -SPACING.lg },
   strip: { gap: SPACING.md, paddingHorizontal: SPACING.lg },
-  tile: { width: TILE },
 
   band: {
     backgroundColor: COLORS.navy,

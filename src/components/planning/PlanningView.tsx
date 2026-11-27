@@ -26,9 +26,7 @@ import {
   contentByDay,
   dayNumber,
   dayRange,
-  isoWeek,
   shortDay,
-  monthSpan,
   place,
   weekdayOf,
   weekdayShort,
@@ -75,9 +73,6 @@ function storedMode(): PlanningMode | null {
   const value = getPref(MODE_KEY);
   return value && (PLANNING_MODES as readonly string[]).includes(value) ? (value as PlanningMode) : null;
 }
-
-/** "november 2026" wordt "nov 2026", zodat de week erbij past. */
-const shortMonth = (label: string) => label.replace(/^([a-z]{3})[a-z]+ /, '$1 ');
 
 const BLOCK_STYLE = {
   lecture: { backgroundColor: PLANNING.lectureBg, borderColor: PLANNING.lectureBorder, color: PLANNING.lectureText },
@@ -501,47 +496,18 @@ function Grid({
     return Math.min(most, 2);
   }, [content]);
 
-  const visible = days.slice(first, first + VISIBLE_DAYS);
-  const label = visible.length > 0 ? monthSpan(visible[0], visible[visible.length - 1]) : '';
   const headStart = Math.max(0, first - HEAD_BUFFER);
   const headEnd = Math.min(days.length, first + VISIBLE_DAYS + HEAD_BUFFER);
   const headDays = days.slice(headStart, headEnd);
 
-  const goTo = (index: number) => {
-    const target = Math.max(0, Math.min(Math.max(days.length - VISIBLE_DAYS, 0), index));
-    list.current?.scrollToIndex({ index: target, animated: true });
-    setFirst(target);
-  };
-  const lastStart = Math.max(days.length - VISIBLE_DAYS, 0);
 
   const onSettle = (x: number) => setFirst(Math.max(0, Math.min(days.length - 1, Math.round(x / column))));
 
   return (
     <View style={styles.root}>
-      {renderHead(
-        <View style={styles.weekNav}>
-          <Text style={styles.weekLabel} numberOfLines={1}>
-            {visible[0] ? `Week ${isoWeek(visible[0])} · ${shortMonth(label)}` : label}
-          </Text>
-          <View style={styles.navButtons}>
-            <YellowRoundButton label="Vorige dagen" disabled={first <= 0} onPress={() => goTo(first - VISIBLE_DAYS)}>
-              <ChevronLeft size={17} color={COLORS.navy} strokeWidth={2.4} />
-            </YellowRoundButton>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: first === todayIndex }}
-              onPress={() => goTo(todayIndex)}
-              hitSlop={6}
-              style={({ pressed }) => [styles.todayPill, pressed && styles.pressed]}
-            >
-              <Text style={styles.todayPillLabel}>Vandaag</Text>
-            </Pressable>
-            <YellowRoundButton label="Volgende dagen" disabled={first >= lastStart} onPress={() => goTo(first + VISIBLE_DAYS)}>
-              <ChevronRight size={17} color={COLORS.navy} strokeWidth={2.4} />
-            </YellowRoundButton>
-          </View>
-        </View>,
-      )}
+      {/* Geen rij met "Week 48 · nov 2026" en pijlen meer (november 2026): je veegt
+          zelf door de dagen, en die hoogte gaat nu naar de agenda. */}
+      {renderHead(null)}
       {notice}
       {modeBar(toolbarRight)}
 
@@ -1175,17 +1141,7 @@ const styles = StyleSheet.create({
   warningText: { ...TYPE.small, color: COLORS.ink, flex: 1 },
 
   // De dagen die je ziet, in de gele kop, met bladeren en Vandaag.
-  weekNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm },
-  weekLabel: { flexShrink: 1, fontFamily: FONTS.bold, fontSize: 15, color: COLORS.navy, fontVariant: ['tabular-nums'] },
   navButtons: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  todayPill: {
-    height: 32,
-    justifyContent: 'center',
-    paddingHorizontal: SPACING.md,
-    borderRadius: RADIUS.pill,
-    backgroundColor: 'rgba(14, 26, 54, 0.08)',
-  },
-  todayPillLabel: { fontFamily: FONTS.semibold, fontSize: 13, color: COLORS.navy },
 
   // De voortgang per vak en per semester, in de gele kop (voorstel P1).
   progress: { gap: SPACING.sm },

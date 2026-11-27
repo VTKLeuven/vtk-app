@@ -64,7 +64,8 @@ export default function MeerScreen() {
   const doen: Link[] = [
     ...(viewer ? [{ label: 'Bonnetjes', onPress: () => router.push('/bonnetjes') }] : []),
     { label: 'Shiften', onPress: () => router.push('/shiften') },
-    { label: "Foto's", onPress: () => router.push('/media') },
+    { label: "Foto's", onPress: () => router.push('/albums') },
+    { label: 'Media', onPress: () => router.push('/media') },
     { label: 'Piano', onPress: () => router.push('/piano') },
     ...(viewer ? [{ label: 'Code scannen', onPress: () => router.push('/scannen') }] : []),
     // Enkel voor wie iets te scannen heeft; de rest heeft hier niets aan.

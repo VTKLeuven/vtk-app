@@ -932,3 +932,25 @@ Na een canvas met vier opties voor elk scherm:
   Aanpassen, Annuleren of Vrijgeven.
 - **De tabbalk**: de actieve tab staat op een gele pil met een vet label, zoals
   in de ontwerpen van Home. Tot nu stond die enkel in de mockups.
+
+## November 2026: elke kop geel, en evenement en tickets op één pagina
+
+- **`PageHead` is geel**, zoals `YellowHead`: zo kreeg elk scherm (Shiften,
+  Foto's, Piano, Praesidium, ...) de gele kop zonder elk scherm te herschrijven.
+- **Een evenement met een gekoppelde ticketverkoop is één pagina**, zoals op de
+  site: de tickets met hun stappers staan op de evenementpagina
+  (`components/TicketShop.tsx`), en de ticketpagina van die verkoop toont het
+  evenement. Dat evenement zoekt de app in de kalender van die dag op
+  `ticketSlug`; een verkoop zonder evenement blijft de ticketpagina.
+- **Foto's en Media zijn twee schermen**: Foto's zijn de albums (`albums.tsx`),
+  Media is eerst 't Bakske en Ir.Reëel en daaronder de aftermovies. Onder "Voor
+  jou" op Home staan nu ook de broodjes (niet meer onder "Snel naar") en het
+  nieuwste Bakske, dat met één tik opent in de lezer.
+- **Alma**: de openingsuren zijn dichtgeklapt (dicht zie je de uren van de dag),
+  open één regel per dag; de foto's van de gerechten zijn groter, en de
+  fotoviewer sluit meteen in plaats van eerst uit te vagen.
+- **Kalender › Planning › Week**: de rij met "Week 48 · nov 2026" en de pijlen
+  is weg; je veegt door de dagen en die hoogte gaat naar de agenda.
+- **Cudi**: de knop naar de tijdsloten staat niet meer ook in de kop, "je vorige
+  bestellingen" is weg (rechtsboven staan al je bestellingen), en de
+  tijdsloten zijn per dag een witte kaart met de momenten als rijen.

@@ -136,10 +136,12 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
    papier van de site); verzin er geen. Geel enkel als accent, geen gradienten en
    geen kaart in een kaart. Tot november 2026 opende elk scherm met de navy kop
    van de site (patroon, gele lijn van 5 px); dat is voorbij. Nu:
-   - **`PageHead` is licht**: de titel op papier, een ronde witte terugknop, een
-     actie rechts als `HeadButton` (wit, rond, icoon in inkt), en tabbladen als
-     pillen, zwart voor wat open staat en wit voor de rest. Geen `onDark`-kleuren
-     in `right` of `children`.
+   - **Elke kop is geel** (sinds eind november 2026): `PageHead` en `YellowHead`
+     zijn allebei een geel vlak met een afgeronde onderkant, de titel in navy,
+     een navy terugknop met een geel pijltje, en tabbladen als pillen (navy met
+     geel voor wat open staat, een navy waas voor de rest). Een actie rechts is
+     een `HeadButton` (wit, rond) of een `YellowHeadButton` (navy, rond). Wat in
+     `right` of `children` staat, staat op het geel: navy en wit, geen grijs.
    - **Witte kaarten met een zachte schaduw** (`CARD_SHADOW` uit
      `src/components/HomeSection.tsx`, radius 20) in plaats van kaarten met een
      haarlijnrand. Een lijst is één kaart met haarlijnen tussen de rijen
