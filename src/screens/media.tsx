@@ -25,6 +25,7 @@ import { Empty, ErrorState, Loading, SectionHeading, StaleNotice } from '../comp
 import { useApp } from '../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { HeadScroll } from '../components/HeadScroll';
+import { t } from '../i18n';
 
 const KIND_LABEL: Record<AppPublication['kind'], string> = {
   bakske: "'t Bakske",
@@ -50,7 +51,7 @@ export default function MediaScreen() {
   const { locale } = useApp();
   const resource = useResource('media', () => fetchMedia(locale), locale);
 
-  if (resource.loading) return <Loading label="Media ophalen" />;
+  if (resource.loading) return <Loading label={t('Media ophalen', 'Loading media')} />;
   if (!resource.data) {
     return (
       <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
@@ -61,7 +62,7 @@ export default function MediaScreen() {
 
   return (
     <>
-      <HeadScroll head={<PageHead title="Media" subtitle="'t Bakske, Ir.Reëel en de aftermovies" />}
+      <HeadScroll head={<PageHead title="Media" subtitle={t("'t Bakske, Ir.Reëel en de aftermovies", "'t Bakske, Ir.Reëel and the aftermovies")} />}
         style={styles.root}
         refreshControl={
           <RefreshControl
@@ -79,7 +80,7 @@ export default function MediaScreen() {
         {publications.length > 0 ? <Magazines publications={publications} /> : null}
         {aftermovies.length > 0 ? <Aftermovies movies={aftermovies} /> : null}
         {publications.length === 0 && aftermovies.length === 0 ? (
-          <Empty title="Nog niets" hint="Magazines en aftermovies verschijnen hier zodra ze online staan." />
+          <Empty title={t('Nog niets', 'Nothing yet')} hint={t('Magazines en aftermovies verschijnen hier zodra ze online staan.', 'Magazines and aftermovies show up here as soon as they are online.')} />
         ) : null}
       </HeadScroll>
     </>
@@ -190,7 +191,7 @@ function Magazines({ publications }: { publications: AppPublication[] }) {
 
       {older.length > 0 ? (
         <View style={styles.archive}>
-          <Text style={styles.kicker}>EERDERE NUMMERS</Text>
+          <Text style={styles.kicker}>{t('EERDERE NUMMERS', 'EARLIER ISSUES')}</Text>
           <FlatList
             data={older}
             keyExtractor={(item) => item.id}

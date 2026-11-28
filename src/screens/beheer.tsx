@@ -16,6 +16,7 @@ import { useApp } from '../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
 import { HeadScroll } from '../components/HeadScroll';
+import { t } from '../i18n';
 
 /**
  * Beheer: de admin van vtk.be, voor wie er rechten voor heeft.
@@ -64,12 +65,12 @@ export default function BeheerScreen() {
         {query === null ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Overzicht, de onderdelen van de admin"
+            accessibilityLabel={t('Overzicht, de onderdelen van de admin', 'Overview, the sections of the admin')}
             accessibilityState={{ expanded: menu }}
             onPress={() => setMenu(!menu)}
             style={({ pressed }) => [styles.navSelect, pressed && styles.pressed]}
           >
-            <Text style={styles.navSelectLabel}>Overzicht</Text>
+            <Text style={styles.navSelectLabel}>{t('Overzicht', 'Overview')}</Text>
             {menu ? <ChevronUp size={18} color={COLORS.ink} /> : <ChevronDown size={18} color={COLORS.ink} />}
           </Pressable>
         ) : (
@@ -79,16 +80,16 @@ export default function BeheerScreen() {
               autoFocus
               value={query}
               onChangeText={setQuery}
-              placeholder="Zoek een onderdeel"
+              placeholder={t('Zoek een onderdeel', 'Search a section')}
               placeholderTextColor={COLORS.muted}
-              accessibilityLabel="Zoek een onderdeel van de admin"
+              accessibilityLabel={t('Zoek een onderdeel van de admin', 'Search a section of the admin')}
               style={styles.navInput}
               returnKeyType="search"
             />
           </View>
         )}
         <HeadButton
-          accessibilityLabel={query === null ? 'Zoeken in de admin' : 'Zoeken sluiten'}
+          accessibilityLabel={query === null ? t('Zoeken in de admin', 'Search the admin') : t('Zoeken sluiten', 'Close search')}
           onPress={() => {
             setQuery(query === null ? '' : null);
             setMenu(false);
@@ -136,7 +137,7 @@ export default function BeheerScreen() {
     setDoor({ busy: true, message: null, ok: false });
     try {
       await openDoor();
-      setDoor({ busy: false, message: 'De deur is open.', ok: true });
+      setDoor({ busy: false, message: t('De deur is open.', 'The door is open.'), ok: true });
     } catch (error) {
       setDoor({ busy: false, message: doorError(error), ok: false });
     }
@@ -180,13 +181,13 @@ export default function BeheerScreen() {
               <LockKeyhole size={20} color={COLORS.ink} />
             </View>
             <View style={styles.flex}>
-              <Text style={styles.doorTitle}>Deur</Text>
+              <Text style={styles.doorTitle}>{t('Deur', 'Door')}</Text>
               <Text style={[styles.doorHint, door.message && !door.ok && styles.error, door.ok && styles.ok]}>
-                {door.message ?? 'Open de voordeur op afstand.'}
+                {door.message ?? t('Open de voordeur op afstand.', 'Open the front door remotely.')}
               </Text>
             </View>
             <PillButton
-              label={door.busy ? 'Openen...' : 'Deur openen'}
+              label={door.busy ? t('Openen...', 'Opening...') : t('Deur openen', 'Open door')}
               primary
               disabled={door.busy}
               onPress={() => void pressDoor()}
@@ -198,17 +199,17 @@ export default function BeheerScreen() {
 
         <View style={styles.block}>
           <View style={styles.tilesBar}>
-            <Text style={styles.tilesTitle}>Snelkoppelingen</Text>
+            <Text style={styles.tilesTitle}>{t('Snelkoppelingen', 'Shortcuts')}</Text>
             {data.tilesUrl ? (
               <PillButton
-                label="Aanpassen"
-                onPress={() => openLink({ url: data.tilesUrl!, label: 'Snelkoppelingen', external: false })}
+                label={t('Aanpassen', 'Edit')}
+                onPress={() => openLink({ url: data.tilesUrl!, label: t('Snelkoppelingen', 'Shortcuts'), external: false })}
               />
             ) : null}
           </View>
           {tileSections.length === 0 ? (
             <Text style={styles.hint}>
-              Nog geen tegels. Voeg er een toe of vraag een beheerder om standaardtegels.
+              {t('Nog geen tegels. Voeg er een toe of vraag een beheerder om standaardtegels.', 'No tiles yet. Add one or ask an admin for default tiles.')}
             </Text>
           ) : null}
           {tileSections.map((section) => (
@@ -242,10 +243,10 @@ export default function BeheerScreen() {
 
         <Pressable
           accessibilityRole="link"
-          onPress={() => router.push({ pathname: '/web', params: { url: data.adminUrl, title: 'Beheer' } })}
+          onPress={() => router.push({ pathname: '/web', params: { url: data.adminUrl, title: t('Beheer', 'Admin') } })}
           style={({ pressed }) => [styles.footer, pressed && styles.pressed]}
         >
-          <Text style={styles.body}>Het dashboard zoals op de site</Text>
+          <Text style={styles.body}>{t('Het dashboard zoals op de site', 'The dashboard as on the website')}</Text>
           <ChevronRight size={18} color={COLORS.muted} />
         </Pressable>
       </HeadScroll>
@@ -270,7 +271,7 @@ function NavMenu({
 }) {
   return (
     <View style={styles.menu}>
-      <Text style={styles.menuKicker}>ALLES</Text>
+      <Text style={styles.menuKicker}>{t('ALLES', 'ALL')}</Text>
       {sections.map((section) => {
         if (!section.label) {
           return section.links.map((link) => <NavLink key={link.key} link={link} onOpen={onOpen} />);
@@ -306,7 +307,7 @@ function NavLink({ link, onOpen }: { link: AppAdminLink; onOpen: (link: AppAdmin
   return (
     <Pressable
       accessibilityRole={link.external ? 'link' : 'button'}
-      accessibilityLabel={link.external ? `${link.label}, opent een browser` : link.label}
+      accessibilityLabel={link.external ? t(`${link.label}, opent een browser`, `${link.label}, opens a browser`) : link.label}
       onPress={() => onOpen(link)}
       style={({ pressed }) => [styles.menuLink, pressed && styles.menuLinkPressed]}
     >
@@ -357,7 +358,7 @@ function SearchResults({
   return (
     <View style={styles.menu}>
       {hits.length === 0 ? (
-        <Text style={styles.hint}>{`Geen onderdeel gevonden voor “${query.trim()}”.`}</Text>
+        <Text style={styles.hint}>{t(`Geen onderdeel gevonden voor “${query.trim()}”.`, `No section found for “${query.trim()}”.`)}</Text>
       ) : (
         hits.map(({ link, group }) => (
           <Pressable
@@ -386,7 +387,7 @@ function Tile({ tile, onPress }: { tile: AppAdminTile; onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="link"
-      accessibilityLabel={tile.external ? `${tile.label}, opent een browser` : tile.label}
+      accessibilityLabel={tile.external ? t(`${tile.label}, opent een browser`, `${tile.label}, opens a browser`) : tile.label}
       onPress={onPress}
       style={({ pressed }) => [styles.tile, pressed && styles.tilePressed]}
     >
@@ -431,7 +432,7 @@ function BoDue({
   const single = posts.size === 1;
   return (
     <View style={styles.bo}>
-      <Text style={styles.boTitle}>Nog te brengen resultaten</Text>
+      <Text style={styles.boTitle}>{t('Nog te brengen resultaten', 'Results still to hand in')}</Text>
       {[...posts.entries()].map(([post, list]) => (
         <View key={post} style={styles.boPost}>
           {!single ? <Text style={styles.boPostName}>{post}</Text> : null}
@@ -441,7 +442,7 @@ function BoDue({
               <Pressable
                 key={`${due.activity}-${index}`}
                 accessibilityRole="link"
-                accessibilityLabel={external ? `${due.activity}, rekenblad openen in Drive` : due.activity}
+                accessibilityLabel={external ? t(`${due.activity}, rekenblad openen in Drive`, `${due.activity}, open spreadsheet in Drive`) : due.activity}
                 onPress={() => onOpen({ url: due.url, label: due.activity, external })}
                 style={({ pressed }) => [styles.boRow, pressed && styles.pressed]}
               >
@@ -520,16 +521,16 @@ function isSite(url: string, adminUrl: string): boolean {
 }
 
 function doorError(error: unknown): string {
-  if (!(error instanceof ApiError)) return 'Geen verbinding. Probeer het opnieuw.';
+  if (!(error instanceof ApiError)) return t('Geen verbinding. Probeer het opnieuw.', 'No connection. Try again.');
   switch (error.code) {
     case 'not_configured':
-      return 'De deurscanner is nog niet ingesteld (Beheer, IT).';
+      return t('De deurscanner is nog niet ingesteld (Beheer, IT).', 'The door scanner is not set up yet (Admin, IT).');
     case 'unreachable':
-      return 'De deurscanner is niet bereikbaar. Staat de Pi aan?';
+      return t('De deurscanner is niet bereikbaar. Staat de Pi aan?', 'The door scanner is unreachable. Is the Pi on?');
     case 'pi_error':
-      return 'De deurscanner gaf een fout terug.';
+      return t('De deurscanner gaf een fout terug.', 'The door scanner returned an error.');
     case 'FORBIDDEN':
-      return 'Je mag de deur niet op afstand openen.';
+      return t('Je mag de deur niet op afstand openen.', 'You are not allowed to open the door remotely.');
     default:
       return error.message;
   }

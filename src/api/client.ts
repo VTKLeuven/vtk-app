@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { installId } from '../installId';
 import { clearCache, clearPref, getPref, setPref } from '../storage';
 import { APP_ERROR, type AppErrorBody } from './contract';
+import { t } from '../i18n';
 
 /**
  * De HTTP-laag naar vtk-website-new.
@@ -145,7 +146,7 @@ export class ApiError extends Error {
 /** Er kwam geen antwoord. Iets anders dan een fout van de server, en de app toont dat ook anders. */
 export class NetworkError extends Error {
   constructor(cause?: unknown) {
-    super('Geen verbinding');
+    super(t('Geen verbinding', 'No connection'));
     this.name = 'NetworkError';
     this.cause = cause;
   }
@@ -213,7 +214,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
       payload?.error,
     );
   }
-  if (payload === null) throw new ApiError('Leeg antwoord', response.status);
+  if (payload === null) throw new ApiError(t('Leeg antwoord', 'Empty response'), response.status);
   return payload;
 }
 

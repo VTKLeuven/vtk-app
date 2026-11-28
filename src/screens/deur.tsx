@@ -13,6 +13,7 @@ import { queueSizes } from '../scanner/storage';
 import { useApp } from '../state/app';
 import { COLORS, SPACING, TYPE } from '../theme/tokens';
 import { HeadScroll } from '../components/HeadScroll';
+import { t } from '../i18n';
 
 /**
  * Tickets scannen (vroeger "Aan de deur"): de evenementen die jij mag scannen.
@@ -57,12 +58,12 @@ export default function DeurScreen() {
   if (!viewer) {
     return (
       <>
-        <PageHead title="Tickets scannen" />
+        <PageHead title={t('Tickets scannen', 'Scan tickets')} />
         <View style={styles.root}>
           <Empty
-            title="Log eerst in"
-            hint="Scanrechten hangen aan je account."
-            action={{ label: 'Inloggen', onPress: () => router.push('/inloggen') }}
+            title={t('Log eerst in', 'Log in first')}
+            hint={t('Scanrechten hangen aan je account.', 'Scan rights are linked to your account.')}
+            action={{ label: t('Inloggen', 'Log in'), onPress: () => router.push('/inloggen') }}
           />
         </View>
       </>
@@ -71,7 +72,7 @@ export default function DeurScreen() {
 
   return (
     <>
-      <HeadScroll head={<PageHead title="Tickets scannen" subtitle="Kies het evenement waar je scant" />}
+      <HeadScroll head={<PageHead title={t('Tickets scannen', 'Scan tickets')} subtitle={t('Kies het evenement waar je scant', 'Choose the event you are scanning')} />}
         style={styles.root}
         contentContainerStyle={styles.content}
         refreshControl={
@@ -79,16 +80,16 @@ export default function DeurScreen() {
         }
       >
         {events.loading ? (
-          <Loading label="Evenementen ophalen" />
+          <Loading label={t('Evenementen ophalen', 'Loading events')} />
         ) : !events.data ? (
           <ErrorState message={messageFor(events.error)} onRetry={() => void events.refresh()} />
         ) : events.data.length === 0 ? (
           <View style={styles.empty}>
             <Empty
-              title="Niets om te scannen"
-              hint="Kom je helpen aan de deur? Vraag wie het evenement organiseert om de uitnodigings-QR te tonen in de scanner, en scan die hier."
+              title={t('Niets om te scannen', 'Nothing to scan')}
+              hint={t('Kom je helpen aan de deur? Vraag wie het evenement organiseert om de uitnodigings-QR te tonen in de scanner, en scan die hier.', 'Coming to help at the door? Ask the event organiser to show the invitation QR in the scanner, and scan it here.')}
             />
-            <Button label="Uitnodiging scannen" onPress={() => router.push('/scannen')} />
+            <Button label={t('Uitnodiging scannen', 'Scan invitation')} onPress={() => router.push('/scannen')} />
           </View>
         ) : (
           <CardList inset={0} style={styles.cardList}>
@@ -114,7 +115,7 @@ export default function DeurScreen() {
                     </Text>
                     {pending > 0 ? (
                       <Text style={styles.pending}>
-                        {pending} {pending === 1 ? 'scan wacht' : 'scans wachten'} op dit toestel
+                        {pending === 1 ? t('1 scan wacht op dit toestel', '1 scan waiting on this device') : t(`${pending} scans wachten op dit toestel`, `${pending} scans waiting on this device`)}
                       </Text>
                     ) : null}
                   </View>

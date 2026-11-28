@@ -12,6 +12,7 @@ import { SearchField } from '../components/SearchField';
 import { Empty, ErrorState, Loading, StaleNotice } from '../components/ui';
 import { useApp } from '../state/app';
 import { COLORS, FONTS, SPACING, TYPE } from '../theme/tokens';
+import { t } from '../i18n';
 
 /** Een rij in de lijst: het album dat een jaar opent, of twee naast elkaar. */
 type Row = { kind: 'feature'; album: AppAlbum } | { kind: 'pair'; albums: AppAlbum[] };
@@ -67,7 +68,7 @@ export default function AlbumsScreen() {
     // juiste volgorde en hoeven niet opnieuw gesorteerd te worden.
     const groups: { title: string; data: Row[] }[] = [];
     for (const album of matching) {
-      const label = yearOf(album) ?? 'Zonder datum';
+      const label = yearOf(album) ?? t('Zonder datum', 'Without date');
       let group = groups[groups.length - 1];
       if (!group || group.title !== label) {
         group = { title: label, data: [] };
@@ -85,7 +86,7 @@ export default function AlbumsScreen() {
     return groups;
   }, [albums, term, year]);
 
-  if (resource.loading) return <Loading label="Albums ophalen" />;
+  if (resource.loading) return <Loading label={t('Albums ophalen', 'Loading albums')} />;
   if (!resource.data) {
     return (
       <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
@@ -133,11 +134,11 @@ export default function AlbumsScreen() {
             <View style={styles.headWrap}>
               <View style={styles.overscroll} />
               <PageHead
-                title="Foto's"
+                title={t("Foto's", 'Photos')}
                 right={
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={searching ? 'Zoeken sluiten' : 'Zoek een album'}
+                    accessibilityLabel={searching ? t('Zoeken sluiten', 'Close search') : t('Zoek een album', 'Search an album')}
                     onPress={toggleSearch}
                     hitSlop={8}
                     style={({ pressed }) => [styles.searchButton, pressed && styles.pressed]}
@@ -155,7 +156,7 @@ export default function AlbumsScreen() {
                         scroll: true,
                         value: year,
                         onChange: setYear,
-                        options: [{ value: ALL, label: 'Alle' }, ...years.map((label) => ({ value: label, label }))],
+                        options: [{ value: ALL, label: t('Alle', 'All') }, ...years.map((label) => ({ value: label, label }))],
                       }
                     : undefined
                 }
@@ -165,8 +166,8 @@ export default function AlbumsScreen() {
                 <SearchField
                   value={query}
                   onChange={setQuery}
-                  placeholder="Zoek een album"
-                  label="Zoek een album op titel"
+                  placeholder={t('Zoek een album', 'Search an album')}
+                  label={t('Zoek een album op titel', 'Search an album by title')}
                   autoFocus
                 />
               ) : null}
@@ -203,8 +204,8 @@ export default function AlbumsScreen() {
         }
         ListEmptyComponent={
           <Empty
-            title="Niets gevonden"
-            hint={term || year !== ALL ? 'Probeer een ander woord of een ander jaar.' : undefined}
+            title={t('Niets gevonden', 'Nothing found')}
+            hint={term || year !== ALL ? t('Probeer een ander woord of een ander jaar.', 'Try another word or another year.') : undefined}
           />
         }
       />

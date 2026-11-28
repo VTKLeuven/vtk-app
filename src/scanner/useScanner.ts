@@ -30,6 +30,7 @@ import type {
   ScannerBootstrap,
   ScannerManifest,
 } from './types';
+import { t } from '../i18n';
 
 /**
  * De volledige werking van het scanscherm.
@@ -59,10 +60,10 @@ function resultKind(payload: ScanApiResponse): ScanKind {
 }
 
 function fallbackMessage(kind: ScanKind): string {
-  if (kind === 'accepted') return 'Ticket aanvaard';
-  if (kind === 'duplicate') return 'Ticket al gescand';
-  if (kind === 'rejected') return 'Ticket niet geldig';
-  return 'Scan kon niet worden gecontroleerd';
+  if (kind === 'accepted') return t('Ticket aanvaard', 'Ticket accepted');
+  if (kind === 'duplicate') return t('Ticket al gescand', 'Ticket already scanned');
+  if (kind === 'rejected') return t('Ticket niet geldig', 'Ticket not valid');
+  return t('Scan kon niet worden gecontroleerd', 'Scan could not be checked');
 }
 
 /**
@@ -72,10 +73,10 @@ function fallbackMessage(kind: ScanKind): string {
  * deurploeg doet.
  */
 function cardMissMessage(reason: string | undefined): string {
-  if (reason === 'NO_TICKET') return 'Geen ticket op deze kaart';
-  if (reason === 'CARD_UNREADABLE') return 'Kaart niet herkend';
-  if (reason === 'CARD_CHECKIN_DISABLED') return 'Kaartcheck-in staat uit voor dit event';
-  return 'Kaart gaf geen ticket';
+  if (reason === 'NO_TICKET') return t('Geen ticket op deze kaart', 'No ticket on this card');
+  if (reason === 'CARD_UNREADABLE') return t('Kaart niet herkend', 'Card not recognised');
+  if (reason === 'CARD_CHECKIN_DISABLED') return t('Kaartcheck-in staat uit voor dit event', 'Card check-in is off for this event');
+  return t('Kaart gaf geen ticket', 'Card gave no ticket');
 }
 
 /**
@@ -84,7 +85,7 @@ function cardMissMessage(reason: string | undefined): string {
  */
 function offlineBootstrap(manifest: ScannerManifest): ScannerBootstrap {
   return {
-    event: { id: '', title: 'Offline scannen' },
+    event: { id: '', title: t('Offline scannen', 'Scanning offline') },
     gates: [],
     stats: {
       total: manifest.ticketCount,
@@ -183,11 +184,11 @@ export function useScanner(eventId: string) {
         setManifest(cached);
         setBootstrap((current) => current ?? offlineBootstrap(cached));
       } else if (error instanceof ApiError && error.isForbidden) {
-        setBootstrapError('Je hebt geen scanrechten voor dit evenement');
+        setBootstrapError(t('Je hebt geen scanrechten voor dit evenement', 'You do not have scan rights for this event'));
       } else if (error instanceof ApiError && error.status === 404) {
-        setBootstrapError('Dit evenement bestaat niet meer');
+        setBootstrapError(t('Dit evenement bestaat niet meer', 'This event no longer exists'));
       } else {
-        setBootstrapError('Scanner kon niet worden geladen');
+        setBootstrapError(t('Scanner kon niet worden geladen', 'Scanner could not be loaded'));
       }
     } finally {
       setLoading(false);
@@ -296,7 +297,7 @@ export function useScanner(eventId: string) {
             scannedAt,
             kind: 'error',
             code: credential.slice(-10),
-            message: 'Geen netwerk en geen ticketlijst op dit toestel',
+            message: t('Geen netwerk en geen ticketlijst op dit toestel', 'No network and no ticket list on this device'),
           };
           showFeedback(item);
           record(item);
@@ -317,14 +318,14 @@ export function useScanner(eventId: string) {
           pending: true,
           message:
             verdict.kind === 'accepted'
-              ? 'Aanvaard (offline)'
+              ? t('Aanvaard (offline)', 'Accepted (offline)')
               : verdict.kind === 'duplicate'
-                ? 'Al gescand'
+                ? t('Al gescand', 'Already scanned')
                 : verdict.reason === 'unknown'
-                  ? 'Onbekend ticket'
+                  ? t('Onbekend ticket', 'Unknown ticket')
                   : verdict.reason === 'version'
-                    ? 'Verouderde ticketcode'
-                    : 'Code niet leesbaar',
+                    ? t('Verouderde ticketcode', 'Outdated ticket code')
+                    : t('Code niet leesbaar', 'Code not readable'),
         };
 
         if (verdict.kind === 'accepted') {
@@ -394,10 +395,10 @@ export function useScanner(eventId: string) {
           code: credential.slice(-10),
           message:
             error instanceof NetworkError
-              ? 'Netwerkfout tijdens controle'
+              ? t('Netwerkfout tijdens controle', 'Network error during check')
               : error instanceof ApiError && error.isForbidden
-                ? 'Je hebt geen scanrechten voor dit evenement'
-                : 'Scan kon niet worden gecontroleerd',
+                ? t('Je hebt geen scanrechten voor dit evenement', 'You do not have scan rights for this event')
+                : t('Scan kon niet worden gecontroleerd', 'Scan could not be checked'),
         };
         showFeedback(item);
         record(item);
@@ -447,8 +448,8 @@ export function useScanner(eventId: string) {
           kind: 'rejected',
           code: 'kaart',
           message: manifest?.cards
-            ? 'Kaart niet in de lijst op dit toestel; scan de QR'
-            : 'Kaartlezen kan niet zonder netwerk; scan de QR',
+            ? t('Kaart niet in de lijst op dit toestel; scan de QR', 'Card not in the list on this device; scan the QR')
+            : t('Kaartlezen kan niet zonder netwerk; scan de QR', 'Reading cards needs a network; scan the QR'),
         };
         showFeedback(item);
         record(item);
@@ -494,7 +495,7 @@ export function useScanner(eventId: string) {
           scannedAt,
           kind: 'error',
           code: 'kaart',
-          message: 'Netwerkfout tijdens het uitlezen van de kaart',
+          message: t('Netwerkfout tijdens het uitlezen van de kaart', 'Network error while reading the card'),
         };
         showFeedback(item);
         record(item);
@@ -533,12 +534,12 @@ export function useScanner(eventId: string) {
           clientScanId: createId(),
         });
         if (payload.result !== 'REVERSED') {
-          throw new Error(payload.message ?? 'Check-in kon niet worden teruggedraaid');
+          throw new Error(payload.message ?? t('Check-in kon niet worden teruggedraaid', 'Check-in could not be undone'));
         }
         const reversed: ScanHistoryItem = {
           ...item,
           kind: 'reversed',
-          message: 'Check-in teruggedraaid',
+          message: t('Check-in teruggedraaid', 'Check-in undone'),
           scanId: undefined,
           scannedAt: new Date().toISOString(),
         };
@@ -559,9 +560,9 @@ export function useScanner(eventId: string) {
             ...item,
             kind: 'error',
             message:
-              error instanceof Error && error.message !== 'Netwerkfout'
+              error instanceof Error && error.message !== t('Netwerkfout', 'Network error')
                 ? error.message
-                : 'Check-in kon niet worden teruggedraaid',
+                : t('Check-in kon niet worden teruggedraaid', 'Check-in could not be undone'),
             scanId: undefined,
             scannedAt: new Date().toISOString(),
           },

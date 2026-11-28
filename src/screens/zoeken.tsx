@@ -15,6 +15,7 @@ import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
+import { t } from '../i18n';
 
 /** Wachttijd voor een getikte letter een zoekopdracht wordt. */
 const DEBOUNCE_MS = 350;
@@ -107,17 +108,17 @@ export default function ZoekenScreen() {
         ListHeaderComponent={
           <View style={styles.headWrap}>
             <View style={styles.overscroll} />
-            <PageHead title="Zoeken" subtitle="Pagina's, activiteiten en albums" />
+            <PageHead title={t('Zoeken', 'Search')} subtitle={t("Pagina's, activiteiten en albums", 'Pages, activities and albums')} />
 
             <SearchField
               value={query}
               onChange={setQuery}
-              placeholder="Waar zoek je naar?"
-              label="Zoekterm"
+              placeholder={t('Waar zoek je naar?', 'What are you looking for?')}
+              label={t('Zoekterm', 'Search term')}
               autoFocus
             />
 
-            {busy && results.length === 0 ? <Loading label="Zoeken" /> : null}
+            {busy && results.length === 0 ? <Loading label={t('Zoeken', 'Search')} /> : null}
           </View>
         }
         renderItem={({ item }) => (
@@ -141,9 +142,9 @@ export default function ZoekenScreen() {
         )}
         ListEmptyComponent={
           busy ? undefined : searched ? (
-            <Empty title="Niets gevonden" hint={`Geen resultaten voor "${query.trim()}".`} />
+            <Empty title={t('Niets gevonden', 'Nothing found')} hint={t(`Geen resultaten voor "${query.trim()}".`, `No results for "${query.trim()}".`)} />
           ) : (
-            <Empty title="Typ om te zoeken" hint="Vanaf twee letters gaat de zoektocht van start." />
+            <Empty title={t('Typ om te zoeken', 'Type to search')} hint={t('Vanaf twee letters gaat de zoektocht van start.', 'The search starts from two letters.')} />
           )
         }
       />

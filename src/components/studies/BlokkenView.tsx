@@ -28,6 +28,7 @@ import { useApp } from '../../state/app';
 import { useTabRouter } from '../../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import type { StudiesTabs } from './tabs';
+import { IS_EN, t } from '../../i18n';
 
 /**
  * Samen blokken.
@@ -183,15 +184,15 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
       <ScrollView style={styles.root} contentContainerStyle={styles.scroll}>
         <View style={styles.overscroll} />
         <YellowHead title="Studies" tabs={tabs}>
-          <Text style={styles.headLine}>Blok samen met je vrienden</Text>
+          <Text style={styles.headLine}>{t('Blok samen met je vrienden', 'Study together with your friends')}</Text>
         </YellowHead>
         <View style={styles.content}>
           <Card>
-            <Text style={styles.cardTitle}>Log eerst in</Text>
+            <Text style={styles.cardTitle}>{t('Log eerst in', 'Log in first')}</Text>
             <Text style={styles.body}>
-              Je studietijd en je groepen hangen aan je account.
+              {t('Je studietijd en je groepen hangen aan je account.', 'Your study time and your groups are linked to your account.')}
             </Text>
-            <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+            <Button label={t('Inloggen', 'Log in')} onPress={() => router.push('/inloggen')} />
           </Card>
         </View>
       </ScrollView>
@@ -202,9 +203,9 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
     return (
       <View style={styles.root}>
         <YellowHead title="Studies" tabs={tabs}>
-          <Text style={styles.headLine}>Blok samen met je vrienden</Text>
+          <Text style={styles.headLine}>{t('Blok samen met je vrienden', 'Study together with your friends')}</Text>
         </YellowHead>
-        <Loading label="Studeren ophalen" />
+        <Loading label={t('Studeren ophalen', 'Loading studying')} />
       </View>
     );
   }
@@ -212,7 +213,7 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
     return (
       <View style={styles.root}>
         <YellowHead title="Studies" tabs={tabs}>
-          <Text style={styles.headLine}>Blok samen met je vrienden</Text>
+          <Text style={styles.headLine}>{t('Blok samen met je vrienden', 'Study together with your friends')}</Text>
         </YellowHead>
         <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
       </View>
@@ -236,7 +237,7 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
         right={
           group ? (
             <YellowHeadButton
-              label={`Instellingen van ${group.name}`}
+              label={t(`Instellingen van ${group.name}`, `Settings of ${group.name}`)}
               onPress={() => router.push(`/studiegroep/${group.id}`)}
             >
               <Settings2 color={COLORS.yellow} size={19} />
@@ -269,7 +270,10 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
           <View style={styles.section}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Groep: ${group.name}. Tik om van groep te wisselen of een groep te maken`}
+              accessibilityLabel={t(
+                `Groep: ${group.name}. Tik om van groep te wisselen of een groep te maken`,
+                `Group: ${group.name}. Tap to switch groups or create a group`,
+              )}
               onPress={() => setPickingGroup(true)}
               hitSlop={6}
               style={({ pressed }) => [styles.groupTitle, pressed && styles.rowPressed]}
@@ -312,11 +316,14 @@ export function BlokkenView({ tabs }: { tabs: StudiesTabs }) {
 }
 
 function roomLine(group: AppStudyGroup | null, overview: AppStudyOverview): string {
-  if (!group) return 'Maak een groep en deel de code met je vrienden';
+  if (!group) return t('Maak een groep en deel de code met je vrienden', 'Create a group and share the code with your friends');
   if (group.liveCount === 0) {
-    return overview.session ? 'Je bent de eerste die zit' : 'Niemand studeert nu';
+    return overview.session ? t('Je bent de eerste die zit', 'You are the first one studying') : t('Niemand studeert nu', 'Nobody is studying now');
   }
-  return `${group.liveCount} van de ${group.memberCount} ${group.liveCount === 1 ? 'is' : 'zijn'} nu bezig`;
+  return t(
+    `${group.liveCount} van de ${group.memberCount} ${group.liveCount === 1 ? 'is' : 'zijn'} nu bezig`,
+    `${group.liveCount} of ${group.memberCount} ${group.liveCount === 1 ? 'is' : 'are'} studying now`,
+  );
 }
 
 // ── De sessie ───────────────────────────────────────────────────────────────
@@ -348,10 +355,9 @@ function SessionPanel({
       <View style={styles.panel}>
         <Skyline buildings={idleSkyline(overview, group)} height={SKYLINE_HEIGHT} moon />
         <View style={styles.panelBody}>
-          <Text style={styles.panelTitle}>Kom erbij</Text>
+          <Text style={styles.panelTitle}>{t('Kom erbij', 'Join in')}</Text>
           <Text style={styles.panelHint}>
-            Elke tien minuten komt er een verdieping bij. Leg je telefoon gerust weg:
-            de teller loopt door tot je stopt.
+            {t('Elke tien minuten komt er een verdieping bij. Leg je telefoon gerust weg: de teller loopt door tot je stopt.', 'Every ten minutes a floor is added. Feel free to put your phone away: the counter keeps running until you stop.')}
           </Text>
 
           <SubjectRow
@@ -362,7 +368,7 @@ function SessionPanel({
           />
 
           <Button
-            label={busy ? 'Bezig' : 'Beginnen'}
+            label={busy ? t('Bezig', 'Busy') : t('Beginnen', 'Start')}
             variant="accent"
             onPress={() => onStart(subject.trim() || undefined)}
           />
@@ -382,16 +388,16 @@ function SessionPanel({
         <Text style={styles.clock}>{formatClock(seconds)}</Text>
         <Text style={styles.panelHint}>
           {session.paused
-            ? 'Gepauzeerd. De bouw ligt stil.'
+            ? t('Gepauzeerd. De bouw ligt stil.', 'Paused. Construction has stopped.')
             : session.subject
-              ? `Bezig met ${session.subject}`
-              : 'Bezig'}
+              ? t(`Bezig met ${session.subject}`, `Working on ${session.subject}`)
+              : t('Bezig', 'Busy')}
         </Text>
 
         <View style={styles.controls}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={session.paused ? 'Hervatten' : 'Pauzeren'}
+            accessibilityLabel={session.paused ? t('Hervatten', 'Resume') : t('Pauzeren', 'Pause')}
             disabled={busy}
             onPress={onPause}
             style={({ pressed }) => [styles.control, pressed && styles.controlPressed]}
@@ -401,12 +407,12 @@ function SessionPanel({
             ) : (
               <Pause color={COLORS.onDark} size={17} />
             )}
-            <Text style={styles.controlLabel}>{session.paused ? 'Hervatten' : 'Pauze'}</Text>
+            <Text style={styles.controlLabel}>{session.paused ? t('Hervatten', 'Resume') : t('Pauze', 'Pause')}</Text>
           </Pressable>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Sessie stoppen"
+            accessibilityLabel={t('Sessie stoppen', 'Stop session')}
             disabled={busy}
             onPress={onStop}
             style={({ pressed }) => [
@@ -416,7 +422,7 @@ function SessionPanel({
             ]}
           >
             <Square color={COLORS.onYellow} size={15} />
-            <Text style={[styles.controlLabel, styles.controlStopLabel]}>Stoppen</Text>
+            <Text style={[styles.controlLabel, styles.controlStopLabel]}>{t('Stoppen', 'Stop')}</Text>
           </Pressable>
         </View>
       </View>
@@ -468,7 +474,7 @@ function SubjectRow({
       <TextInput
         value={value}
         onChangeText={onChange}
-        placeholder="Waaraan werk je? (mag leeg blijven)"
+        placeholder={t('Waaraan werk je? (mag leeg blijven)', 'What are you working on? (optional)')}
         placeholderTextColor={COLORS.onDarkMuted}
         style={styles.subjectInput}
         maxLength={60}
@@ -488,12 +494,12 @@ function SubjectRow({
         ))}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Vakken beheren"
+          accessibilityLabel={t('Vakken beheren', 'Manage courses')}
           onPress={() => setManaging(true)}
           style={[styles.chip, styles.chipManage]}
         >
           {suggestions.length > 0 ? <Pencil color={COLORS.onDarkMuted} size={13} /> : <Plus color={COLORS.onDarkMuted} size={14} />}
-          <Text style={styles.chipText}>{suggestions.length > 0 ? 'Beheren' : 'Vakken toevoegen'}</Text>
+          <Text style={styles.chipText}>{suggestions.length > 0 ? t('Beheren', 'Manage') : t('Vakken toevoegen', 'Add courses')}</Text>
         </Pressable>
       </ScrollView>
       {/* Pas getekend wanneer het open gaat, zodat het telkens begint van de lijst zoals ze nu is. */}
@@ -548,9 +554,9 @@ function SubjectsSheet({
   };
 
   return (
-    <Sheet visible title="Waaraan werk je?" onClose={onClose}>
+    <Sheet visible title={t('Waaraan werk je?', 'What are you working on?')} onClose={onClose}>
       <Text style={styles.sheetHint}>
-        De vakken die je onder het tekstveld ziet. Tik op een naam om ze aan te passen.
+        {t('De vakken die je onder het tekstveld ziet. Tik op een naam om ze aan te passen.', 'The courses you see below the text field. Tap a name to edit them.')}
       </Text>
       {draft.map((item, index) => (
         <View key={index} style={styles.sheetRow}>
@@ -563,7 +569,7 @@ function SubjectsSheet({
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${item || 'Vak'} verwijderen`}
+            accessibilityLabel={t(`${item || 'Vak'} verwijderen`, `Remove ${item || 'course'}`)}
             hitSlop={8}
             onPress={() => setDraft(draft.filter((_, at) => at !== index))}
             style={styles.sheetDelete}
@@ -576,7 +582,7 @@ function SubjectsSheet({
         <TextInput
           value={added}
           onChangeText={setAdded}
-          placeholder="Nieuw vak"
+          placeholder={t('Nieuw vak', 'New course')}
           placeholderTextColor={COLORS.muted}
           style={styles.sheetInput}
           maxLength={60}
@@ -585,7 +591,7 @@ function SubjectsSheet({
         />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Vak toevoegen"
+          accessibilityLabel={t('Vak toevoegen', 'Add course')}
           hitSlop={8}
           disabled={!added.trim()}
           onPress={add}
@@ -594,7 +600,7 @@ function SubjectsSheet({
           <Plus color={COLORS.ink} size={20} />
         </Pressable>
       </View>
-      <Button label="Bewaren" onPress={() => void save()} busy={saving} />
+      <Button label={t('Bewaren', 'Save')} onPress={() => void save()} busy={saving} />
     </Sheet>
   );
 }
@@ -606,11 +612,14 @@ function Room({ group, onOpen }: { group: AppStudyGroup; onOpen: () => void }) {
 
   return (
     <Card>
-      <Text style={styles.label}>Nu aan het studeren</Text>
+      <Text style={styles.label}>{t('Nu aan het studeren', 'Studying now')}</Text>
 
       {present.length === 0 ? (
         <Text style={styles.body}>
-          Niemand van {group.name} zit nu. Begin jij, dan krijgen ze een bericht.
+          {t(
+            `Niemand van ${group.name} zit nu. Begin jij, dan krijgen ze een bericht.`,
+            `Nobody from ${group.name} is studying now. If you start, they get a notification.`,
+          )}
         </Text>
       ) : (
         present.map((member) => <Seat key={member.userId} member={member} />)
@@ -618,7 +627,7 @@ function Room({ group, onOpen }: { group: AppStudyGroup; onOpen: () => void }) {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`De groep ${group.name} openen`}
+        accessibilityLabel={t(`De groep ${group.name} openen`, `Open the group ${group.name}`)}
         onPress={onOpen}
         style={({ pressed }) => [styles.groupLink, pressed && styles.rowPressed]}
       >
@@ -637,10 +646,10 @@ function Seat({ member }: { member: AppStudyMemberState }) {
       <Avatar member={member} live={member.studying} />
       <View style={styles.seatText}>
         <Text style={styles.seatName} numberOfLines={1}>
-          {member.isYou ? 'Jij' : member.name}
+          {member.isYou ? t('Jij', 'You') : member.name}
         </Text>
         <Text style={styles.seatSub} numberOfLines={1}>
-          {member.paused ? 'Even gepauzeerd' : (member.subject ?? 'Aan het studeren')}
+          {member.paused ? t('Even gepauzeerd', 'Paused for a moment') : (member.subject ?? t('Aan het studeren', 'Studying'))}
         </Text>
       </View>
       <Text style={[styles.seatTime, member.paused && styles.seatTimeDim]}>
@@ -683,7 +692,7 @@ function GroupGoal({ group }: { group: AppStudyGroup }) {
 
   return (
     <Card>
-      <Text style={styles.label}>Samen deze week</Text>
+      <Text style={styles.label}>{t('Samen deze week', 'Together this week')}</Text>
       <Text style={styles.goalLine}>
         {formatSpan(group.weekSeconds)} van de {formatSpan(goal)}
       </Text>
@@ -692,8 +701,8 @@ function GroupGoal({ group }: { group: AppStudyGroup }) {
       </View>
       <Text style={styles.hint}>
         {share >= 1
-          ? 'Gehaald. Iedereen heeft eraan meegedaan.'
-          : `Nog ${formatSpan(goal - group.weekSeconds)} te gaan.`}
+          ? t('Gehaald. Iedereen heeft eraan meegedaan.', 'Reached. Everyone contributed.')
+          : t(`Nog ${formatSpan(goal - group.weekSeconds)} te gaan.`, `${formatSpan(goal - group.weekSeconds)} to go.`)}
       </Text>
     </Card>
   );
@@ -706,14 +715,14 @@ function Leaderboard({ group }: { group: AppStudyGroup }) {
 
   return (
     <Card>
-      <Text style={styles.label}>Deze week</Text>
+      <Text style={styles.label}>{t('Deze week', 'This week')}</Text>
       {group.members.map((member, index) => (
         <View key={member.userId} style={styles.rank}>
           <Text style={styles.pos}>{index + 1}</Text>
           <Avatar member={member} live={member.studying} />
           <View style={styles.rankText}>
             <Text style={styles.rankName} numberOfLines={1}>
-              {member.isYou ? 'Jij' : member.name}
+              {member.isYou ? t('Jij', 'You') : member.name}
             </Text>
             <View style={styles.bar}>
               <View
@@ -742,17 +751,17 @@ function YourWeek({
   yours: AppStudyMemberState | null;
 }) {
   const best = Math.max(1, ...overview.week.map((day) => day.seconds));
-  const days = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
+  const days = IS_EN ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
 
   return (
     <Card>
-      <Text style={styles.label}>Jouw week</Text>
+      <Text style={styles.label}>{t('Jouw week', 'Your week')}</Text>
 
       <View style={styles.stats}>
-        <Stat label="Vandaag" value={formatSpan(overview.todaySeconds)} />
-        <Stat label="Deze week" value={formatSpan(overview.weekSeconds)} />
+        <Stat label={t('Vandaag', 'Today')} value={formatSpan(overview.todaySeconds)} />
+        <Stat label={t('Deze week', 'This week')} value={formatSpan(overview.weekSeconds)} />
         <Stat
-          label="Reeks"
+          label={t('Reeks', 'Streak')}
           value={overview.streak === 0 ? '0 d' : `${overview.streak} d`}
         />
       </View>
@@ -777,9 +786,12 @@ function YourWeek({
       </View>
 
       <Text style={styles.hint}>
-        Je dagdoel staat op {formatSpan(overview.dailyGoalMinutes * 60)}.
+        {t(
+          `Je dagdoel staat op ${formatSpan(overview.dailyGoalMinutes * 60)}.`,
+          `Your daily goal is ${formatSpan(overview.dailyGoalMinutes * 60)}.`,
+        )}
         {yours && yours.todaySeconds >= overview.dailyGoalMinutes * 60
-          ? ' Vandaag gehaald.'
+          ? t(' Vandaag gehaald.', ' Reached today.')
           : ''}
       </Text>
     </Card>
@@ -818,7 +830,7 @@ function GroupSheet({
   onClose: () => void;
 }) {
   return (
-    <Sheet visible={visible} title="Je groepen" onClose={onClose}>
+    <Sheet visible={visible} title={t('Je groepen', 'Your groups')} onClose={onClose}>
       <View style={styles.sheetList}>
         {groups.map((item, index) => {
           const active = item.id === activeId;
@@ -827,7 +839,7 @@ function GroupSheet({
               key={item.id}
               accessibilityRole="radio"
               accessibilityState={{ selected: active }}
-              accessibilityLabel={`${item.name}, ${item.liveCount} nu bezig`}
+              accessibilityLabel={t(`${item.name}, ${item.liveCount} nu bezig`, `${item.name}, ${item.liveCount} studying now`)}
               onPress={() => onPick(item.id)}
               style={({ pressed }) => [styles.groupRow, index > 0 && styles.sheetLine, pressed && styles.rowPressed]}
             >
@@ -835,8 +847,8 @@ function GroupSheet({
                 <Text style={styles.sheetName}>{item.name}</Text>
                 <Text style={styles.sheetSub}>
                   {item.liveCount > 0
-                    ? `${item.liveCount} van de ${item.memberCount} nu bezig`
-                    : `${item.memberCount} ${item.memberCount === 1 ? 'lid' : 'leden'}`}
+                    ? t(`${item.liveCount} van de ${item.memberCount} nu bezig`, `${item.liveCount} of ${item.memberCount} studying now`)
+                    : `${item.memberCount} ${item.memberCount === 1 ? t('lid', 'member') : t('leden', 'members')}`}
                 </Text>
               </View>
               {active ? <Check color={COLORS.strong} size={18} /> : null}
@@ -844,7 +856,7 @@ function GroupSheet({
           );
         })}
       </View>
-      <Button label="Groep maken of deelnemen" variant="ghost" onPress={onNew} />
+      <Button label={t('Groep maken of deelnemen', 'Create or join a group')} variant="ghost" onPress={onNew} />
     </Sheet>
   );
 }
@@ -856,13 +868,12 @@ function NoGroups({ onNew }: { onNew: () => void }) {
         <View style={styles.cardIcon}>
           <Users color={COLORS.onYellow} size={21} />
         </View>
-        <Text style={styles.cardHeadTitle}>Blok samen</Text>
+        <Text style={styles.cardHeadTitle}>{t('Blok samen', 'Study together')}</Text>
       </View>
       <Text style={styles.body}>
-        Maak een groep, deel de code met je vrienden, en jullie zien van elkaar wie
-        er zit. Je tijd is enkel zichtbaar voor wie in dezelfde groep zit.
+        {t('Maak een groep, deel de code met je vrienden, en jullie zien van elkaar wie er zit. Je tijd is enkel zichtbaar voor wie in dezelfde groep zit.', 'Create a group, share the code with your friends, and you see who is studying. Your time is only visible to people in the same group.')}
       </Text>
-      <Button label="Groep maken of deelnemen" onPress={onNew} />
+      <Button label={t('Groep maken of deelnemen', 'Create or join a group')} onPress={onNew} />
     </Card>
   );
 }

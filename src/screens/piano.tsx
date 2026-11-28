@@ -15,6 +15,7 @@ import { useTabRouter } from '../navigation';
 import { useApp } from '../state/app';
 import { IS_DARK } from '../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { t } from '../i18n';
 
 /**
  * De piano in het kasteel reserveren.
@@ -47,7 +48,7 @@ export default function PianoScreen() {
     null;
 
   const head = (
-    <YellowHead title="Piano" subtitle="Het pianolokaal in het kasteel" back>
+    <YellowHead title="Piano" subtitle={t('Het pianolokaal in het kasteel', 'The piano room in the castle')} back>
       {piano ? (
         <>
           <Quota piano={piano} />
@@ -66,9 +67,9 @@ export default function PianoScreen() {
         {head}
         <View style={styles.content}>
           <Card>
-            <Text style={styles.title}>Log eerst in</Text>
-            <Text style={styles.body}>De agenda toont wie welk uur heeft, dus die staat achter een login.</Text>
-            <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+            <Text style={styles.title}>{t('Log eerst in', 'Log in first')}</Text>
+            <Text style={styles.body}>{t('De agenda toont wie welk uur heeft, dus die staat achter een login.', 'The schedule shows who has which slot, so it is behind a login.')}</Text>
+            <Button label={t('Inloggen', 'Log in')} onPress={() => router.push('/inloggen')} />
           </Card>
         </View>
       </ScrollView>
@@ -79,7 +80,7 @@ export default function PianoScreen() {
     return (
       <View style={styles.root}>
         {head}
-        <Loading label="Agenda ophalen" />
+        <Loading label={t('Agenda ophalen', 'Loading schedule')} />
       </View>
     );
   }
@@ -103,7 +104,7 @@ export default function PianoScreen() {
       }
       void resource.reload();
     } catch (error) {
-      Alert.alert('Dat lukte niet', pianoErrorText(error));
+      Alert.alert(t('Dat lukte niet', 'That did not work'), pianoErrorText(error));
       void resource.reload();
     } finally {
       setBusy(null);
@@ -112,11 +113,14 @@ export default function PianoScreen() {
 
   const confirmCancel = (slot: AppPianoSlot) => {
     Alert.alert(
-      'Reservatie loslaten',
-      `Je laat ${formatDay(slot.startsAt, locale)} om ${formatTime(slot.startsAt, locale)} los. Het uur komt weer vrij voor iemand anders.`,
+      t('Reservatie loslaten', 'Release booking'),
+      t(
+        `Je laat ${formatDay(slot.startsAt, locale)} om ${formatTime(slot.startsAt, locale)} los. Het uur komt weer vrij voor iemand anders.`,
+        `You release ${formatDay(slot.startsAt, locale)} at ${formatTime(slot.startsAt, locale)}. The slot becomes available for someone else.`,
+      ),
       [
-        { text: 'Houden', style: 'cancel' },
-        { text: 'Loslaten', style: 'destructive', onPress: () => void press(slot) },
+        { text: t('Houden', 'Keep'), style: 'cancel' },
+        { text: t('Loslaten', 'Release'), style: 'destructive', onPress: () => void press(slot) },
       ],
     );
   };
@@ -141,7 +145,7 @@ export default function PianoScreen() {
         {mine.length > 0 ? (
           <View style={styles.section}>
             <Text accessibilityRole="header" style={styles.sectionTitle}>
-              Jouw uren
+              {t('Jouw uren', 'Your slots')}
             </Text>
             <View style={styles.card}>
               {mine.map((slot, index) => (
@@ -156,11 +160,14 @@ export default function PianoScreen() {
                     </Text>
                   </View>
                   <SlotAction
-                    label="Loslaten"
+                    label={t('Loslaten', 'Release')}
                     kind="quiet"
                     disabled={busy !== null}
                     onPress={() => confirmCancel(slot)}
-                    accessibilityLabel={`${formatDay(slot.startsAt, locale)} om ${formatTime(slot.startsAt, locale)} loslaten`}
+                    accessibilityLabel={t(
+                      `${formatDay(slot.startsAt, locale)} om ${formatTime(slot.startsAt, locale)} loslaten`,
+                      `Release ${formatDay(slot.startsAt, locale)} at ${formatTime(slot.startsAt, locale)}`,
+                    )}
                   />
                 </View>
               ))}
@@ -174,7 +181,7 @@ export default function PianoScreen() {
               <Text accessibilityRole="header" style={styles.dayTitle}>
                 {capitalize(formatDay(`${day.date}T12:00:00.000Z`, locale))}
               </Text>
-              <Text style={styles.dayCount}>{free === 0 ? 'Niets vrij' : free === 1 ? '1 uur vrij' : `${free} uur vrij`}</Text>
+              <Text style={styles.dayCount}>{free === 0 ? t('Niets vrij', 'Nothing free') : free === 1 ? t('1 uur vrij', '1 slot free') : t(`${free} uur vrij`, `${free} slots free`)}</Text>
             </View>
             <View style={styles.card}>
               {day.slots.map((slot, index) => (
@@ -193,9 +200,9 @@ export default function PianoScreen() {
           </View>
         ) : (
           <View style={styles.section}>
-            <Text style={styles.title}>Geen uren beschikbaar</Text>
+            <Text style={styles.title}>{t('Geen uren beschikbaar', 'No slots available')}</Text>
             <Text style={styles.body}>
-              Er staan momenteel geen tijdsloten open. Dat kan aan een sluitingsperiode liggen.
+              {t('Er staan momenteel geen tijdsloten open. Dat kan aan een sluitingsperiode liggen.', 'There are no time slots open at the moment. That may be due to a closing period.')}
             </Text>
           </View>
         )}
@@ -208,7 +215,7 @@ export default function PianoScreen() {
               onPress={() => setInfoOpen(!infoOpen)}
               style={({ pressed }) => [styles.row, pressed && styles.pressed]}
             >
-              <Text style={[styles.rowTitle, styles.flex]}>Afspraken bij de piano</Text>
+              <Text style={[styles.rowTitle, styles.flex]}>{t('Afspraken bij de piano', 'Piano rules')}</Text>
               <ChevronDown color={COLORS.strong} size={20} style={infoOpen ? styles.chevronOpen : undefined} />
             </Pressable>
             {infoOpen ? (
@@ -230,7 +237,10 @@ function Quota({ piano }: { piano: AppPiano }) {
     <View
       style={styles.quota}
       accessible
-      accessibilityLabel={`Deze week ${piano.usedThisWeek} van ${piano.maxPerWeek} uur genomen`}
+      accessibilityLabel={t(
+        `Deze week ${piano.usedThisWeek} van ${piano.maxPerWeek} uur genomen`,
+        `${piano.usedThisWeek} of ${piano.maxPerWeek} slots taken this week`,
+      )}
     >
       <View style={styles.pips}>
         {Array.from({ length: piano.maxPerWeek }, (_, index) => (
@@ -239,8 +249,11 @@ function Quota({ piano }: { piano: AppPiano }) {
       </View>
       <Text style={styles.quotaText}>
         {left === 0
-          ? 'Je zit aan je maximum voor deze week'
-          : `Nog ${left} van ${piano.maxPerWeek} deze week, ${piano.slotMinutes} minuten elk`}
+          ? t('Je zit aan je maximum voor deze week', 'You have reached your maximum for this week')
+          : t(
+              `Nog ${left} van ${piano.maxPerWeek} deze week, ${piano.slotMinutes} minuten elk`,
+              `${left} of ${piano.maxPerWeek} left this week, ${piano.slotMinutes} minutes each`,
+            )}
       </Text>
     </View>
   );
@@ -256,7 +269,7 @@ function DaySquares({
   selected: string | null;
   onSelect: (date: string) => void;
 }) {
-  const format = (options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('nl-BE', { timeZone: 'UTC', ...options });
+  const format = (options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(t('nl-BE', 'en-GB'), { timeZone: 'UTC', ...options });
   const weekday = format({ weekday: 'short' });
   const dayOfMonth = format({ day: 'numeric' });
   const full = format({ weekday: 'long', day: 'numeric', month: 'long' });
@@ -271,7 +284,7 @@ function DaySquares({
           <Pressable
             key={day.date}
             accessibilityRole="button"
-            accessibilityLabel={[full.format(noon), own ? 'je hebt hier een uur' : null, open ? null : 'niets vrij']
+            accessibilityLabel={[full.format(noon), own ? t('je hebt hier een uur', 'you have a slot here') : null, open ? null : t('niets vrij', 'nothing free')]
               .filter(Boolean)
               .join(', ')}
             accessibilityState={{ selected: active }}
@@ -311,7 +324,7 @@ function SlotRow({
   const end = formatTime(slot.endsAt, locale);
   const mine = slot.state === 'MINE';
   const taken = slot.state === 'TAKEN';
-  const status = mine ? 'Van jou' : taken ? (slot.takenByName ?? 'Bezet') : slot.bookable ? 'Vrij' : 'Nog niet te boeken';
+  const status = mine ? t('Van jou', 'Yours') : taken ? (slot.takenByName ?? t('Bezet', 'Taken')) : slot.bookable ? t('Vrij', 'Free') : t('Nog niet te boeken', 'Not bookable yet');
 
   return (
     <View style={[styles.row, !first && styles.divider, mine && styles.rowMine]}>
@@ -327,19 +340,19 @@ function SlotRow({
       </Text>
       {mine ? (
         <SlotAction
-          label="Loslaten"
+          label={t('Loslaten', 'Release')}
           kind="quiet"
           disabled={busy !== null}
           onPress={onCancel}
-          accessibilityLabel={`${start} loslaten`}
+          accessibilityLabel={t(`${start} loslaten`, `Release ${start}`)}
         />
       ) : slot.bookable ? (
         <SlotAction
-          label={busy === slot.startsAt ? 'Even...' : 'Neem'}
+          label={busy === slot.startsAt ? t('Even...', 'One moment...') : t('Neem', 'Take')}
           kind="primary"
           disabled={busy !== null || full}
           onPress={onReserve}
-          accessibilityLabel={full ? `${start}, je zit aan je maximum` : `${start} tot ${end} nemen`}
+          accessibilityLabel={full ? t(`${start}, je zit aan je maximum`, `${start}, you have reached your maximum`) : t(`${start} tot ${end} nemen`, `Take ${start} to ${end}`)}
         />
       ) : null}
     </View>
@@ -384,19 +397,19 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 /** De melding bij een geweigerde reservatie; de codes komen van de server. */
 function pianoErrorText(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return 'Geen verbinding met vtk.be. Probeer het straks opnieuw.';
+    return t('Geen verbinding met vtk.be. Probeer het straks opnieuw.', 'No connection to vtk.be. Try again later.');
   }
   switch (error.code) {
     case 'TAKEN':
-      return 'Iemand was je net voor met dit uur.';
+      return t('Iemand was je net voor met dit uur.', 'Someone just beat you to this slot.');
     case 'WEEK_LIMIT':
-      return 'Je zit aan je maximum voor deze week. Laat eerst een ander uur los.';
+      return t('Je zit aan je maximum voor deze week. Laat eerst een ander uur los.', 'You have reached your maximum for this week. Release another slot first.');
     case 'PAST':
-      return 'Dat uur is voorbij.';
+      return t('Dat uur is voorbij.', 'That slot has passed.');
     case 'BEYOND_HORIZON':
-      return 'Zo ver vooruit kan je nog niet boeken.';
+      return t('Zo ver vooruit kan je nog niet boeken.', 'You cannot book that far ahead yet.');
     case 'NOT_FOUND':
-      return 'Dat uur bestaat niet meer in de agenda.';
+      return t('Dat uur bestaat niet meer in de agenda.', 'That slot no longer exists in the schedule.');
     default:
       return error.message;
   }

@@ -23,6 +23,8 @@ niet opnieuw moet beginnen. Pas het hier aan wanneer je het daar aanpast.
 
   Nieuw onder Meer: het Liederboek, met alle 740 liedjes uit het Leuvens Liedboek en de KVHV-codex, ook zonder netwerk. En een donker thema: zwart, met het geel van VTK als accent. Je kiest het naast Feedback App.
 
+  De app is nu volledig in het Nederlands en in het Engels. Bij de eerste start kies je de taal; wisselen kan later onder Meer.
+
   Tickets zijn compacter. In het grote scherm veeg je naar het volgende ticket van je bestelling, je kiest zelf hoe je betaalt, en je ticket gaat rechtstreeks naar Apple Wallet, zonder witte pagina erna.
 
   Studies: documenten van Burgieclan openen in de app, je bestellingen bij de cursusdienst hebben de kleuren van cudi, en bij samen blokken loopt de teller door als je je telefoon weglegt. De vakken waaraan je werkt, beheer je zelf.
@@ -32,10 +34,10 @@ niet opnieuw moet beginnen. Pas het hier aan wanneer je het daar aanpast.
   En verder: Shiften per dag met de dagen bovenaan, aftellen tot je broodjes kan bestellen, een kop die meeschuift bij het scrollen, terug naar boven met een tik op de tab, en affiches bijgesneden zoals VTK ze koos.
   ```
 
-  Voor Google, dat 500 tekens toelaat (470):
+  Voor Google, dat 500 tekens toelaat (481):
 
   ```
-  Een nieuw, geel ontwerp. Home toont de week van VTK met de evenementen per dag en wat er open is. Nieuw: het Liederboek met alle 740 liedjes, ook zonder netwerk. Tickets zijn compacter, je veegt tussen de tickets van een bestelling en Google Wallet opent rechtstreeks. Documenten van Burgieclan openen in de app, en bij samen blokken loopt de teller door als je je telefoon weglegt. Bij Alma ook Alma 1, Alma 2 en Gasthuisberg. Nieuw onder Meer: een donker thema.
+  Een nieuw, geel ontwerp. Home toont de week van VTK met de evenementen per dag en wat er open is. Nieuw: het Liederboek met alle 740 liedjes, ook zonder netwerk. Tickets zijn compacter, je veegt tussen de tickets van een bestelling en Google Wallet opent rechtstreeks. Documenten van Burgieclan openen in de app, en bij samen blokken loopt de teller door als je je telefoon weglegt. Bij Alma ook Alma 1, Alma 2 en Gasthuisberg. Nieuw: een donker thema en de hele app in het Engels.
   ```
 - **1.2.0**: Een volledig nieuw ontwerp. Home opent met de evenementen van vandaag, wat er
   open is en je volgende lessen. Nieuw: de menu's van de Alma's, tijdsloten bij de

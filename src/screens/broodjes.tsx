@@ -27,6 +27,7 @@ import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { HeadScroll } from '../components/HeadScroll';
+import { t } from '../i18n';
 
 /** Onder dit aantal zegt de voorraad iets; daarboven staat ze er niet, zoals op /theokot. */
 const LOW_STOCK = 5;
@@ -57,7 +58,7 @@ export default function BroodjesScreen() {
   // De gele kop van de andere schermen; `extra` komt onderaan in het geel (de
   // verkoopdagen, en je bestelling als je er al een hebt).
   const head = (extra?: React.ReactNode) => (
-    <YellowHead title="Broodjes" subtitle="Bestellen en afhalen in het Theokot" back>
+    <YellowHead title={t('Broodjes', 'Sandwiches')} subtitle={t('Bestellen en afhalen in het Theokot', 'Order and pick up at the Theokot')} back>
       {extra}
     </YellowHead>
   );
@@ -67,12 +68,11 @@ export default function BroodjesScreen() {
       <>
         <HeadScroll head={head()} contentContainerStyle={styles.content} style={styles.root}>
           <Card>
-            <Text style={styles.title}>Log eerst in</Text>
+            <Text style={styles.title}>{t('Log eerst in', 'Log in first')}</Text>
             <Text style={styles.body}>
-              Een bestelling hangt aan jouw naam, dus die kan enkel met een account. Hetzelfde
-              account als op vtk.be.
+              {t('Een bestelling hangt aan jouw naam, dus die kan enkel met een account. Hetzelfde account als op vtk.be.', 'An order is linked to your name, so it needs an account. The same account as on vtk.be.')}
             </Text>
-            <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+            <Button label={t('Inloggen', 'Log in')} onPress={() => router.push('/inloggen')} />
           </Card>
         </HeadScroll>
       </>
@@ -85,13 +85,13 @@ export default function BroodjesScreen() {
         <HeadScroll head={head()} contentContainerStyle={styles.content} style={styles.root}>
           <Card featured>
             <Text style={styles.title}>
-              {gate === 'onboarding' ? 'Werk eerst je profiel af' : 'Bevestig eerst je studie'}
+              {gate === 'onboarding' ? t('Werk eerst je profiel af', 'Complete your profile first') : t('Bevestig eerst je studie', 'Confirm your studies first')}
             </Text>
             <Text style={styles.body}>
-              Zolang dit openstaat kan je niet bestellen. Het duurt een minuut.
+              {t('Zolang dit openstaat kan je niet bestellen. Het duurt een minuut.', 'As long as this is open you cannot order. It takes a minute.')}
             </Text>
             <Button
-              label="Nu doen"
+              label={t('Nu doen', 'Do it now')}
               onPress={() => router.push({ pathname: '/poort', params: { gate } })}
             />
           </Card>
@@ -100,7 +100,7 @@ export default function BroodjesScreen() {
     );
   }
 
-  if (resource.loading) return <Loading label="Aanbod ophalen" />;
+  if (resource.loading) return <Loading label={t('Aanbod ophalen', 'Loading the menu')} />;
   if (!resource.data) {
     return (
       <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
@@ -163,18 +163,20 @@ function Ordering({
         <Card featured>
           <View style={styles.rowIcon}>
             <CircleAlert color={COLORS.ink} size={18} />
-            <Text style={styles.title}>Tijdelijk geschorst</Text>
+            <Text style={styles.title}>{t('Tijdelijk geschorst', 'Temporarily suspended')}</Text>
           </View>
           <Text style={styles.body}>
-            Je kan tot {formatDate(ban.until, locale)} niet bestellen, omdat er bestellingen niet
-            opgehaald zijn. Daarna gaat het vanzelf weer.
+            {t(
+              `Je kan tot ${formatDate(ban.until, locale)} niet bestellen, omdat er bestellingen niet opgehaald zijn. Daarna gaat het vanzelf weer.`,
+              `You cannot order until ${formatDate(ban.until, locale)}, because orders were not picked up. After that it works again automatically.`,
+            )}
           </Text>
         </Card>
       ) : null}
 
       {message ? (
         <Card featured>
-          <Text style={styles.kicker}>Van het Theokot</Text>
+          <Text style={styles.kicker}>{t('Van het Theokot', 'From the Theokot')}</Text>
           <Text style={styles.body}>{message}</Text>
         </Card>
       ) : null}
@@ -197,7 +199,7 @@ function Ordering({
               key={item.id}
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
-              accessibilityLabel={item.order ? `${formatDay(item.date, locale)}, besteld` : formatDay(item.date, locale)}
+              accessibilityLabel={item.order ? t(`${formatDay(item.date, locale)}, besteld`, `${formatDay(item.date, locale)}, ordered`) : formatDay(item.date, locale)}
               onPress={() => setPicked(item.id)}
             >
               <DatePin iso={item.date} locale={locale} tone={active ? 'ink' : 'plain'} month={false} />
@@ -220,8 +222,8 @@ function Ordering({
         <View style={styles.content}>
           {notices}
           <Empty
-            title="Geen verkoopdagen open"
-            hint="Er staat nu niets klaar om te bestellen. Het Theokot zet de dagen meestal een paar dagen op voorhand open."
+            title={t('Geen verkoopdagen open', 'No sales days open')}
+            hint={t('Er staat nu niets klaar om te bestellen. Het Theokot zet de dagen meestal een paar dagen op voorhand open.', 'There is nothing to order right now. The Theokot usually opens the days a few days in advance.')}
           />
         </View>
       </ScrollView>
@@ -362,7 +364,7 @@ function SessionView({
       setQuantities({});
       onChanged();
     } catch (error) {
-      Alert.alert(editing ? 'Aanpassen lukte niet' : 'Bestellen lukte niet', orderErrorText(error));
+      Alert.alert(editing ? t('Aanpassen lukte niet', 'Editing failed') : t('Bestellen lukte niet', 'Ordering failed'), orderErrorText(error));
       // Ook bij een fout opnieuw ophalen: "uitverkocht" en "al besteld" betekenen
       // allebei dat dit scherm achterloopt op de werkelijkheid.
       onChanged();
@@ -384,14 +386,17 @@ function SessionView({
   const release = () => {
     if (!order) return;
     Alert.alert(
-      'Vrijgeven voor overname',
-      `De deadline is verstreken en je broodjes worden al gemaakt. Wat je nu annuleert, wordt vrijgegeven voor overname. Neemt iemand anders het over, dan vervalt het zonder gevolgen. Blijft het om ${pickupEnd} over, dan telt dit als een no-show.`,
+      t('Vrijgeven voor overname', 'Release for takeover'),
+      t(
+        `De deadline is verstreken en je broodjes worden al gemaakt. Wat je nu annuleert, wordt vrijgegeven voor overname. Neemt iemand anders het over, dan vervalt het zonder gevolgen. Blijft het om ${pickupEnd} over, dan telt dit als een no-show.`,
+        `The deadline has passed and your sandwiches are already being made. What you cancel now is released for someone else to take over. If someone takes it over, it lapses without consequences. If it is still left at ${pickupEnd}, it counts as a no-show.`,
+      ),
       [
-        { text: 'Behouden', style: 'cancel' },
+        { text: t('Behouden', 'Keep'), style: 'cancel' },
         {
-          text: 'Vrijgeven',
+          text: t('Vrijgeven', 'Release'),
           style: 'destructive',
-          onPress: () => void act(() => releaseTheokotOrder({ orderId: order.orderId }), 'Vrijgeven lukte niet'),
+          onPress: () => void act(() => releaseTheokotOrder({ orderId: order.orderId }), t('Vrijgeven lukte niet', 'Releasing failed')),
         },
       ],
     );
@@ -399,13 +404,16 @@ function SessionView({
 
   const takeOver = (item: AppTheokotItem) => {
     Alert.alert(
-      'Broodje overnemen?',
-      `Je neemt 1x ${item.name} over voor ${formatEuro(item.priceCents)}. Je haalt het af en betaalt aan de balie, tot ${pickupEnd}. Haal je het niet op, dan telt dat als een no-show.`,
+      t('Broodje overnemen?', 'Take over sandwich?'),
+      t(
+        `Je neemt 1x ${item.name} over voor ${formatEuro(item.priceCents)}. Je haalt het af en betaalt aan de balie, tot ${pickupEnd}. Haal je het niet op, dan telt dat als een no-show.`,
+        `You take over 1x ${item.name} for ${formatEuro(item.priceCents)}. You pick it up and pay at the desk, until ${pickupEnd}. If you do not pick it up, it counts as a no-show.`,
+      ),
       [
-        { text: 'Toch niet', style: 'cancel' },
+        { text: t('Toch niet', 'Never mind'), style: 'cancel' },
         {
-          text: 'Overnemen',
-          onPress: () => void act(() => takeOverTheokotSandwich(item.id), 'Overnemen lukte niet'),
+          text: t('Overnemen', 'Take over'),
+          onPress: () => void act(() => takeOverTheokotSandwich(item.id), t('Overnemen lukte niet', 'Taking over failed')),
         },
       ],
     );
@@ -414,14 +422,17 @@ function SessionView({
   const cancel = () => {
     if (!order) return;
     Alert.alert(
-      'Bestelling annuleren',
-      `Je annuleert je bestelling van ${formatDay(session.date, locale)}. De broodjes komen weer vrij voor iemand anders.`,
+      t('Bestelling annuleren', 'Cancel order'),
+      t(
+        `Je annuleert je bestelling van ${formatDay(session.date, locale)}. De broodjes komen weer vrij voor iemand anders.`,
+        `You cancel your order for ${formatDay(session.date, locale)}. The sandwiches become available for someone else again.`,
+      ),
       [
-        { text: 'Behouden', style: 'cancel' },
+        { text: t('Behouden', 'Keep'), style: 'cancel' },
         {
-          text: 'Annuleren',
+          text: t('Annuleren', 'Cancel'),
           style: 'destructive',
-          onPress: () => void act(() => cancelTheokotOrder(order.orderId), 'Annuleren lukte niet'),
+          onPress: () => void act(() => cancelTheokotOrder(order.orderId), t('Annuleren lukte niet', 'Cancelling failed')),
         },
       ],
     );
@@ -468,42 +479,54 @@ function SessionView({
   const yours =
     order && !editing ? (
       <View style={styles.yours}>
-        <Text style={styles.kicker}>Jouw bestelling voor {weekdayOf(session.date, locale)}</Text>
-        <OrderLines order={order} label="Totaal" />
+        <Text style={styles.kicker}>
+          {t(`Jouw bestelling voor ${weekdayOf(session.date, locale)}`, `Your order for ${weekdayOf(session.date, locale)}`)}
+        </Text>
+        <OrderLines order={order} label={t('Totaal', 'Total')} />
         <Text style={styles.hint}>
-          Afhalen {formatTimeRange(session.pickupStart, session.pickupEnd, locale)} aan de balie, met je studentenkaart.
+          {t(
+            `Afhalen ${formatTimeRange(session.pickupStart, session.pickupEnd, locale)} aan de balie, met je studentenkaart.`,
+            `Pick up ${formatTimeRange(session.pickupStart, session.pickupEnd, locale)} at the desk, with your student card.`,
+          )}
         </Text>
         {order.releasedCount ? (
           <Text style={styles.hint}>
             {order.releasedCount === 1
-              ? '1 broodje van deze bestelling staat vrij voor overname en is niet meer van jou.'
-              : `${order.releasedCount} broodjes van deze bestelling staan vrij voor overname en zijn niet meer van jou.`}{' '}
-            Wat om {pickupEnd} niet overgenomen is, telt als no-show.
+              ? t('1 broodje van deze bestelling staat vrij voor overname en is niet meer van jou.', '1 sandwich from this order is available for others to take over and is no longer yours.')
+              : t(
+                  `${order.releasedCount} broodjes van deze bestelling staan vrij voor overname en zijn niet meer van jou.`,
+                  `${order.releasedCount} sandwiches from this order are available for others to take over and are no longer yours.`,
+                )}{' '}
+            {t(`Wat om ${pickupEnd} niet overgenomen is, telt als no-show.`, `What is not taken over by ${pickupEnd} counts as a no-show.`)}
           </Text>
         ) : null}
         {order.canCancel ? (
           <View style={styles.buttons}>
             {order.canEdit ? (
               <View style={styles.flex}>
-                <Button label="Aanpassen" variant="ghost" busy={busy} onPress={startEditing} />
+                <Button label={t('Aanpassen', 'Edit')} variant="ghost" busy={busy} onPress={startEditing} />
               </View>
             ) : null}
             <View style={styles.flex}>
-              <Button label="Annuleren" variant="ghost" busy={busy} onPress={cancel} />
+              <Button label={t('Annuleren', 'Cancel')} variant="ghost" busy={busy} onPress={cancel} />
             </View>
           </View>
         ) : order.canRelease && order.lines.length > 0 ? (
           <>
             <Text style={styles.hint}>
-              De deadline is voorbij en je broodjes worden al gemaakt. Kan je toch niet komen,
-              geef ze dan vrij: een ander kan ze overnemen.
+              {t(
+                'De deadline is voorbij en je broodjes worden al gemaakt. Kan je toch niet komen, geef ze dan vrij: een ander kan ze overnemen.',
+                'The deadline has passed and your sandwiches are already being made. If you cannot come after all, release them: someone else can take them over.',
+              )}
             </Text>
-            <Button label="Annuleren en vrijgeven" variant="ghost" busy={busy} onPress={release} />
+            <Button label={t('Annuleren en vrijgeven', 'Cancel and release')} variant="ghost" busy={busy} onPress={release} />
           </>
         ) : (
           <Text style={styles.hint}>
-            Kom je bestelling zeker afhalen: drie keer niet afhalen levert een tijdelijke
-            schorsing op.
+            {t(
+              'Kom je bestelling zeker afhalen: drie keer niet afhalen levert een tijdelijke schorsing op.',
+              'Make sure to pick up your order: not picking up three times leads to a temporary suspension.',
+            )}
           </Text>
         )}
       </View>
@@ -528,13 +551,13 @@ function SessionView({
           ) : (
           <Text style={styles.when}>
             {session.window === 'UPCOMING' ? (
-              <>Bestellen opent <Text style={styles.strong}>{formatDay(session.orderOpenAt, locale)}</Text>, </>
+              <>{t('Bestellen opent', 'Ordering opens')} <Text style={styles.strong}>{formatDay(session.orderOpenAt, locale)}</Text>, </>
             ) : session.window === 'OPEN' ? (
-              <>Bestellen tot <Text style={styles.strong}>{formatDay(session.orderCloseAt, locale)} {formatTime(session.orderCloseAt, locale)}</Text>, </>
+              <>{t('Bestellen tot', 'Order until')} <Text style={styles.strong}>{formatDay(session.orderCloseAt, locale)} {formatTime(session.orderCloseAt, locale)}</Text>, </>
             ) : (
-              <>Bestellen is gesloten, </>
+              <>{t('Bestellen is gesloten, ', 'Ordering is closed, ')}</>
             )}
-            afhalen <Text style={styles.strong}>{formatTimeRange(session.pickupStart, session.pickupEnd, locale)}</Text>.
+            {t('afhalen', 'pickup')} <Text style={styles.strong}>{formatTimeRange(session.pickupStart, session.pickupEnd, locale)}</Text>.
           </Text>
           )}
 
@@ -546,7 +569,7 @@ function SessionView({
                     <Image cachePolicy="memory-disk" source={{ uri: special.imageUrl }} style={styles.specialPhoto} contentFit="cover" />
                   ) : null}
                   <View style={styles.specialBody}>
-                    <Text style={styles.tag}>BROODJE VAN DE WEEK</Text>
+                    <Text style={styles.tag}>{t('BROODJE VAN DE WEEK', 'SANDWICH OF THE WEEK')}</Text>
                     <Text style={styles.specialName}>{special.name}</Text>
                     {special.ingredients ? <Text style={styles.hint}>{special.ingredients}</Text> : null}
                     <View style={styles.specialLine}>
@@ -568,7 +591,7 @@ function SessionView({
                 </View>
               ) : null}
 
-              <SectionHeading>Het aanbod</SectionHeading>
+              <SectionHeading>{t('Het aanbod', 'The menu')}</SectionHeading>
               <CardList style={styles.flat}>
                 {regular.map((item) => {
                   const { quantity, available, max } = limitFor(item);
@@ -607,10 +630,12 @@ function SessionView({
 
           {offered.length > 0 && !banned ? (
             <View style={styles.takeover}>
-              <SectionHeading>Vrijgekomen broodjes</SectionHeading>
+              <SectionHeading>{t('Vrijgekomen broodjes', 'Released sandwiches')}</SectionHeading>
               <Text style={styles.hint}>
-                Na de deadline geannuleerd en al gemaakt. Neem je een broodje over, dan haal je het
-                af en betaal je aan de balie, tot {pickupEnd}.
+                {t(
+                  `Na de deadline geannuleerd en al gemaakt. Neem je een broodje over, dan haal je het af en betaal je aan de balie, tot ${pickupEnd}.`,
+                  `Cancelled after the deadline and already made. If you take over a sandwich, you pick it up and pay at the desk, until ${pickupEnd}.`,
+                )}
               </Text>
               <CardList style={styles.flat}>
                 {offered.map((item) => {
@@ -630,7 +655,7 @@ function SessionView({
                         onPress={() => takeOver(item)}
                         style={({ pressed }) => [styles.smallButton, (busy || full) && styles.disabled, pressed && styles.pressed]}
                       >
-                        <Text style={styles.smallButtonLabel}>Overnemen</Text>
+                        <Text style={styles.smallButtonLabel}>{t('Overnemen', 'Take over')}</Text>
                       </Pressable>
                     </View>
                   );
@@ -640,7 +665,7 @@ function SessionView({
           ) : null}
 
           {!ordering && !order && offered.length === 0 && session.window !== 'UPCOMING' ? (
-            <Text style={styles.hint}>Bestellen is gesloten voor deze dag.</Text>
+            <Text style={styles.hint}>{t('Bestellen is gesloten voor deze dag.', 'Ordering is closed for this day.')}</Text>
           ) : null}
         </View>
       </ScrollView>
@@ -650,22 +675,22 @@ function SessionView({
           <View style={styles.flex}>
             <Text style={styles.barTotal}>
               {totals.items === 0
-                ? 'Kies je broodjes'
-                : `${totals.items} ${totals.items === 1 ? 'broodje' : 'broodjes'}, ${formatEuro(totals.cents)}`}
+                ? t('Kies je broodjes', 'Choose your sandwiches')
+                : `${totals.items} ${totals.items === 1 ? t('broodje', 'sandwich') : t('broodjes', 'sandwiches')}, ${formatEuro(totals.cents)}`}
             </Text>
             <Text style={styles.hint}>
               {editing ? (
                 <Text style={styles.link} onPress={() => { setEditing(false); setQuantities({}); }}>
-                  Niet aanpassen
+                  {t('Niet aanpassen', 'Do not edit')}
                 </Text>
               ) : (
-                `Tot ${maxItems} per dag`
+                t(`Tot ${maxItems} per dag`, `Up to ${maxItems} per day`)
               )}
             </Text>
           </View>
           <View style={styles.barButton}>
             <Button
-              label={editing ? 'Bewaren' : 'Bestellen'}
+              label={editing ? t('Bewaren', 'Save') : t('Bestellen', 'Order')}
               busy={busy}
               disabled={banned || totals.items === 0}
               onPress={() => void submit()}
@@ -716,21 +741,21 @@ function Countdown({
   const parts: { value: number; unit: string }[] =
     days > 0
       ? [
-          { value: days, unit: days === 1 ? 'dag' : 'dagen' },
-          { value: hours, unit: 'uur' },
+          { value: days, unit: days === 1 ? t('dag', 'day') : t('dagen', 'days') },
+          { value: hours, unit: t('uur', 'hours') },
         ]
       : hours > 0
         ? [
-            { value: hours, unit: 'uur' },
-            { value: mins, unit: mins === 1 ? 'minuut' : 'minuten' },
+            { value: hours, unit: t('uur', 'hours') },
+            { value: mins, unit: mins === 1 ? t('minuut', 'minute') : t('minuten', 'minutes') },
           ]
-        : [{ value: mins, unit: mins === 1 ? 'minuut' : 'minuten' }];
+        : [{ value: mins, unit: mins === 1 ? t('minuut', 'minute') : t('minuten', 'minutes') }];
   const moment = (iso: string) => `${formatDay(iso, locale)}, ${formatTime(iso, locale)}`;
   const steps = [
-    { title: 'Bestellen opent', detail: moment(session.orderOpenAt) },
-    { title: 'Bestellen sluit', detail: moment(session.orderCloseAt) },
+    { title: t('Bestellen opent', 'Ordering opens'), detail: moment(session.orderOpenAt) },
+    { title: t('Bestellen sluit', 'Ordering closes'), detail: moment(session.orderCloseAt) },
     {
-      title: 'Afhalen met je studentenkaart',
+      title: t('Afhalen met je studentenkaart', 'Pick up with your student card'),
       detail: `${formatDay(session.pickupStart, locale)}, ${formatTimeRange(session.pickupStart, session.pickupEnd, locale)}`,
     },
   ];
@@ -741,11 +766,16 @@ function Countdown({
         <View
           style={styles.countdownTop}
           accessible
-          accessibilityLabel={`Bestellen voor ${weekdayOf(session.date, locale)} opent over ${parts.map((part) => `${part.value} ${part.unit}`).join(' en ')}`}
+          accessibilityLabel={t(
+            `Bestellen voor ${weekdayOf(session.date, locale)} opent over ${parts.map((part) => `${part.value} ${part.unit}`).join(' en ')}`,
+            `Ordering for ${weekdayOf(session.date, locale)} opens in ${parts.map((part) => `${part.value} ${part.unit}`).join(' and ')}`,
+          )}
         >
           <Text style={styles.countdownLabel}>
-            Bestellen voor {weekdayOf(session.date, locale)} {formatDate(session.date, locale)} opent{' '}
-            {left > 0 ? 'over' : 'nu'}
+            {t(
+              `Bestellen voor ${weekdayOf(session.date, locale)} ${formatDate(session.date, locale)} opent ${left > 0 ? 'over' : 'nu'}`,
+              `Ordering for ${weekdayOf(session.date, locale)} ${formatDate(session.date, locale)} opens ${left > 0 ? 'in' : 'now'}`,
+            )}
           </Text>
           {left > 0 ? (
             <View style={styles.countdownRow}>
@@ -803,8 +833,8 @@ function OpenAlert() {
         if (!ok) {
           setChoice(false);
           Alert.alert(
-            'Meldingen staan uit',
-            'Zet meldingen voor de app aan in de instellingen van je telefoon, en probeer dan opnieuw.',
+            t('Meldingen staan uit', 'Notifications are off'),
+            t('Zet meldingen voor de app aan in de instellingen van je telefoon, en probeer dan opnieuw.', 'Turn on notifications for the app in your phone settings, then try again.'),
           );
           return;
         }
@@ -812,7 +842,7 @@ function OpenAlert() {
       await setNotificationTopic('theokot.open', next);
     } catch {
       setChoice(!next);
-      Alert.alert('Niet opgeslagen', 'Die instelling kon niet bewaard worden. Probeer opnieuw.');
+      Alert.alert(t('Niet opgeslagen', 'Not saved'), t('Die instelling kon niet bewaard worden. Probeer opnieuw.', 'That setting could not be saved. Try again.'));
     } finally {
       setBusy(false);
     }
@@ -824,8 +854,8 @@ function OpenAlert() {
         <Bell size={18} color={COLORS.onYellow} />
       </View>
       <View style={styles.flex}>
-        <Text style={styles.stepTitle}>Meld het als het opent</Text>
-        <Text style={styles.hint}>Eén bericht wanneer je kan bestellen</Text>
+        <Text style={styles.stepTitle}>{t('Meld het als het opent', 'Notify me when it opens')}</Text>
+        <Text style={styles.hint}>{t('Eén bericht wanneer je kan bestellen', 'One notification when you can order')}</Text>
       </View>
       <Switch
         value={on}
@@ -833,7 +863,7 @@ function OpenAlert() {
         onValueChange={(next) => void toggle(next)}
         trackColor={{ true: COLORS.yellow, false: COLORS.line2 }}
         thumbColor={COLORS.plate}
-        accessibilityLabel="Melding wanneer het bestellen opent"
+        accessibilityLabel={t('Melding wanneer het bestellen opent', 'Notification when ordering opens')}
       />
     </View>
   );
@@ -853,33 +883,33 @@ function weekdayOf(iso: string, locale: AppLocale): string {
  */
 function orderErrorText(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return 'Geen verbinding met vtk.be. Probeer het straks opnieuw.';
+    return t('Geen verbinding met vtk.be. Probeer het straks opnieuw.', 'No connection to vtk.be. Try again later.');
   }
   switch (error.code) {
     case 'BANNED':
-      return 'Je bent tijdelijk geschorst omdat er bestellingen niet opgehaald zijn.';
+      return t('Je bent tijdelijk geschorst omdat er bestellingen niet opgehaald zijn.', 'You are temporarily suspended because orders were not picked up.');
     case 'ORDER_CLOSED':
-      return 'Bestellen is intussen gesloten voor deze dag.';
+      return t('Bestellen is intussen gesloten voor deze dag.', 'Ordering has closed for this day in the meantime.');
     case 'ALREADY_ORDERED':
-      return 'Je hebt al een bestelling voor deze dag. Eén per dag.';
+      return t('Je hebt al een bestelling voor deze dag. Eén per dag.', 'You already have an order for this day. One per day.');
     case 'SESSION_NOT_FOUND':
-      return 'Deze verkoopdag bestaat niet meer.';
+      return t('Deze verkoopdag bestaat niet meer.', 'This sales day no longer exists.');
     case 'ORDER_NOT_FOUND':
-      return 'Die bestelling is er niet meer.';
+      return t('Die bestelling is er niet meer.', 'That order no longer exists.');
     case 'NOT_CANCELABLE':
-      return 'Deze bestelling kan niet meer geannuleerd worden.';
+      return t('Deze bestelling kan niet meer geannuleerd worden.', 'This order can no longer be cancelled.');
     case 'CANCEL_DEADLINE_PASSED':
-      return 'De annulatiedeadline is voorbij.';
+      return t('De annulatiedeadline is voorbij.', 'The cancellation deadline has passed.');
     case 'TAKEOVER_CLOSED':
-      return 'De afhaal is voorbij: vrijgeven of overnemen kan niet meer.';
+      return t('De afhaal is voorbij: vrijgeven of overnemen kan niet meer.', 'Pickup is over: releasing or taking over is no longer possible.');
     case 'RELEASE_NOT_POSSIBLE':
-      return 'Deze bestelling kan niet vrijgegeven worden. Een bestelling in de doos van een grocomeet ligt niet aan de balie.';
+      return t('Deze bestelling kan niet vrijgegeven worden. Een bestelling in de doos van een grocomeet ligt niet aan de balie.', 'This order cannot be released. An order in a group order box is not at the desk.');
     case 'NOTHING_RELEASED':
-      return 'Er is niets vrijgegeven om over te nemen.';
+      return t('Er is niets vrijgegeven om over te nemen.', 'Nothing has been released to take over.');
     case 'TAKEOVER_UNAVAILABLE':
-      return 'Dit broodje is intussen al overgenomen.';
+      return t('Dit broodje is intussen al overgenomen.', 'This sandwich has already been taken over.');
     case 'INVALID_ORDER':
-      return 'Er is intussen iets veranderd aan het aanbod. Het scherm is bijgewerkt; probeer opnieuw.';
+      return t('Er is intussen iets veranderd aan het aanbod. Het scherm is bijgewerkt; probeer opnieuw.', 'Something changed in the menu in the meantime. The screen has been updated; try again.');
     default:
       return error.message;
   }

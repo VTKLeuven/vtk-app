@@ -9,6 +9,7 @@ import { COLORS, FONTS, PLANNING, RADIUS, SPACING, TYPE } from '../../theme/toke
 import { Button } from '../ui';
 import { Sheet } from './PlanningSheets';
 import { Wheel } from './Wheel';
+import { t } from '../../i18n';
 
 /** Het blok dat iemand in de week neerzette: de dag en de uren, in minuten sinds middernacht. */
 export type ItemDraft = { date: string; startMin: number; endMin: number };
@@ -65,7 +66,7 @@ export function PersonalSheet({
   // Een half jaar heen en terug rond de gekozen dag; genoeg voor een agenda.
   const dates = useMemo(() => Array.from({ length: 365 }, (_, i) => addDays(initialDate, i - 182)), [initialDate]);
   const today = handle.data?.today ?? '';
-  const dayText = (d: string) => (d === today ? 'Vandaag' : shortDay(d));
+  const dayText = (d: string) => (d === today ? t('Vandaag', 'Today') : shortDay(d));
 
   const valid = title.trim() !== '' && (allDay || end > start);
 
@@ -93,10 +94,13 @@ export function PersonalSheet({
 
   const remove = () => {
     if (!editing) return;
-    Alert.alert('Item verwijderen?', `"${editing.title}" verdwijnt uit je planning. Je lessen en VTK-evenementen blijven staan.`, [
-      { text: 'Behouden', style: 'cancel' },
+    Alert.alert(t('Item verwijderen?', 'Remove item?'), t(
+        `"${editing.title}" verdwijnt uit je planning. Je lessen en VTK-evenementen blijven staan.`,
+        `"${editing.title}" will be removed from your planning. Your classes and VTK events stay.`,
+      ), [
+      { text: t('Behouden', 'Keep'), style: 'cancel' },
       {
-        text: 'Verwijderen',
+        text: t('Verwijderen', 'Remove'),
         style: 'destructive',
         onPress: () => void handle.run({ op: 'deletePersonal', id: editing.id }).then((ok) => ok && onClose()),
       },
@@ -104,17 +108,17 @@ export function PersonalSheet({
   };
 
   return (
-    <Sheet visible title={editing ? 'Item wijzigen' : 'Nieuw item'} onClose={onClose}>
+    <Sheet visible title={editing ? t('Item wijzigen', 'Edit item') : t('Nieuw item', 'New item')} onClose={onClose}>
       <View style={styles.group}>
         <TextInput
           value={title}
           onChangeText={setTitle}
-          placeholder="Titel"
+          placeholder={t('Titel', 'Title')}
           placeholderTextColor={COLORS.muted}
           autoFocus={!editing}
           maxLength={200}
           style={[styles.field, styles.title]}
-          accessibilityLabel="Titel"
+          accessibilityLabel={t('Titel', 'Title')}
         />
         <View style={styles.line} />
         <View style={styles.locationRow}>
@@ -122,18 +126,18 @@ export function PersonalSheet({
           <TextInput
             value={location}
             onChangeText={setLocation}
-            placeholder="Locatie"
+            placeholder={t('Locatie', 'Location')}
             placeholderTextColor={COLORS.muted}
             maxLength={200}
             style={[styles.field, styles.flex]}
-            accessibilityLabel="Locatie"
+            accessibilityLabel={t('Locatie', 'Location')}
           />
         </View>
       </View>
 
       <View style={styles.group}>
         <View style={styles.row}>
-          <Text style={styles.rowLabel}>Hele dag</Text>
+          <Text style={styles.rowLabel}>{t('Hele dag', 'All day')}</Text>
           <Switch
             value={allDay}
             onValueChange={(value) => {
@@ -141,7 +145,7 @@ export function PersonalSheet({
               setOpen(null);
             }}
             trackColor={{ true: COLORS.ink, false: COLORS.line2 }}
-            accessibilityLabel="Hele dag"
+            accessibilityLabel={t('Hele dag', 'All day')}
           />
         </View>
         <View style={styles.line} />
@@ -151,7 +155,7 @@ export function PersonalSheet({
           onPress={() => setOpen(open === 'start' ? null : 'start')}
           style={styles.row}
         >
-          <Text style={styles.rowLabel}>{allDay ? 'Dag' : 'Begint'}</Text>
+          <Text style={styles.rowLabel}>{allDay ? t('Dag', 'Day') : t('Begint', 'Starts')}</Text>
           <View style={styles.values}>
             <Text style={[styles.pill, open === 'start' && styles.pillOpen]}>{dayText(date)}</Text>
             {!allDay ? <Text style={[styles.pill, open === 'start' && styles.pillOpen]}>{hhmm(start)}</Text> : null}
@@ -159,7 +163,7 @@ export function PersonalSheet({
         </Pressable>
         {open === 'start' ? (
           <View style={styles.wheels}>
-            <Wheel values={dates} value={date} onChange={setDate} width={allDay ? 220 : 150} render={dayText} accessibilityLabel="Dag" />
+            <Wheel values={dates} value={date} onChange={setDate} width={allDay ? 220 : 150} render={dayText} accessibilityLabel={t('Dag', 'Day')} />
             {!allDay ? (
               <>
                 <Wheel
@@ -168,7 +172,7 @@ export function PersonalSheet({
                   onChange={(h) => moveStart(h * 60 + (start % 60))}
                   width={56}
                   render={two}
-                  accessibilityLabel="Uur van het begin"
+                  accessibilityLabel={t('Uur van het begin', 'Start hour')}
                 />
                 <Wheel
                   values={MINUTES}
@@ -176,7 +180,7 @@ export function PersonalSheet({
                   onChange={(m) => moveStart(Math.floor(start / 60) * 60 + m)}
                   width={56}
                   render={two}
-                  accessibilityLabel="Minuten van het begin"
+                  accessibilityLabel={t('Minuten van het begin', 'Start minutes')}
                 />
               </>
             ) : null}
@@ -191,7 +195,7 @@ export function PersonalSheet({
               onPress={() => setOpen(open === 'end' ? null : 'end')}
               style={styles.row}
             >
-              <Text style={styles.rowLabel}>Eindigt</Text>
+              <Text style={styles.rowLabel}>{t('Eindigt', 'Ends')}</Text>
               <Text style={[styles.pill, open === 'end' && styles.pillOpen, end <= start && styles.pillInvalid]}>{hhmm(end)}</Text>
             </Pressable>
             {open === 'end' ? (
@@ -202,7 +206,7 @@ export function PersonalSheet({
                   onChange={(h) => setEnd(h * 60 + (end % 60))}
                   width={56}
                   render={two}
-                  accessibilityLabel="Uur van het einde"
+                  accessibilityLabel={t('Uur van het einde', 'End hour')}
                 />
                 <Wheel
                   values={MINUTES}
@@ -210,37 +214,36 @@ export function PersonalSheet({
                   onChange={(m) => setEnd(Math.floor(end / 60) * 60 + m)}
                   width={56}
                   render={two}
-                  accessibilityLabel="Minuten van het einde"
+                  accessibilityLabel={t('Minuten van het einde', 'End minutes')}
                 />
               </View>
             ) : null}
           </>
         ) : null}
       </View>
-      {!allDay && end <= start ? <Text style={styles.error}>Het einde moet na het begin liggen.</Text> : null}
+      {!allDay && end <= start ? <Text style={styles.error}>{t('Het einde moet na het begin liggen.', 'The end must be after the start.')}</Text> : null}
 
       <View style={styles.group}>
         <TextInput
           value={note}
           onChangeText={setNote}
-          placeholder="Notitie"
+          placeholder={t('Notitie', 'Note')}
           placeholderTextColor={COLORS.muted}
           multiline
           maxLength={2000}
           style={[styles.field, styles.note]}
-          accessibilityLabel="Notitie"
+          accessibilityLabel={t('Notitie', 'Note')}
         />
       </View>
 
-      <Button label={editing ? 'Bewaren' : 'Toevoegen'} busy={handle.busy} disabled={!valid} onPress={() => void save()} />
+      <Button label={editing ? t('Bewaren', 'Save') : t('Toevoegen', 'Add')} busy={handle.busy} disabled={!valid} onPress={() => void save()} />
       {editing ? (
         <Pressable accessibilityRole="button" onPress={remove} disabled={handle.busy} style={styles.delete}>
-          <Text style={styles.deleteText}>Item verwijderen</Text>
+          <Text style={styles.deleteText}>{t('Item verwijderen', 'Remove item')}</Text>
         </Pressable>
       ) : null}
       <Text style={styles.hint}>
-        Enkel jij ziet dit. Het staat in je planning in de app, naast je lessen en VTK-evenementen.
-        Een item verplaats je door het lang in te drukken en te slepen.
+        {t('Enkel jij ziet dit. Het staat in je planning in de app, naast je lessen en VTK-evenementen. Een item verplaats je door het lang in te drukken en te slepen.', 'Only you can see this. It is in your planning in the app, next to your classes and VTK events. Move an item by long-pressing and dragging it.')}
       </Text>
     </Sheet>
   );

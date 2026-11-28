@@ -16,6 +16,7 @@ import { BoothNode, BoothLod } from './BoothNode';
 import { parseSvgViewBox } from './svgParser';
 
 import { COLORS, SPACING, RADIUS, SHADOWS, TEXT, HIT_TARGET, getCategoryColor } from './theme';
+import { t } from '../i18n';
 
 /** Zoom thresholds at which more label detail is revealed. */
 const LOD_NUMBER_AT = 1.9;
@@ -171,15 +172,15 @@ export const InteractiveFloorplan: React.FC<InteractiveFloorplanProps> = ({
           style={styles.hint}
           pointerEvents="none"
         >
-          <Text style={styles.hintText}>Knijp of tik twee keer om in te zoomen</Text>
+          <Text style={styles.hintText}>{t('Knijp of tik twee keer om in te zoomen', 'Pinch or double-tap to zoom in')}</Text>
         </Animated.View>
       )}
 
       {/* Map key. Three colours, three meanings — no guessing. */}
       <View style={styles.legend} pointerEvents="none">
-        <LegendDot color={COLORS.floorplan.boothDefaultFill} label="Bedrijf" />
-        <LegendDot color={COLORS.floorplan.boothEmptyFill} label="Vrij" />
-        <LegendDot color={COLORS.accent} label="Gekozen" />
+        <LegendDot color={COLORS.floorplan.boothDefaultFill} label={t('Bedrijf', 'Company')} />
+        <LegendDot color={COLORS.floorplan.boothEmptyFill} label={t('Vrij', 'Free')} />
+        <LegendDot color={COLORS.accent} label={t('Gekozen', 'Selected')} />
       </View>
 
       {/* Controls sit in the thumb zone, bottom-right, above the sheet. */}
@@ -187,7 +188,7 @@ export const InteractiveFloorplan: React.FC<InteractiveFloorplanProps> = ({
         <Pressable
           style={({ pressed }) => [styles.controlButton, pressed && styles.controlPressed]}
           onPress={() => handleZoom(1.6)}
-          accessibilityLabel="Inzoomen"
+          accessibilityLabel={t('Inzoomen', 'Zoom in')}
           accessibilityRole="button"
         >
           <Plus size={20} color={COLORS.primary} strokeWidth={2.5} />
@@ -198,7 +199,7 @@ export const InteractiveFloorplan: React.FC<InteractiveFloorplanProps> = ({
         <Pressable
           style={({ pressed }) => [styles.controlButton, pressed && styles.controlPressed]}
           onPress={() => handleZoom(1 / 1.6)}
-          accessibilityLabel="Uitzoomen"
+          accessibilityLabel={t('Uitzoomen', 'Zoom out')}
           accessibilityRole="button"
         >
           <Minus size={20} color={COLORS.primary} strokeWidth={2.5} />
@@ -215,7 +216,7 @@ export const InteractiveFloorplan: React.FC<InteractiveFloorplanProps> = ({
                   pressed && styles.controlPressed,
                 ]}
                 onPress={handleReset}
-                accessibilityLabel="Heel het plan tonen"
+                accessibilityLabel={t('Heel het plan tonen', 'Show the whole plan')}
                 accessibilityRole="button"
               >
                 <Maximize2 size={18} color={COLORS.primaryDark} strokeWidth={2.5} />

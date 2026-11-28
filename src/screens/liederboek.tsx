@@ -7,6 +7,7 @@ import { Empty } from '../components/ui';
 import { liederboek, normalize, pageNumber, type Song } from '../liederboek';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { t } from '../i18n';
 
 type Book = 'alle' | 'leuven' | 'kvhv';
 
@@ -57,13 +58,13 @@ export default function LiederboekScreen() {
         <View style={styles.headWrap}>
           <View style={styles.overscroll} />
           <PageHead
-            title="Liederboek"
-            subtitle={`${songs.length} liedjes van codex.rondgezang.be`}
+            title={t('Liederboek', 'Songbook')}
+            subtitle={t(`${songs.length} liedjes van codex.rondgezang.be`, `${songs.length} songs from codex.rondgezang.be`)}
             tabs={{
               value: book,
               onChange: setBook,
               options: [
-                { value: 'alle', label: 'Alle' },
+                { value: 'alle', label: t('Alle', 'All') },
                 { value: 'leuven', label: 'Leuvens Liedboek' },
                 { value: 'kvhv', label: 'KVHV-codex' },
               ],
@@ -73,8 +74,8 @@ export default function LiederboekScreen() {
               <SearchField
                 value={query}
                 onChange={setQuery}
-                placeholder="Titel of paginanummer"
-                label="Zoek een lied op titel of paginanummer"
+                placeholder={t('Titel of paginanummer', 'Title or page number')}
+                label={t('Zoek een lied op titel of paginanummer', 'Search a song by title or page number')}
                 style={styles.searchField}
               />
             </View>
@@ -84,8 +85,8 @@ export default function LiederboekScreen() {
       ListEmptyComponent={
         <Empty
           flush
-          title="Niets gevonden"
-          hint={/^\d/.test(query.trim()) ? `Geen lied op pagina ${query.trim()}.` : 'Probeer een ander woord uit de titel.'}
+          title={t('Niets gevonden', 'Nothing found')}
+          hint={/^\d/.test(query.trim()) ? t(`Geen lied op pagina ${query.trim()}.`, `No song on page ${query.trim()}.`) : t('Probeer een ander woord uit de titel.', 'Try another word from the title.')}
         />
       }
       renderItem={({ item, index }) => (

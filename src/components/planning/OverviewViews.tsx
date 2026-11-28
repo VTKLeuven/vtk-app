@@ -7,6 +7,7 @@ import type { CourseRow, OverviewSession, SemesterView } from '../../planning/ov
 import type { PlanningHandle } from '../../planning/usePlanning';
 import { COLORS, FONTS, PLANNING, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW } from '../HomeSection';
+import { IS_EN, t } from '../../i18n';
 
 /**
  * De tabbladen "Per vak" en "Semester" van de planner van Burgieclan, op een
@@ -25,15 +26,21 @@ const PALE = {
 } as const;
 
 const TYPE_PLURAL: Record<string, string> = {
-  college: 'Hoorcolleges',
-  practicum: 'Practica',
-  oefenzitting: 'Oefenzittingen',
-  excursie: 'Excursies',
-  opdracht: 'Opdrachten',
+  college: t('Hoorcolleges', 'Lectures'),
+  practicum: t('Practica', 'Practicals'),
+  oefenzitting: t('Oefenzittingen', 'Exercise sessions'),
+  excursie: t('Excursies', 'Excursions'),
+  opdracht: t('Opdrachten', 'Assignments'),
 };
-const TONE_PLURAL = { lecture: 'Hoorcolleges', practice: 'Practica en oefenzittingen', other: 'Andere sessies' } as const;
+const TONE_PLURAL = {
+  lecture: t('Hoorcolleges', 'Lectures'),
+  practice: t('Practica en oefenzittingen', 'Practicals and exercise sessions'),
+  other: t('Andere sessies', 'Other sessions'),
+} as const;
 
-const MONTHS = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+const MONTHS = IS_EN
+  ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  : ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
 const dayMonth = (date: string) => `${Number(date.slice(8, 10))} ${MONTHS[Number(date.slice(5, 7)) - 1]}`;
 
 // ── Totalen ─────────────────────────────────────────────────────────────────
@@ -79,7 +86,10 @@ export function CourseList({
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ expanded }}
-              accessibilityLabel={`${row.label}, ${row.done} van ${row.past} afgevinkt${row.missed > 0 ? `, ${row.missed} in te halen` : ''}`}
+              accessibilityLabel={t(
+                `${row.label}, ${row.done} van ${row.past} afgevinkt${row.missed > 0 ? `, ${row.missed} in te halen` : ''}`,
+                `${row.label}, ${row.done} of ${row.past} checked off${row.missed > 0 ? `, ${row.missed} to catch up` : ''}`,
+              )}
               onPress={() => onToggle(row.key)}
               style={({ pressed }) => [styles.course, expanded && styles.courseOpen, pressed && styles.pressed]}
             >
@@ -139,7 +149,7 @@ function CourseDetail({
         <Text style={[styles.badge, styles.badgeMuted]}>{row.upcoming} nog te komen</Text>
         {catalogue ? (
           <Pressable accessibilityRole="link" onPress={() => onOpenCourse(catalogue[1])} hitSlop={4}>
-            <Text style={[styles.badge, styles.badgeLink]}>Vak openen</Text>
+            <Text style={[styles.badge, styles.badgeLink]}>{t('Vak openen', 'Open course')}</Text>
           </Pressable>
         ) : null}
       </View>
@@ -150,7 +160,9 @@ function CourseDetail({
               {section.title} <Text style={styles.sectionCount}>· {section.sessions.length}</Text>
             </Text>
             <Text style={styles.sectionMeta}>
-              {section.past > 0 ? `${section.done} van ${section.past} afgevinkt` : 'nog geen voorbij'}
+              {section.past > 0
+                ? t(`${section.done} van ${section.past} afgevinkt`, `${section.done} of ${section.past} checked off`)
+                : t('nog geen voorbij', 'none past yet')}
             </Text>
           </View>
           {section.sessions.map((s) => (
@@ -165,8 +177,7 @@ function CourseDetail({
         </View>
       ))}
       <Text style={styles.hint}>
-        Vink een les af zodra je ze gevolgd of ingehaald hebt. Tik op een datum voor de details, om
-        een les te verbergen of als verplicht aan te duiden.
+        {t('Vink een les af zodra je ze gevolgd of ingehaald hebt. Tik op een datum voor de details, om een les te verbergen of als verplicht aan te duiden.', 'Check off a class once you attended or caught up on it. Tap a date for the details, to hide a class or to mark it as mandatory.')}
       </Text>
     </View>
   );
@@ -192,7 +203,7 @@ function SessionRow({
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: done, disabled: !canTick }}
-        accessibilityLabel={`${shortDay(e.date)}, ${e.start}: ${done ? 'afgevinkt' : s.past ? 'niet afgevinkt' : 'nog te komen'}`}
+        accessibilityLabel={`${shortDay(e.date)}, ${e.start}: ${done ? t('afgevinkt', 'checked off') : s.past ? t('niet afgevinkt', 'not checked off') : t('nog te komen', 'upcoming')}`}
         disabled={!canTick || handle.busy}
         onPress={() => void handle.run({ op: 'done', uid: e.uid, value: !done })}
         hitSlop={8}
@@ -213,7 +224,7 @@ function SessionRow({
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityHint="Opent de details van deze les"
+        accessibilityHint={t('Opent de details van deze les', 'Opens the details of this class')}
         onPress={() => onSelect(e.uid)}
         style={({ pressed }) => [styles.sessionBody, pressed && styles.pressed]}
       >
@@ -233,9 +244,9 @@ function SessionRow({
           ) : (
             <View style={{ flex: 1 }} />
           )}
-          {isNext ? <Text style={[styles.tag, styles.tagInfo]}>Volgende</Text> : e.date === today ? <Text style={[styles.tag, styles.tagInfo]}>Vandaag</Text> : null}
-          {s.mandatory ? <Text style={[styles.tag, styles.tagDanger]}>Verplicht</Text> : null}
-          {s.missed ? <Text style={styles.missedText}>Niet afgevinkt</Text> : null}
+          {isNext ? <Text style={[styles.tag, styles.tagInfo]}>{t('Volgende', 'Next')}</Text> : e.date === today ? <Text style={[styles.tag, styles.tagInfo]}>{t('Vandaag', 'Today')}</Text> : null}
+          {s.mandatory ? <Text style={[styles.tag, styles.tagDanger]}>{t('Verplicht', 'Mandatory')}</Text> : null}
+          {s.missed ? <Text style={styles.missedText}>{t('Niet afgevinkt', 'Not checked off')}</Text> : null}
         </View>
       </Pressable>
     </View>
@@ -271,27 +282,26 @@ export function SemesterGrid({ data, onCourse }: { data: SemesterView; onCourse:
   return (
     <View style={styles.gap}>
       <Text style={styles.intro}>
-        Elk vierkantje is een les. Vol is afgevinkt, een roze rand is voorbij en niet afgevinkt, licht
-        is nog te komen. Tik op een vak voor zijn lessen.
+        {t('Elk vierkantje is een les. Vol is afgevinkt, een roze rand is voorbij en niet afgevinkt, licht is nog te komen. Tik op een vak voor zijn lessen.', 'Each square is a class. Filled is checked off, a pink border is past and not checked off, light is upcoming. Tap a course for its classes.')}
       </Text>
       <View style={styles.legend}>
-        <Legend style={{ backgroundColor: PLANNING.lectureFill }} label="Hoorcollege" />
-        <Legend style={{ backgroundColor: PLANNING.practiceFill }} label="Practicum" />
-        <Legend style={{ backgroundColor: PLANNING.otherFill }} label="Andere" />
-        <Legend style={{ borderWidth: 2, borderColor: PLANNING.catchupFill }} label="In te halen" />
-        <Legend style={[{ backgroundColor: PLANNING.practiceBg, borderWidth: 1, borderColor: PLANNING.practiceBorder }, styles.squareMandatory]} label="Verplicht" />
+        <Legend style={{ backgroundColor: PLANNING.lectureFill }} label={t('Hoorcollege', 'Lecture')} />
+        <Legend style={{ backgroundColor: PLANNING.practiceFill }} label={t('Practicum', 'Practical')} />
+        <Legend style={{ backgroundColor: PLANNING.otherFill }} label={t('Andere', 'Other')} />
+        <Legend style={{ borderWidth: 2, borderColor: PLANNING.catchupFill }} label={t('In te halen', 'To catch up')} />
+        <Legend style={[{ backgroundColor: PLANNING.practiceBg, borderWidth: 1, borderColor: PLANNING.practiceBorder }, styles.squareMandatory]} label={t('Verplicht', 'Mandatory')} />
       </View>
 
       <View style={[styles.card, styles.gridCard]} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
         <View style={{ width: NAME_WIDTH }}>
           <View style={[styles.gridHead, styles.nameCell]}>
-            <Text style={styles.gridHeadText}>Vak</Text>
+            <Text style={styles.gridHeadText}>{t('Vak', 'Course')}</Text>
           </View>
           {data.rows.map((row) => (
             <Pressable
               key={row.key}
               accessibilityRole="button"
-              accessibilityLabel={`${row.label}: lessen bekijken`}
+              accessibilityLabel={t(`${row.label}: lessen bekijken`, `${row.label}: view classes`)}
               onPress={() => onCourse(row.key)}
               style={({ pressed }) => [styles.nameCell, styles.gridRow, pressed && styles.pressed]}
             >
@@ -319,7 +329,7 @@ export function SemesterGrid({ data, onCourse }: { data: SemesterView; onCourse:
                 );
               })}
               <View style={[styles.ratioCell, styles.ratioHead]}>
-                <Text style={styles.gridHeadText}>Afgevinkt</Text>
+                <Text style={styles.gridHeadText}>{t('Afgevinkt', 'Checked off')}</Text>
               </View>
             </View>
             {data.rows.map((row) => (
@@ -344,10 +354,10 @@ export function SemesterGrid({ data, onCourse }: { data: SemesterView; onCourse:
                     numberOfLines={2}
                   >
                     {row.past === 0
-                      ? `start ${dayMonth(row.sessions[0].session.date)}`
+                      ? t(`start ${dayMonth(row.sessions[0].session.date)}`, `starts ${dayMonth(row.sessions[0].session.date)}`)
                       : row.missed > 0
-                        ? `${row.missed} in te halen`
-                        : 'alles afgevinkt'}
+                        ? t(`${row.missed} in te halen`, `${row.missed} to catch up`)
+                        : t('alles afgevinkt', 'all checked off')}
                   </Text>
                 </View>
               </View>
@@ -355,7 +365,7 @@ export function SemesterGrid({ data, onCourse }: { data: SemesterView; onCourse:
           </View>
         </ScrollView>
       </View>
-      {weeks > 6 ? <Text style={styles.hint}>Veeg opzij voor de andere weken.</Text> : null}
+      {weeks > 6 ? <Text style={styles.hint}>{t('Veeg opzij voor de andere weken.', 'Swipe sideways for the other weeks.')}</Text> : null}
     </View>
   );
 }

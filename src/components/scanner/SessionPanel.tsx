@@ -3,6 +3,7 @@ import { memo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FONTS, RADIUS, SCANNER, SPACING, TICKET_COLORS } from '../../theme/tokens';
 import type { ScanHistoryItem } from '../../scanner/types';
+import { t } from '../../i18n';
 
 const clockFormat = new Intl.DateTimeFormat('nl-BE', {
   hour: '2-digit',
@@ -26,7 +27,7 @@ export function ScanCounters({
     <View style={styles.counters}>
       <View style={styles.presentRow}>
         <Users size={16} color={SCANNER.textMuted} />
-        <Text style={styles.presentLabel}>Aanwezig</Text>
+        <Text style={styles.presentLabel}>{t('Aanwezig', 'Present')}</Text>
         <Text style={styles.presentValue}>
           {checkedIn}
           <Text style={styles.presentTotal}> / {total}</Text>
@@ -36,9 +37,9 @@ export function ScanCounters({
         <View style={[styles.fill, { width: `${ratio * 100}%` }]} />
       </View>
       <View style={styles.countRow}>
-        <Counter label="Aanvaard" value={counts.accepted} color={SCANNER.countAccepted} />
-        <Counter label="Dubbel" value={counts.duplicate} color={SCANNER.countDuplicate} />
-        <Counter label="Geweigerd" value={counts.rejected} color={SCANNER.countRejected} />
+        <Counter label={t('Aanvaard', 'Accepted')} value={counts.accepted} color={SCANNER.countAccepted} />
+        <Counter label={t('Dubbel', 'Duplicate')} value={counts.duplicate} color={SCANNER.countDuplicate} />
+        <Counter label={t('Geweigerd', 'Rejected')} value={counts.rejected} color={SCANNER.countRejected} />
       </View>
     </View>
   );
@@ -99,7 +100,7 @@ export const HistoryRow = memo(function HistoryRow({
           disabled={reversing}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={`Check-in terugdraaien: ${item.attendeeName ?? item.code}`}
+          accessibilityLabel={t(`Check-in terugdraaien: ${item.attendeeName ?? item.code}`, `Undo check-in: ${item.attendeeName ?? item.code}`)}
         >
           {reversing ? (
             <ActivityIndicator size="small" color={SCANNER.textMuted} />

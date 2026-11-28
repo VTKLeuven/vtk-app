@@ -10,6 +10,7 @@ import { Card, Empty, ErrorState, Loading } from '../components/ui';
 import { useApp } from '../state/app';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { HeadScroll } from '../components/HeadScroll';
+import { t } from '../i18n';
 
 /**
  * Alle POC's.
@@ -22,7 +23,7 @@ export default function PocsScreen() {
   const { locale } = useApp();
   const resource = useResource('pocs', () => fetchPocs(locale), locale);
 
-  if (resource.loading) return <Loading label="POC's ophalen" />;
+  if (resource.loading) return <Loading label={t("POC's ophalen", 'Loading POCs')} />;
   if (!resource.data) {
     return (
       <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
@@ -33,10 +34,10 @@ export default function PocsScreen() {
     <>
       <HeadScroll head={<PageHead
         title="POC's"
-        subtitle="De permanente onderwijscommissies en wie er voor jou in zit"
+        subtitle={t('De permanente onderwijscommissies en wie er voor jou in zit', 'The permanent education committees and who represents you in them')}
       />} style={styles.root} contentContainerStyle={styles.content}>
         {resource.data.length === 0 ? (
-          <Empty title="Geen POC's" hint="Er staat nog niets ingevuld." />
+          <Empty title={t("Geen POC's", 'No POCs')} hint={t('Er staat nog niets ingevuld.', 'Nothing has been filled in yet.')} />
         ) : null}
 
         {resource.data.map((poc) => (

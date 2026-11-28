@@ -18,6 +18,7 @@ import { useTabRouter } from '../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
 import { HeadScroll } from '../components/HeadScroll';
+import { t } from '../i18n';
 
 /**
  * Waarvoor je telefoon afgaat.
@@ -39,28 +40,28 @@ import { HeadScroll } from '../components/HeadScroll';
 /** De zinnen bij elk soort bericht. Ze staan hier omdat ze UI zijn, geen contract. */
 const TOPICS: Record<AppNotificationTopic, { label: string; hint: string }> = {
   'theokot.open': {
-    label: 'Broodjes gaan open',
-    hint: 'Wanneer een nieuwe bestelronde opengaat. De deadline ligt uren voor het eten.',
+    label: t('Broodjes gaan open', 'Sandwich orders open'),
+    hint: t('Wanneer een nieuwe bestelronde opengaat. De deadline ligt uren voor het eten.', 'When a new ordering round opens. The deadline is hours before the meal.'),
   },
   'theokot.pickup': {
-    label: 'Je broodje ligt klaar',
-    hint: 'Op het moment dat de afhaal begint.',
+    label: t('Je broodje ligt klaar', 'Your sandwich is ready'),
+    hint: t('Op het moment dat de afhaal begint.', 'When pickup starts.'),
   },
   'shift.reminder': {
-    label: 'Je shift begint',
-    hint: 'De dag ervoor en vlak voor de start. Komt ook per mail.',
+    label: t('Je shift begint', 'Your shift starts'),
+    hint: t('De dag ervoor en vlak voor de start. Komt ook per mail.', 'The day before and right before the start. Also sent by email.'),
   },
   'calendar.follow': {
-    label: 'Nieuw in wat je volgt',
-    hint: 'Wanneer er een evenement bijkomt in een categorie hieronder.',
+    label: t('Nieuw in wat je volgt', 'New in what you follow'),
+    hint: t('Wanneer er een evenement bijkomt in een categorie hieronder.', 'When an event is added to a category below.'),
   },
   'calendar.interest': {
-    label: 'Herinnering aan wat je aanduidde',
-    hint: 'Een dag voor een evenement waar je een ster bij zette.',
+    label: t('Herinnering aan wat je aanduidde', 'Reminder of what you marked'),
+    hint: t('Een dag voor een evenement waar je een ster bij zette.', 'A day before an event you starred.'),
   },
   'study.groupStart': {
-    label: 'De eerste van je blokgroep zit',
-    hint: 'Eén bericht per groep per dag, wanneer de eerste begint. Niet bij elke volgende.',
+    label: t('De eerste van je blokgroep zit', 'The first of your study group starts'),
+    hint: t('Eén bericht per groep per dag, wanneer de eerste begint. Niet bij elke volgende.', 'One message per group per day, when the first one starts. Not for every next one.'),
   },
 };
 
@@ -70,7 +71,7 @@ export default function MeldingenScreen() {
   const resource = useResource(
     'meldingen',
     () =>
-      viewer ? fetchNotificationSettings(locale) : Promise.reject(new Error('Niet ingelogd')),
+      viewer ? fetchNotificationSettings(locale) : Promise.reject(new Error(t('Niet ingelogd', 'Not logged in'))),
     `${locale}:${viewer?.id ?? 'anon'}`,
   );
 
@@ -82,18 +83,18 @@ export default function MeldingenScreen() {
   if (!viewer) {
     return (
       <>
-        <HeadScroll head={<PageHead title="Meldingen" />} contentContainerStyle={styles.content} style={styles.root}>
+        <HeadScroll head={<PageHead title={t('Meldingen', 'Notifications')} />} contentContainerStyle={styles.content} style={styles.root}>
           <Card>
-            <Text style={styles.title}>Log eerst in</Text>
-            <Text style={styles.body}>Meldingen hangen aan je account en aan je toestel.</Text>
-            <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+            <Text style={styles.title}>{t('Log eerst in', 'Log in first')}</Text>
+            <Text style={styles.body}>{t('Meldingen hangen aan je account en aan je toestel.', 'Notifications are linked to your account and your device.')}</Text>
+            <Button label={t('Inloggen', 'Log in')} onPress={() => router.push('/inloggen')} />
           </Card>
         </HeadScroll>
       </>
     );
   }
 
-  if (resource.loading) return <Loading label="Instellingen ophalen" />;
+  if (resource.loading) return <Loading label={t('Instellingen ophalen', 'Loading settings')} />;
   if (!resource.data) {
     return (
       <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
@@ -114,7 +115,7 @@ export default function MeldingenScreen() {
     setTopics((current) => ({ ...current, [topic]: next }));
     void setNotificationTopic(topic, next).catch(() => {
       setTopics((current) => ({ ...current, [topic]: !next }));
-      Alert.alert('Niet opgeslagen', 'Die instelling kon niet bewaard worden. Probeer opnieuw.');
+      Alert.alert(t('Niet opgeslagen', 'Not saved'), t('Die instelling kon niet bewaard worden. Probeer opnieuw.', 'That setting could not be saved. Try again.'));
     });
   };
 
@@ -122,7 +123,7 @@ export default function MeldingenScreen() {
     setFollows(next ? [...followed, slug] : followed.filter((item) => item !== slug));
     void setCategoryFollow(slug, next).catch(() => {
       setFollows(followed);
-      Alert.alert('Niet opgeslagen', 'Die categorie kon niet bewaard worden. Probeer opnieuw.');
+      Alert.alert(t('Niet opgeslagen', 'Not saved'), t('Die categorie kon niet bewaard worden. Probeer opnieuw.', 'That category could not be saved. Try again.'));
     });
   };
 
@@ -138,10 +139,10 @@ export default function MeldingenScreen() {
       setPushOn(ok);
       if (!ok) {
         Alert.alert(
-          'Pushberichten staan uit',
+          t('Pushberichten staan uit', 'Push notifications are off'),
           hasBeenAsked()
-            ? 'Je toestel laat geen berichten toe voor deze app. Dat kan je aanzetten in de instellingen van je telefoon.'
-            : 'Er kon geen toestemming opgehaald worden.',
+            ? t('Je toestel laat geen berichten toe voor deze app. Dat kan je aanzetten in de instellingen van je telefoon.', 'Your device does not allow notifications for this app. You can turn that on in your phone settings.')
+            : t('Er kon geen toestemming opgehaald worden.', 'Permission could not be obtained.'),
         );
       }
     } finally {
@@ -151,26 +152,26 @@ export default function MeldingenScreen() {
 
   return (
     <>
-      <HeadScroll head={<PageHead title="Meldingen" subtitle="Waarvoor je telefoon afgaat" />} contentContainerStyle={styles.content} style={styles.root}>
+      <HeadScroll head={<PageHead title={t('Meldingen', 'Notifications')} subtitle={t('Waarvoor je telefoon afgaat', 'What your phone notifies you about')} />} contentContainerStyle={styles.content} style={styles.root}>
         <Card featured={!pushOn}>
           <View style={styles.headRow}>
             <Bell color={COLORS.strong} size={20} />
-            <Text style={styles.title}>Pushberichten</Text>
+            <Text style={styles.title}>{t('Pushberichten', 'Push notifications')}</Text>
           </View>
           <Text style={styles.body}>
             {pushOn
-              ? 'Dit toestel staat aangemeld. Hieronder kies je welke berichten je wil.'
-              : 'Zonder dit komt er niets binnen, hoe je het hieronder ook instelt.'}
+              ? t('Dit toestel staat aangemeld. Hieronder kies je welke berichten je wil.', 'This device is registered. Choose below which notifications you want.')
+              : t('Zonder dit komt er niets binnen, hoe je het hieronder ook instelt.', 'Without this nothing comes in, no matter how you set it up below.')}
           </Text>
           <Button
-            label={pushOn ? 'Uitzetten op dit toestel' : 'Aanzetten'}
+            label={pushOn ? t('Uitzetten op dit toestel', 'Turn off on this device') : t('Aanzetten', 'Turn on')}
             variant={pushOn ? 'ghost' : 'primary'}
             busy={busy}
             onPress={() => void togglePush()}
           />
         </Card>
 
-        <Text style={styles.sectionTitle}>Soorten bericht</Text>
+        <Text style={styles.sectionTitle}>{t('Soorten bericht', 'Kinds of notification')}</Text>
         <View style={styles.list}>
           {settings.topics.map((entry) => {
             const copy = TOPICS[entry.topic];
@@ -192,10 +193,9 @@ export default function MeldingenScreen() {
           })}
         </View>
 
-        <Text style={styles.sectionTitle}>Categorieën volgen</Text>
+        <Text style={styles.sectionTitle}>{t('Categorieën volgen', 'Follow categories')}</Text>
         <Text style={styles.hint}>
-          Krijg een bericht wanneer er een evenement bijkomt in een categorie die je volgt. Tik om
-          aan of uit te zetten.
+          {t('Krijg een bericht wanneer er een evenement bijkomt in een categorie die je volgt. Tik om aan of uit te zetten.', 'Get a notification when an event is added to a category you follow. Tap to turn it on or off.')}
         </Text>
         <View style={styles.chips}>
           {settings.categories.map((category) => {
@@ -206,7 +206,7 @@ export default function MeldingenScreen() {
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
                 accessibilityLabel={
-                  active ? `${category.name} niet meer volgen` : `${category.name} volgen`
+                  active ? t(`${category.name} niet meer volgen`, `Stop following ${category.name}`) : t(`${category.name} volgen`, `Follow ${category.name}`)
                 }
                 onPress={() => toggleFollow(category.slug, !active)}
                 style={[styles.chip, active && styles.chipActive]}
@@ -219,7 +219,7 @@ export default function MeldingenScreen() {
           })}
         </View>
         {settings.categories.length === 0 ? (
-          <Text style={styles.hint}>Er staan nog geen categorieën klaar.</Text>
+          <Text style={styles.hint}>{t('Er staan nog geen categorieën klaar.', 'There are no categories yet.')}</Text>
         ) : null}
       </HeadScroll>
     </>

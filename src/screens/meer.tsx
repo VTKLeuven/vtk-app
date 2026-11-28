@@ -18,6 +18,7 @@ import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { applyTheme, THEME, type ThemeMode } from '../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { t } from '../i18n';
 
 /**
  * Meer: alles wat je opzoekt in plaats van doet.
@@ -61,7 +62,7 @@ export default function MeerScreen() {
   if (!bootstrap) {
     return (
       <ErrorState
-        message={error?.message ?? 'De navigatie kon niet geladen worden.'}
+        message={error?.message ?? t('De navigatie kon niet geladen worden.', 'The navigation could not be loaded.')}
         onRetry={() => void refresh()}
       />
     );
@@ -73,34 +74,34 @@ export default function MeerScreen() {
   };
 
   const doen: Link[] = [
-    ...(viewer ? [{ label: 'Bonnetjes', onPress: () => router.push('/bonnetjes') }] : []),
-    { label: 'Shiften', onPress: () => router.push('/shiften') },
-    { label: "Foto's", onPress: () => router.push('/albums') },
+    ...(viewer ? [{ label: t('Bonnetjes', 'Vouchers'), onPress: () => router.push('/bonnetjes') }] : []),
+    { label: t('Shiften', 'Shifts'), onPress: () => router.push('/shiften') },
+    { label: t("Foto's", 'Photos'), onPress: () => router.push('/albums') },
     { label: 'Media', onPress: () => router.push('/media') },
     { label: 'Piano', onPress: () => router.push('/piano') },
-    { label: 'Liederboek', onPress: () => router.push('/liederboek') },
+    { label: t('Liederboek', 'Songbook'), onPress: () => router.push('/liederboek') },
     // Wegwijzer (`/wegwijzer`) staat er tijdelijk niet bij: zolang Career het
     // grondplan niet publiek zet, is er niets te zien.
     // Enkel voor wie iets te scannen heeft; de rest heeft hier niets aan.
     ...(bootstrap?.abilities?.scanTickets
-      ? [{ label: 'Tickets scannen', onPress: () => router.push('/deur') }]
+      ? [{ label: t('Tickets scannen', 'Scan tickets'), onPress: () => router.push('/deur') }]
       : []),
   ];
   const mensen: Link[] = [
     { label: 'Praesidium', onPress: () => router.push('/praesidium') },
-    { label: 'Werkgroepen', onPress: () => router.push('/werkgroepen') },
+    { label: t('Werkgroepen', 'Working groups'), onPress: () => router.push('/werkgroepen') },
     { label: "POC's", onPress: () => router.push('/pocs') },
-    ...(viewer ? [{ label: 'Peilingen', onPress: () => router.push('/peilingen') }] : []),
+    ...(viewer ? [{ label: t('Peilingen', 'Polls'), onPress: () => router.push('/peilingen') }] : []),
   ];
   // Voor de kring: enkel voor wie er rechten voor heeft (`bootstrap.abilities`).
   // De cursusdienst en Burgieclan staan sinds november 2026 onder Studies, als
   // eigen schermen; hier stonden ze als link naar hun site.
   const kring: Link[] = [
     ...(bootstrap?.abilities?.admin
-      ? [{ label: 'Beheer', hint: 'De admin van vtk.be', onPress: () => router.push('/beheer') }]
+      ? [{ label: t('Beheer', 'Admin'), hint: t('De admin van vtk.be', 'The admin of vtk.be'), onPress: () => router.push('/beheer') }]
       : []),
     ...(bootstrap?.abilities?.transport
-      ? [{ label: 'Transport', hint: 'De ritten van Logistiek', onPress: () => router.push('/vervoer') }]
+      ? [{ label: 'Transport', hint: t('De ritten van Logistiek', 'The rides of Logistics'), onPress: () => router.push('/vervoer') }]
       : []),
   ];
 
@@ -108,12 +109,12 @@ export default function MeerScreen() {
     <View style={styles.root}>
       <ScrollView ref={topRef} contentContainerStyle={styles.scroll} style={styles.root}>
         <View style={styles.overscroll} />
-        <YellowHead title="Meer">
+        <YellowHead title={t('Meer', 'More')}>
           {/* Jij, als witte kaart in de kop. Een eigen tab was dat niet waard: je
               opent je profiel een paar keer per jaar, niet een paar keer per dag. */}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={viewer ? `Profiel van ${viewer.name}` : 'Inloggen'}
+            accessibilityLabel={viewer ? t(`Profiel van ${viewer.name}`, `Profile of ${viewer.name}`) : t('Inloggen', 'Log in')}
             onPress={() => router.push(viewer ? '/profiel' : '/inloggen')}
             style={({ pressed }) => [styles.me, pressed && styles.pressedDark]}
           >
@@ -126,10 +127,10 @@ export default function MeerScreen() {
             )}
             <View style={styles.flex}>
               <Text style={styles.meName} numberOfLines={1}>
-                {viewer?.name ?? 'Niet ingelogd'}
+                {viewer?.name ?? t('Niet ingelogd', 'Not logged in')}
               </Text>
               <Text style={styles.meHint} numberOfLines={1}>
-                {viewer ? 'Je profiel en meldingen' : 'Log in om te bestellen en tickets te kopen'}
+                {viewer ? t('Je profiel en meldingen', 'Your profile and notifications') : t('Log in om te bestellen en tickets te kopen', 'Log in to order and buy tickets')}
               </Text>
             </View>
             <ChevronRight color={COLORS.muted} size={18} />
@@ -141,7 +142,7 @@ export default function MeerScreen() {
           <View style={styles.pair}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Feedback over de app geven"
+              accessibilityLabel={t('Feedback over de app geven', 'Give feedback on the app')}
               onPress={() =>
                 router.push({ pathname: '/web', params: { url: feedbackUrl(locale, viewer), title: 'Feedback App' } })
               }
@@ -159,32 +160,32 @@ export default function MeerScreen() {
 
           <Pressable
             accessibilityRole="search"
-            accessibilityLabel="Zoeken"
+            accessibilityLabel={t('Zoeken', 'Search')}
             onPress={() => router.push('/zoeken')}
             style={({ pressed }) => [styles.search, pressed && styles.pressedDark]}
           >
             <View style={styles.searchIcon}>
               <Search color={COLORS.yellow} size={15} />
             </View>
-            <Text style={styles.searchText}>Zoeken op vtk.be</Text>
+            <Text style={styles.searchText}>{t('Zoeken op vtk.be', 'Search vtk.be')}</Text>
           </Pressable>
         </YellowHead>
         {stale ? <StaleNotice onRetry={() => void refresh()} /> : null}
         <View style={styles.content}>
           <View style={styles.columns}>
-            <MarginRegister title="Doen" links={doen} style={styles.flex} />
-            <MarginRegister title="Mensen" links={mensen} style={styles.flex} />
+            <MarginRegister title={t('Doen', 'Do')} links={doen} style={styles.flex} />
+            <MarginRegister title={t('Mensen', 'People')} links={mensen} style={styles.flex} />
           </View>
           {viewer ? (
             <MarginRegister
-              title="Meldingen"
-              links={[{ label: 'Wat je wil weten', hint: 'Broodjes, shiften, categorieën', onPress: () => router.push('/meldingen') }]}
+              title={t('Meldingen', 'Notifications')}
+              links={[{ label: t('Wat je wil weten', 'What you want to know'), hint: t('Broodjes, shiften, categorieën', 'Sandwiches, shifts, categories'), onPress: () => router.push('/meldingen') }]}
             />
           ) : null}
-          {kring.length > 0 ? <MarginRegister title="Voor de kring" links={kring} style={styles.flex} /> : null}
+          {kring.length > 0 ? <MarginRegister title={t('Voor de kring', 'For the association')} links={kring} style={styles.flex} /> : null}
 
           <View style={styles.tiles}>
-            <SectionHeading>Alles van VTK</SectionHeading>
+            <SectionHeading>{t('Alles van VTK', 'Everything from VTK')}</SectionHeading>
             {bootstrap.tabs.map((tab) => (
               <TabTile
                 key={tab.id}
@@ -203,7 +204,7 @@ export default function MeerScreen() {
               />
             ))}
             {bootstrap.tabs.length === 0 ? (
-              <Text style={styles.hint}>Er staan nog geen onderdelen klaar.</Text>
+              <Text style={styles.hint}>{t('Er staan nog geen onderdelen klaar.', 'There are no sections yet.')}</Text>
             ) : null}
           </View>
         </View>
@@ -288,10 +289,10 @@ function TabTile({
           <Text style={styles.tileLabel}>{tab.label}</Text>
           <Text style={styles.hint}>
             {external
-              ? 'Opent een andere site'
+              ? t('Opent een andere site', 'Opens another site')
               : expandable
                 ? `${tab.children.length} ${tab.children.length === 1 ? 'onderdeel' : 'onderdelen'}`
-                : 'Lees meer'}
+                : t('Lees meer', 'Read more')}
           </Text>
         </View>
         {/* Een geel rondje met de pijl: het accent van de tegel. */}
@@ -351,20 +352,20 @@ function ThemePicker() {
   const choose = (next: ThemeMode) => {
     if (next === THEME) return;
     Alert.alert(
-      next === 'dark' ? 'Donker thema' : 'Licht thema',
-      'De app herstart om de nieuwe kleuren toe te passen.',
+      next === 'dark' ? t('Donker thema', 'Dark theme') : t('Licht thema', 'Light theme'),
+      t('De app herstart om de nieuwe kleuren toe te passen.', 'The app restarts to apply the new colours.'),
       [
-        { text: 'Annuleren', style: 'cancel' },
-        { text: 'Herstarten', onPress: () => void applyTheme(next) },
+        { text: t('Annuleren', 'Cancel'), style: 'cancel' },
+        { text: t('Herstarten', 'Restart'), onPress: () => void applyTheme(next) },
       ],
     );
   };
   const options: { value: ThemeMode; label: string; Icon: typeof Sun }[] = [
-    { value: 'light', label: 'Licht', Icon: Sun },
-    { value: 'dark', label: 'Donker', Icon: Moon },
+    { value: 'light', label: t('Licht', 'Light'), Icon: Sun },
+    { value: 'dark', label: t('Donker', 'Dark'), Icon: Moon },
   ];
   return (
-    <View style={[styles.search, styles.flex, styles.theme]} accessibilityRole="radiogroup" accessibilityLabel="Thema">
+    <View style={[styles.search, styles.flex, styles.theme]} accessibilityRole="radiogroup" accessibilityLabel={t('Thema', 'Theme')}>
       {options.map(({ value, label, Icon }) => {
         const active = value === THEME;
         return (

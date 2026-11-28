@@ -4,6 +4,7 @@ import type { AppLocale } from '../api/contract';
 import { weekdayLabels } from '../monthGrid';
 import { addDays } from '../planning/grid';
 import { COLORS, FONTS } from '../theme/tokens';
+import { t } from '../i18n';
 
 /** Zoveel weken toont de agenda: één terug, deze, en twee verder. */
 export const AGENDA_WEEKS = 4;
@@ -56,8 +57,12 @@ export function AgendaGrid({
                 key={day}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
-                accessibilityLabel={`${isToday ? 'Vandaag, ' : ''}${Number(day.slice(8))} ${day.slice(5, 7)}, ${
-                  count === 0 ? 'geen evenementen' : count === 1 ? '1 evenement' : `${count} evenementen`
+                accessibilityLabel={`${isToday ? t('Vandaag, ', 'Today, ') : ''}${Number(day.slice(8))} ${day.slice(5, 7)}, ${
+                  count === 0
+                    ? t('geen evenementen', 'no events')
+                    : count === 1
+                      ? t('1 evenement', '1 event')
+                      : t(`${count} evenementen`, `${count} events`)
                 }`}
                 onPress={() => onSelect(day)}
                 style={({ pressed }) => [

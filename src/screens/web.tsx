@@ -10,6 +10,7 @@ import { HeadButton, PageHead } from '../components/PageHead';
 import { handleShouldStartLoad } from '../components/WebFlow';
 import { Empty } from '../components/ui';
 import { COLORS } from '../theme/tokens';
+import { t } from '../i18n';
 
 /**
  * Een pagina van vtk.be of cudi in de app, onder een gewone kop met terugknop.
@@ -50,7 +51,7 @@ export default function WebScreen() {
     return (
       <>
         <PageHead title={title ?? 'vtk.be'} />
-        <Empty title="Deze pagina opent niet in de app" hint="Enkel pagina's van vtk.be openen hier." />
+        <Empty title={t('Deze pagina opent niet in de app', 'This page does not open in the app')} hint={t("Enkel pagina's van vtk.be openen hier.", 'Only vtk.be pages open here.')} />
       </>
     );
   }
@@ -75,7 +76,7 @@ export default function WebScreen() {
       <PageHead
         title={title ?? 'vtk.be'}
         right={
-          <HeadButton accessibilityLabel="Herladen" onPress={() => setNonce((n) => n + 1)}>
+          <HeadButton accessibilityLabel={t('Herladen', 'Reload')} onPress={() => setNonce((n) => n + 1)}>
             <RotateCw color={COLORS.ink} size={19} />
           </HeadButton>
         }

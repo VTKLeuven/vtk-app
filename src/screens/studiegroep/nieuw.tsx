@@ -8,6 +8,7 @@ import { Button, Card } from '../../components/ui';
 import { useTabRouter } from '../../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { HeadScroll } from '../../components/HeadScroll';
+import { t } from '../../i18n';
 
 /**
  * Een groep maken, of erbij komen met een code.
@@ -28,7 +29,7 @@ export default function NieuweStudiegroepScreen() {
       await createStudyGroup(name.trim());
       router.back();
     } catch (error) {
-      Alert.alert('Dat lukte niet', groupErrorText(error));
+      Alert.alert(t('Dat lukte niet', 'That did not work'), groupErrorText(error));
     } finally {
       setBusy(false);
     }
@@ -40,7 +41,7 @@ export default function NieuweStudiegroepScreen() {
       await joinStudyGroup(code.trim());
       router.back();
     } catch (error) {
-      Alert.alert('Dat lukte niet', groupErrorText(error));
+      Alert.alert(t('Dat lukte niet', 'That did not work'), groupErrorText(error));
     } finally {
       setBusy(false);
     }
@@ -48,11 +49,11 @@ export default function NieuweStudiegroepScreen() {
 
   return (
     <>
-      <HeadScroll head={<PageHead title="Blokgroep" subtitle="Maak er een of kom erbij met een code" />} style={styles.root} contentContainerStyle={styles.content}>
+      <HeadScroll head={<PageHead title={t('Blokgroep', 'Study group')} subtitle={t('Maak er een of kom erbij met een code', 'Create one or join with a code')} />} style={styles.root} contentContainerStyle={styles.content}>
         <Card>
-          <Text style={styles.cardTitle}>Ik heb een code</Text>
+          <Text style={styles.cardTitle}>{t('Ik heb een code', 'I have a code')}</Text>
           <Text style={styles.body}>
-            Zes tekens, van iemand die de groep al heeft.
+            {t('Zes tekens, van iemand die de groep al heeft.', 'Six characters, from someone who already has the group.')}
           </Text>
           <TextInput
             value={code}
@@ -65,7 +66,7 @@ export default function NieuweStudiegroepScreen() {
             style={[styles.input, styles.codeInput]}
           />
           <Button
-            label="Deelnemen"
+            label={t('Deelnemen', 'Join')}
             busy={busy}
             onPress={join}
             variant={code.trim().length >= 4 ? 'primary' : 'ghost'}
@@ -73,21 +74,20 @@ export default function NieuweStudiegroepScreen() {
         </Card>
 
         <Card>
-          <Text style={styles.cardTitle}>Nieuwe groep</Text>
+          <Text style={styles.cardTitle}>{t('Nieuwe groep', 'New group')}</Text>
           <Text style={styles.body}>
-            Je krijgt meteen een code om door te sturen. Alleen wie in de groep zit,
-            ziet jullie tijden.
+            {t('Je krijgt meteen een code om door te sturen. Alleen wie in de groep zit, ziet jullie tijden.', 'You immediately get a code to share. Only group members see your times.')}
           </Text>
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder="Blokgroep Arenberg"
+            placeholder={t('Blokgroep Arenberg', 'Study group Arenberg')}
             placeholderTextColor={COLORS.muted}
             maxLength={40}
             style={styles.input}
           />
           <Button
-            label="Groep maken"
+            label={t('Groep maken', 'Create group')}
             busy={busy}
             onPress={create}
             variant={name.trim().length >= 2 ? 'primary' : 'ghost'}
@@ -96,9 +96,7 @@ export default function NieuweStudiegroepScreen() {
 
         <View style={styles.note}>
           <Text style={styles.hint}>
-            Je studietijd is enkel zichtbaar voor wie in dezelfde groep zit. Stap je
-            eruit, dan ben je meteen uit die lijst weg. Er is geen ranglijst over
-            heel VTK.
+            {t('Je studietijd is enkel zichtbaar voor wie in dezelfde groep zit. Stap je eruit, dan ben je meteen uit die lijst weg. Er is geen ranglijst over heel VTK.', 'Your study time is only visible to people in the same group. If you leave, you are removed from that list right away. There is no ranking across all of VTK.')}
           </Text>
         </View>
       </HeadScroll>
@@ -109,12 +107,12 @@ export default function NieuweStudiegroepScreen() {
 /** De foutcodes uit `lib/app-api/studyGroups.ts`, in mensentaal. */
 export function groupErrorText(error: unknown): string {
   const code = error instanceof Error ? error.message : '';
-  if (code.includes('NOT_FOUND')) return 'Die code bestaat niet. Kijk hem nog eens na.';
-  if (code.includes('GROUP_FULL')) return 'Die groep zit vol.';
-  if (code.includes('TOO_MANY_GROUPS')) return 'Je zit al in het maximum aantal groepen.';
-  if (code.includes('INVALID_NAME')) return 'Kies een naam van 2 tot 40 tekens.';
-  if (code.includes('NOT_OWNER')) return 'Alleen wie de groep maakte, kan dat.';
-  return 'Er ging iets mis. Probeer het straks opnieuw.';
+  if (code.includes('NOT_FOUND')) return t('Die code bestaat niet. Kijk hem nog eens na.', 'That code does not exist. Check it again.');
+  if (code.includes('GROUP_FULL')) return t('Die groep zit vol.', 'That group is full.');
+  if (code.includes('TOO_MANY_GROUPS')) return t('Je zit al in het maximum aantal groepen.', 'You are already in the maximum number of groups.');
+  if (code.includes('INVALID_NAME')) return t('Kies een naam van 2 tot 40 tekens.', 'Choose a name of 2 to 40 characters.');
+  if (code.includes('NOT_OWNER')) return t('Alleen wie de groep maakte, kan dat.', 'Only the person who created the group can do that.');
+  return t('Er ging iets mis. Probeer het straks opnieuw.', 'Something went wrong. Try again later.');
 }
 
 const styles = StyleSheet.create({

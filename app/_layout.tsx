@@ -10,10 +10,12 @@ import * as Notifications from 'expo-notifications';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { LanguageChoice } from '../src/components/LanguageChoice';
+import { languageChosen } from '../src/i18n';
 import { AppProvider, useApp } from '../src/state/app';
 import { trackEvent, UsageTracker } from '../src/usage';
 import { IS_DARK } from '../src/theme/mode';
@@ -37,6 +39,8 @@ export const unstable_settings = { anchor: '(tabs)' };
  */
 export default function RootLayout() {
   const router = useRouter();
+  // Bij de eerste start eerst de taal; daarna nooit meer (zie src/i18n.ts).
+  const [askLanguage, setAskLanguage] = useState(() => !languageChosen());
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -109,6 +113,7 @@ export default function RootLayout() {
               }}
             />
           </Stack>
+          {askLanguage ? <LanguageChoice onDone={() => setAskLanguage(false)} /> : null}
         </AppProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

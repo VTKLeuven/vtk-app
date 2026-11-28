@@ -27,6 +27,7 @@ import { useTabRouter } from '../../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { groupErrorText } from './nieuw';
 import { HeadScroll } from '../../components/HeadScroll';
+import { t } from '../../i18n';
 
 /**
  * Eén blokgroep: de code, de leden, het doel.
@@ -42,7 +43,7 @@ const SKYLINE_HEIGHT = 132;
 
 /** De doelen die je kan kiezen. Een vrij getal invullen levert niets extra op. */
 const GOALS: { label: string; minutes: number | null }[] = [
-  { label: 'Geen doel', minutes: null },
+  { label: t('Geen doel', 'No goal'), minutes: null },
   { label: '20u', minutes: 20 * 60 },
   { label: '40u', minutes: 40 * 60 },
   { label: '60u', minutes: 60 * 60 },
@@ -60,7 +61,10 @@ export default function StudiegroepScreen() {
   const share = async () => {
     if (!group) return;
     await Share.share({
-      message: `Kom blokken met ${group.name}. Open de VTK-app, tab Studeren, en gebruik code ${group.code}.`,
+      message: t(
+        `Kom blokken met ${group.name}. Open de VTK-app, tab Studies, en gebruik code ${group.code}.`,
+        `Come study with ${group.name}. Open the VTK app, Studies tab, and use code ${group.code}.`,
+      ),
     });
   };
 
@@ -71,7 +75,7 @@ export default function StudiegroepScreen() {
       await updateStudyGroup(group.id, { weeklyGoalMinutes: minutes });
       await resource.reload();
     } catch (error) {
-      Alert.alert('Dat lukte niet', groupErrorText(error));
+      Alert.alert(t('Dat lukte niet', 'That did not work'), groupErrorText(error));
     } finally {
       setBusy(false);
     }
@@ -80,19 +84,22 @@ export default function StudiegroepScreen() {
   const remove = (member: AppStudyMemberState) => {
     if (!group) return;
     Alert.alert(
-      `${member.name} verwijderen`,
-      `${member.name} verdwijnt uit ${group.name} en ziet jullie tijden niet meer. De gestudeerde tijd zelf blijft van ${member.name}.`,
+      t(`${member.name} verwijderen`, `Remove ${member.name}`),
+      t(
+        `${member.name} verdwijnt uit ${group.name} en ziet jullie tijden niet meer. De gestudeerde tijd zelf blijft van ${member.name}.`,
+        `${member.name} is removed from ${group.name} and no longer sees your times. The studied time itself stays with ${member.name}.`,
+      ),
       [
-        { text: 'Laten staan', style: 'cancel' },
+        { text: t('Laten staan', 'Keep'), style: 'cancel' },
         {
-          text: 'Verwijderen',
+          text: t('Verwijderen', 'Remove'),
           style: 'destructive',
           onPress: async () => {
             try {
               await leaveStudyGroup(group.id, member.userId);
               await resource.reload();
             } catch (error) {
-              Alert.alert('Dat lukte niet', groupErrorText(error));
+              Alert.alert(t('Dat lukte niet', 'That did not work'), groupErrorText(error));
             }
           },
         },
@@ -104,21 +111,21 @@ export default function StudiegroepScreen() {
     if (!group) return;
     const last = group.memberCount === 1;
     Alert.alert(
-      last ? `${group.name} verwijderen` : `Uit ${group.name} stappen`,
+      last ? t(`${group.name} verwijderen`, `Delete ${group.name}`) : t(`Uit ${group.name} stappen`, `Leave ${group.name}`),
       last
-        ? 'Je bent het laatste lid, dus de groep verdwijnt en de code werkt niet meer. Je eigen studietijd blijft gewoon staan.'
-        : 'Je verdwijnt uit de lijst en ziet hun tijden niet meer. Je eigen studietijd blijft gewoon staan, en met de code kan je later terugkomen.',
+        ? t('Je bent het laatste lid, dus de groep verdwijnt en de code werkt niet meer. Je eigen studietijd blijft gewoon staan.', 'You are the last member, so the group disappears and the code stops working. Your own study time stays.')
+        : t('Je verdwijnt uit de lijst en ziet hun tijden niet meer. Je eigen studietijd blijft gewoon staan, en met de code kan je later terugkomen.', 'You disappear from the list and no longer see their times. Your own study time stays, and you can come back later with the code.'),
       [
-        { text: 'Blijven', style: 'cancel' },
+        { text: t('Blijven', 'Stay'), style: 'cancel' },
         {
-          text: last ? 'Verwijderen' : 'Eruit stappen',
+          text: last ? t('Verwijderen', 'Remove') : t('Eruit stappen', 'Leave'),
           style: 'destructive',
           onPress: async () => {
             try {
               await leaveStudyGroup(group.id);
               router.back();
             } catch (error) {
-              Alert.alert('Dat lukte niet', groupErrorText(error));
+              Alert.alert(t('Dat lukte niet', 'That did not work'), groupErrorText(error));
             }
           },
         },
@@ -126,13 +133,13 @@ export default function StudiegroepScreen() {
     );
   };
 
-  if (resource.loading && !resource.data) return <Loading label="Groep ophalen" />;
+  if (resource.loading && !resource.data) return <Loading label={t('Groep ophalen', 'Loading group')} />;
   if (!group) {
     return (
       <>
-        <PageHead title="Blokgroep" />
+        <PageHead title={t('Blokgroep', 'Study group')} />
         <ErrorState
-          message={resource.data ? 'Deze groep bestaat niet meer.' : messageFor(resource.error)}
+          message={resource.data ? t('Deze groep bestaat niet meer.', 'This group no longer exists.') : messageFor(resource.error)}
           onRetry={() => void resource.refresh()}
         />
       </>
@@ -143,10 +150,10 @@ export default function StudiegroepScreen() {
     <>
       <HeadScroll head={<PageHead
         title={group.name}
-        kicker="Blokgroep"
+        kicker={t('Blokgroep', 'Study group')}
         subtitle={`${group.memberCount} ${group.memberCount === 1 ? 'lid' : 'leden'}`}
         right={
-          <HeadButton accessibilityLabel="Code delen" onPress={() => void share()}>
+          <HeadButton accessibilityLabel={t('Code delen', 'Share code')} onPress={() => void share()}>
             <Share2 color={COLORS.ink} size={21} />
           </HeadButton>
         }
@@ -163,19 +170,19 @@ export default function StudiegroepScreen() {
         <Skyline buildings={skylineOf(group)} height={SKYLINE_HEIGHT} moon />
 
         <Card>
-          <Text style={styles.label}>Code om te delen</Text>
+          <Text style={styles.label}>{t('Code om te delen', 'Code to share')}</Text>
           <Text style={styles.code}>{group.code}</Text>
           <Text style={styles.hint}>
-            Wie deze code heeft, kan erbij. Deel ze dus alleen met wie je erbij wil.
+            {t('Wie deze code heeft, kan erbij. Deel ze dus alleen met wie je erbij wil.', 'Anyone with this code can join. So only share it with people you want in the group.')}
           </Text>
-          <Button label="Code doorsturen" variant="ghost" onPress={() => void share()} />
+          <Button label={t('Code doorsturen', 'Send code')} variant="ghost" onPress={() => void share()} />
         </Card>
 
         <Card>
-          <Text style={styles.label}>Samen deze week</Text>
+          <Text style={styles.label}>{t('Samen deze week', 'Together this week')}</Text>
           <Text style={styles.big}>
             {formatSpan(group.weekSeconds)}
-            {group.weeklyGoalMinutes ? ` van de ${formatSpan(group.weeklyGoalMinutes * 60)}` : ''}
+            {group.weeklyGoalMinutes ? t(` van de ${formatSpan(group.weeklyGoalMinutes * 60)}`, ` of ${formatSpan(group.weeklyGoalMinutes * 60)}`) : ''}
           </Text>
           {group.isOwner ? (
             <>
@@ -206,13 +213,13 @@ export default function StudiegroepScreen() {
             </>
           ) : (
             <Text style={styles.hint}>
-              Alleen wie de groep maakte, kan het doel wijzigen.
+              {t('Alleen wie de groep maakte, kan het doel wijzigen.', 'Only the person who created the group can change the goal.')}
             </Text>
           )}
         </Card>
 
         <Card>
-          <Text style={styles.label}>Leden</Text>
+          <Text style={styles.label}>{t('Leden', 'Members')}</Text>
           {group.members.map((member) => (
             <View key={member.userId} style={styles.member}>
               <View style={styles.memberText}>
@@ -221,14 +228,14 @@ export default function StudiegroepScreen() {
                 </Text>
                 <Text style={styles.memberSub}>
                   {member.studying
-                    ? `Nu bezig, ${formatSpan(member.liveSeconds ?? 0)}`
-                    : `${formatSpan(member.weekSeconds)} deze week`}
+                    ? t(`Nu bezig, ${formatSpan(member.liveSeconds ?? 0)}`, `Studying now, ${formatSpan(member.liveSeconds ?? 0)}`)
+                    : t(`${formatSpan(member.weekSeconds)} deze week`, `${formatSpan(member.weekSeconds)} this week`)}
                 </Text>
               </View>
               {group.isOwner && !member.isYou ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Verwijderen: ${member.name}`}
+                  accessibilityLabel={t(`Verwijderen: ${member.name}`, `Remove: ${member.name}`)}
                   onPress={() => remove(member)}
                   hitSlop={8}
                   style={({ pressed }) => [styles.remove, pressed && styles.pressed]}
@@ -241,7 +248,7 @@ export default function StudiegroepScreen() {
         </Card>
 
         <Button
-          label={group.memberCount === 1 ? 'Groep verwijderen' : 'Uit deze groep stappen'}
+          label={group.memberCount === 1 ? t('Groep verwijderen', 'Delete group') : t('Uit deze groep stappen', 'Leave this group')}
           variant="ghost"
           onPress={leave}
         />

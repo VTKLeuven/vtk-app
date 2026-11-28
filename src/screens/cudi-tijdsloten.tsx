@@ -11,6 +11,7 @@ import { formatDay, formatTime } from '../format';
 import { useApp } from '../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
+import { t } from '../i18n';
 
 /**
  * Een tijdslot kiezen om je cursussen af te halen, zoals *Tijdslot reserveren* op
@@ -39,7 +40,7 @@ export default function CudiTijdslotenScreen() {
 
   const data = state ?? resource.data;
   const head = (extra?: React.ReactNode) => (
-    <YellowHead title="Tijdslot" subtitle="Je cursussen afhalen bij de cursusdienst" back>
+    <YellowHead title={t('Tijdslot', 'Time slot')} subtitle={t('Je cursussen afhalen bij de cursusdienst', 'Collect your course books at the course shop')} back>
       {extra}
     </YellowHead>
   );
@@ -65,8 +66,8 @@ export default function CudiTijdslotenScreen() {
       <View style={styles.root}>
         {head()}
         <Empty
-          title="Geen tijdsloten nodig"
-          hint="De cursusdienst werkt nu zonder tijdsloten. Kom gewoon langs tijdens de openingsuren."
+          title={t('Geen tijdsloten nodig', 'No time slots needed')}
+          hint={t('De cursusdienst werkt nu zonder tijdsloten. Kom gewoon langs tijdens de openingsuren.', 'The course shop works without time slots right now. Just come by during opening hours.')}
         />
       </View>
     );
@@ -78,11 +79,11 @@ export default function CudiTijdslotenScreen() {
       const result = await reserveCudiTimeslot(locale, slot.id);
       if (result.ok) setState(result);
       else {
-        Alert.alert('Niet gereserveerd', timeslotError(result.code, result.message));
+        Alert.alert(t('Niet gereserveerd', 'Not booked'), timeslotError(result.code, result.message));
         void resource.reload().then(() => setState(null));
       }
     } catch (error) {
-      Alert.alert('Niet gereserveerd', messageFor(error instanceof Error ? error : null));
+      Alert.alert(t('Niet gereserveerd', 'Not booked'), messageFor(error instanceof Error ? error : null));
     } finally {
       setBusy(null);
     }
@@ -94,9 +95,9 @@ export default function CudiTijdslotenScreen() {
     try {
       const result = await releaseCudiTimeslot(locale, registrationId);
       if (result.ok) setState(result);
-      else Alert.alert('Niet verwijderd', timeslotError(result.code, result.message));
+      else Alert.alert(t('Niet verwijderd', 'Not removed'), timeslotError(result.code, result.message));
     } catch (error) {
-      Alert.alert('Niet verwijderd', messageFor(error instanceof Error ? error : null));
+      Alert.alert(t('Niet verwijderd', 'Not removed'), messageFor(error instanceof Error ? error : null));
     } finally {
       setBusy(null);
     }
@@ -111,7 +112,7 @@ export default function CudiTijdslotenScreen() {
       <View style={styles.mine}>
         <View style={styles.mineHead}>
           <CalendarClock size={18} color={COLORS.okInk} />
-          <Text style={[styles.title, styles.flex]}>{data.mine.length === 1 ? 'Je tijdslot' : 'Je tijdsloten'}</Text>
+          <Text style={[styles.title, styles.flex]}>{data.mine.length === 1 ? t('Je tijdslot', 'Your time slot') : t('Je tijdsloten', 'Your time slots')}</Text>
         </View>
         {data.mine.map((mine) => (
           <View key={mine.registrationId} style={styles.mineRow}>
@@ -119,7 +120,7 @@ export default function CudiTijdslotenScreen() {
             {mine.cancelable ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`${slotLabel(mine.start, mine.end)} verwijderen`}
+                accessibilityLabel={t(`${slotLabel(mine.start, mine.end)} verwijderen`, `Remove ${slotLabel(mine.start, mine.end)}`)}
                 disabled={busy !== null}
                 onPress={() => void release(mine.registrationId)}
                 style={({ pressed }) => [styles.release, pressed && styles.pressed]}
@@ -127,25 +128,25 @@ export default function CudiTijdslotenScreen() {
                 {busy === mine.registrationId ? (
                   <ActivityIndicator size="small" color={COLORS.strong} />
                 ) : (
-                  <Text style={styles.releaseLabel}>Verwijderen</Text>
+                  <Text style={styles.releaseLabel}>{t('Verwijderen', 'Remove')}</Text>
                 )}
               </Pressable>
             ) : (
-              <Text style={styles.hint}>Staat vast</Text>
+              <Text style={styles.hint}>{t('Staat vast', 'Confirmed')}</Text>
             )}
           </View>
         ))}
         {data.cutoffHours > 0 ? (
           <Text style={styles.hint}>
-            Vanaf {data.cutoffHours} uur voor de start staat een tijdslot vast. Kom je niet, dan telt dat als niet
+            {t('Vanaf', 'From')} {data.cutoffHours} uur voor de start staat een tijdslot vast. Kom je niet, dan telt dat als niet
             opgedaagd.
           </Text>
         ) : null}
       </View>
     ) : (
       <Text style={styles.headHint}>
-        Kies wanneer je je cursussen komt halen.
-        {data.oneTimeslotPerDay ? ' Eén tijdslot per dag.' : ''}
+        {t('Kies wanneer je je cursussen komt halen.', 'Choose when you come to collect your course books.')}
+        {data.oneTimeslotPerDay ? t(' Eén tijdslot per dag.', ' One time slot per day.') : ''}
       </Text>
     );
 
@@ -168,7 +169,7 @@ export default function CudiTijdslotenScreen() {
           {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
 
           {data.days.length === 0 ? (
-            <Text style={styles.hint}>Er staan nog geen tijdsloten open. Kijk later opnieuw.</Text>
+            <Text style={styles.hint}>{t('Er staan nog geen tijdsloten open. Kijk later opnieuw.', 'There are no time slots open yet. Check again later.')}</Text>
           ) : (
             data.days.map((day) => (
               <View key={day.date} style={styles.day}>
@@ -185,8 +186,8 @@ export default function CudiTijdslotenScreen() {
                         key={slot.id}
                         accessibilityRole="button"
                         accessibilityState={{ disabled, selected: slot.mine, busy: busy === slot.id }}
-                        accessibilityLabel={`${formatTime(slot.start, locale)} tot ${formatTime(slot.end, locale)}, ${
-                          slot.mine ? 'jouw tijdslot' : slot.full ? 'volzet' : `${free} vrij`
+                        accessibilityLabel={`${formatTime(slot.start, locale)} - ${formatTime(slot.end, locale)}, ${
+                          slot.mine ? t('jouw tijdslot', 'your time slot') : slot.full ? t('volzet', 'full') : t(`${free} vrij`, `${free} free`)
                         }`}
                         disabled={disabled}
                         onPress={() => void reserve(slot)}
@@ -203,21 +204,21 @@ export default function CudiTijdslotenScreen() {
                             ]}
                           >
                             {slot.full
-                              ? 'Volzet'
+                              ? t('Volzet', 'Full')
                               : slot.blockedByOtherSlot && !slot.mine
-                                ? `${free} vrij, je hebt al een tijdslot op deze dag`
-                                : `${free} vrij`}
+                                ? t(`${free} vrij, je hebt al een tijdslot op deze dag`, `${free} free, you already have a time slot on this day`)
+                                : t(`${free} vrij`, `${free} free`)}
                           </Text>
                         </View>
                         {busy === slot.id ? (
                           <ActivityIndicator size="small" color={COLORS.strong} />
                         ) : slot.mine ? (
                           <View style={[styles.choose, styles.chooseMine]}>
-                            <Text style={[styles.chooseLabel, styles.chooseLabelMine]}>Jouw slot</Text>
+                            <Text style={[styles.chooseLabel, styles.chooseLabelMine]}>{t('Jouw slot', 'Your slot')}</Text>
                           </View>
                         ) : !off ? (
                           <View style={styles.choose}>
-                            <Text style={styles.chooseLabel}>Kies</Text>
+                            <Text style={styles.chooseLabel}>{t('Kies', 'Pick')}</Text>
                           </View>
                         ) : null}
                       </Pressable>
@@ -236,15 +237,15 @@ export default function CudiTijdslotenScreen() {
 function timeslotError(code: string, message: string): string {
   switch (code) {
     case 'FULL':
-      return 'Dit tijdslot is intussen volzet. Kies een ander.';
+      return t('Dit tijdslot is intussen volzet. Kies een ander.', 'This time slot is full in the meantime. Pick another one.');
     case 'SAME_DAY':
-      return 'Je hebt al een tijdslot op deze dag. Verwijder dat eerst.';
+      return t('Je hebt al een tijdslot op deze dag. Verwijder dat eerst.', 'You already have a time slot on this day. Remove that one first.');
     case 'PASSED':
-      return 'Dit tijdslot is al voorbij.';
+      return t('Dit tijdslot is al voorbij.', 'This time slot has already passed.');
     case 'NOT_FOUND':
-      return 'Dit tijdslot bestaat niet meer.';
+      return t('Dit tijdslot bestaat niet meer.', 'This time slot no longer exists.');
     case 'ALREADY':
-      return 'Je had dit tijdslot al.';
+      return t('Je had dit tijdslot al.', 'You already had this time slot.');
     default:
       return message;
   }

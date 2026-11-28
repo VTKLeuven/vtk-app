@@ -976,3 +976,20 @@ Na een canvas met vier opties voor elk scherm:
   blijft navy), en de pagina's van de site in een WebView. De logo's van de
   diensten worden in het donker eentonig. Het toetsenbord en de systeemvensters
   volgen het thema nog niet (`userInterfaceStyle` staat op `light`).
+
+## Eind november 2026: de app in het Engels
+
+- **Elke tekst van de app zelf staat er in beide talen**, naast elkaar:
+  `t('Terug', 'Back')` (`src/i18n.ts`). Geen library en geen catalogus met
+  sleutels: wie een zin wijzigt, ziet de andere taal er meteen naast staan. Ook
+  toegankelijkheidslabels, meldingen en foutmeldingen. Dag- en maandnamen die de
+  app zelf opbouwt (planning, blok, samen blokken) volgen mee.
+- **Bij de eerste start kies je de taal** (`LanguageChoice`, over de app heen),
+  met Nederlands al aangeduid. Ook wie de app al had, krijgt die vraag één keer.
+  Later wissel je onder Meer › je naam › Taal.
+- **De taal ligt vast bij de start**, zoals het thema; wisselen herstart de app
+  (`src/restart.ts`, gedeeld met het thema). Daardoor kan `t` ook in constanten
+  die bij het laden van een bestand al opgebouwd worden.
+- Wat de server stuurt (evenementen, pagina's, menu's, openingsuren), kwam al in
+  de gekozen taal via `?locale=`. De openingsuren van Alma en de cursusdienst
+  lezen de Engelse woorden van de server nu ook, zoals `ServiceList` al deed.

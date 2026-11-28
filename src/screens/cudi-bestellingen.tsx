@@ -13,6 +13,7 @@ import { useTabRouter } from '../navigation';
 import { useApp } from '../state/app';
 import { COLORS, FONTS, SPACING, TYPE } from '../theme/tokens';
 import { HeadScroll } from '../components/HeadScroll';
+import { t } from '../i18n';
 
 /**
  * Al je bestellingen bij de cursusdienst, zoals Mijn bestellingen op cudi:
@@ -35,7 +36,7 @@ export default function CudiBestellingenScreen() {
   );
   const [busy, setBusy] = useState<string | null>(null);
 
-  const head = <PageHead title="Bestellingen" subtitle="Bij de cursusdienst" />;
+  const head = <PageHead title={t('Bestellingen', 'Orders')} subtitle={t('Bij de cursusdienst', 'At the course shop')} />;
 
   // Een oude link of een pushbericht kan hier binnenkomen zonder dat je ingelogd bent.
   if (!viewer) {
@@ -43,9 +44,9 @@ export default function CudiBestellingenScreen() {
       <>
         <HeadScroll head={head} style={styles.root} contentContainerStyle={styles.content}>
           <Card>
-            <Text style={styles.title}>Log eerst in</Text>
-            <Text style={styles.body}>Je bestellingen bij de cursusdienst hangen aan je VTK-account.</Text>
-            <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+            <Text style={styles.title}>{t('Log eerst in', 'Log in first')}</Text>
+            <Text style={styles.body}>{t('Je bestellingen bij de cursusdienst hangen aan je VTK-account.', 'Your course shop orders are linked to your VTK account.')}</Text>
+            <Button label={t('Inloggen', 'Log in')} onPress={() => router.push('/inloggen')} />
           </Card>
         </HeadScroll>
       </>
@@ -74,7 +75,7 @@ export default function CudiBestellingenScreen() {
     return (
       <>
         {head}
-        <Empty title="Nog geen bestellingen" hint="Wat je bij de cursusdienst reserveert, staat hier." />
+        <Empty title={t('Nog geen bestellingen', 'No orders yet')} hint={t('Wat je bij de cursusdienst reserveert, staat hier.', 'What you reserve at the course shop shows up here.')} />
       </>
     );
   }
@@ -87,19 +88,22 @@ export default function CudiBestellingenScreen() {
   const toPay = open.filter((order) => !order.paidOnline).reduce((sum, order) => sum + order.total, 0);
 
   const cancel = (order: AppCudiOrder, line: AppCudiOrder['lines'][number]) => {
-    Alert.alert('Uit je bestelling halen?', `${line.title}, uit bestelling #${order.number}. Wie na jou op de wachtlijst staat, krijgt je exemplaar.`, [
-      { text: 'Behouden', style: 'cancel' },
+    Alert.alert(t('Uit je bestelling halen?', 'Remove from your order?'), t(
+      `${line.title}, uit bestelling #${order.number}. Wie na jou op de wachtlijst staat, krijgt je exemplaar.`,
+      `${line.title}, from order #${order.number}. Whoever is after you on the waiting list gets your copy.`,
+    ), [
+      { text: t('Behouden', 'Keep'), style: 'cancel' },
       {
-        text: 'Uit bestelling halen',
+        text: t('Uit bestelling halen', 'Remove from order'),
         style: 'destructive',
         onPress: async () => {
           setBusy(line.id);
           try {
             const result = await cancelCudiLine(locale, line.id);
-            if (!result.ok) Alert.alert('Niet geannuleerd', result.message);
+            if (!result.ok) Alert.alert(t('Niet geannuleerd', 'Not cancelled'), result.message);
             await resource.reload();
           } catch (error) {
-            Alert.alert('Niet geannuleerd', messageFor(error instanceof Error ? error : null));
+            Alert.alert(t('Niet geannuleerd', 'Not cancelled'), messageFor(error instanceof Error ? error : null));
           } finally {
             setBusy(null);
           }
@@ -115,7 +119,7 @@ export default function CudiBestellingenScreen() {
       await WebBrowser.openBrowserAsync(checkoutUrl);
       await resource.reload();
     } catch (error) {
-      Alert.alert('Betalen lukte niet', messageFor(error instanceof Error ? error : null));
+      Alert.alert(t('Betalen lukte niet', 'Payment failed'), messageFor(error instanceof Error ? error : null));
     } finally {
       setBusy(null);
     }
@@ -143,20 +147,20 @@ export default function CudiBestellingenScreen() {
         {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
         {open.length > 0 ? (
           <View style={styles.tiles}>
-            <Tile icon={PackageCheck} tone={TONES.ok} value={String(ready)} label={ready === 1 ? 'cursus ligt klaar' : 'cursussen liggen klaar'} />
-            <Tile icon={Hourglass} tone={TONES.waiting} value={String(waiting)} label="op de wachtlijst" />
-            <Tile icon={Wallet} tone={TONES.info} value={euro(toPay)} label="nog te betalen" />
+            <Tile icon={PackageCheck} tone={TONES.ok} value={String(ready)} label={ready === 1 ? t('cursus ligt klaar', 'course book ready') : t('cursussen liggen klaar', 'course books ready')} />
+            <Tile icon={Hourglass} tone={TONES.waiting} value={String(waiting)} label={t('op de wachtlijst', 'on the waiting list')} />
+            <Tile icon={Wallet} tone={TONES.info} value={euro(toPay)} label={t('nog te betalen', 'still to pay')} />
           </View>
         ) : null}
         {open.length > 0 ? (
           <View style={styles.block}>
-            <SectionHeading>{`Lopend · ${open.length}`}</SectionHeading>
+            <SectionHeading>{t(`Lopend · ${open.length}`, `In progress · ${open.length}`)}</SectionHeading>
             {open.map(card)}
           </View>
         ) : null}
         {done.length > 0 ? (
           <View style={styles.block}>
-            <SectionHeading>{`Afgehandeld · ${done.length}`}</SectionHeading>
+            <SectionHeading>{t(`Afgehandeld · ${done.length}`, `Completed · ${done.length}`)}</SectionHeading>
             {done.map(card)}
           </View>
         ) : null}

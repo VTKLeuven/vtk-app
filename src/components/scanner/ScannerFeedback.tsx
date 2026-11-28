@@ -2,6 +2,7 @@ import { Check, RotateCcw, X } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 import { FONTS, RADIUS, SCANNER, SPACING, TICKET_COLORS } from '../../theme/tokens';
 import type { ScanHistoryItem } from '../../scanner/types';
+import { t } from '../../i18n';
 
 /**
  * Het volledige camerabeeld, overdekt met de uitkomst van de scan.
@@ -55,7 +56,7 @@ export function ScannerFeedback({ item }: { item: ScanHistoryItem }) {
       ) : item.typeName ? (
         <Text style={styles.name}>{item.typeName}</Text>
       ) : null}
-      {item.pending ? <Text style={styles.pending}>Wacht op synchronisatie</Text> : null}
+      {item.pending ? <Text style={styles.pending}>{t('Wacht op synchronisatie', 'Waiting to sync')}</Text> : null}
     </View>
   );
 }

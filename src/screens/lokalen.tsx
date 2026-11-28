@@ -15,6 +15,7 @@ import { SearchField } from '../components/SearchField';
 import { Empty, ErrorState, Loading, StaleNotice } from '../components/ui';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
+import { t } from '../i18n';
 
 /**
  * De lokalenzoeker.
@@ -176,14 +177,14 @@ export default function LokalenScreen() {
       doors.map((door) => nearestNode(graph, door)),
     );
     return path
-      ? { ...path, from: here ? 'waar je staat' : (stop?.name ?? 'de halte'), building }
+      ? { ...path, from: here ? t('waar je staat', 'where you are') : (stop?.name ?? t('de halte', 'the bus stop')), building }
       : null;
   }, [data, graph, focus, position.state]);
 
   if (resource.loading) {
     return (
       <View style={styles.root}>
-        <PageHead title="Lokalen" subtitle="Zoek een lokaal op de campus" />
+        <PageHead title={t('Lokalen', 'Rooms')} subtitle={t('Zoek een lokaal op de campus', 'Find a room on campus')} />
         <Loading />
       </View>
     );
@@ -192,7 +193,7 @@ export default function LokalenScreen() {
   if (!data) {
     return (
       <View style={styles.root}>
-        <PageHead title="Lokalen" subtitle="Zoek een lokaal op de campus" />
+        <PageHead title={t('Lokalen', 'Rooms')} subtitle={t('Zoek een lokaal op de campus', 'Find a room on campus')} />
         <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
       </View>
     );
@@ -210,7 +211,7 @@ export default function LokalenScreen() {
         ListHeaderComponent={
           <View style={styles.headWrap}>
             <View style={styles.overscroll} />
-            <PageHead title="Lokalen" subtitle="Zoek een lokaal op de campus" />
+            <PageHead title={t('Lokalen', 'Rooms')} subtitle={t('Zoek een lokaal op de campus', 'Find a room on campus')} />
             {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
 
             <View style={styles.search}>
@@ -223,7 +224,7 @@ export default function LokalenScreen() {
                   setPicked(null);
                 }}
                 placeholder="200K 00.06, aula, Franklin"
-                label="Zoek een lokaal of gebouw"
+                label={t('Zoek een lokaal of gebouw', 'Search a room or building')}
               />
 
               <CampusMap
@@ -238,29 +239,32 @@ export default function LokalenScreen() {
               <View style={styles.legendRow}>
                 <Text style={styles.legend}>
                   {route
-                    ? `${route.building.name}${route.building.shortCode ? ` (${route.building.shortCode})` : ''} · ${Math.round(route.metres)} m te voet vanaf ${route.from}`
-                    : 'Tik een gebouw aan of zoek een lokaal; de route wordt hier berekend.'}
+                    ? `${route.building.name}${route.building.shortCode ? ` (${route.building.shortCode})` : ''} · ${t(
+                        `${Math.round(route.metres)} m te voet vanaf ${route.from}`,
+                        `${Math.round(route.metres)} m on foot from ${route.from}`,
+                      )}`
+                    : t('Tik een gebouw aan of zoek een lokaal; de route wordt hier berekend.', 'Tap a building or search a room; the route is calculated here.')}
                 </Text>
 
                 <View style={styles.actions}>
                   {position.state.kind !== 'ok' ? (
                     <SmallButton
                       icon={<Crosshair color={COLORS.strong} size={14} />}
-                      label={position.state.kind === 'busy' ? 'Zoeken' : 'Vanaf hier'}
+                      label={position.state.kind === 'busy' ? t('Zoeken', 'Search') : t('Vanaf hier', 'From here')}
                       disabled={position.state.kind === 'busy'}
                       onPress={() => void position.locate()}
                     />
                   ) : (
                     <SmallButton
                       icon={<Crosshair color={COLORS.strong} size={14} />}
-                      label="Vanaf de halte"
+                      label={t('Vanaf de halte', 'From the bus stop')}
                       onPress={position.forget}
                     />
                   )}
                   {route ? (
                     <SmallButton
                       icon={<Navigation color={COLORS.strong} size={14} />}
-                      label="In kaart-app"
+                      label={t('In kaart-app', 'In maps app')}
                       onPress={() => openInMaps(route.building)}
                     />
                   ) : null}
@@ -278,10 +282,10 @@ export default function LokalenScreen() {
              erin. Doen alsof een bureau niet bestaat is erger dan zeggen waar
              het wel te vinden is. */
           <Empty
-            title="Niets gevonden"
-            hint="Deze lijst komt uit de KU Leuven Access Guide en bevat de aula's, leslokalen en inkomhallen. Een bureau of labo staat er niet altijd in."
+            title={t('Niets gevonden', 'Nothing found')}
+            hint={t("Deze lijst komt uit de KU Leuven Access Guide en bevat de aula's, leslokalen en inkomhallen. Een bureau of labo staat er niet altijd in.", 'This list comes from the KU Leuven Access Guide and contains the lecture halls, classrooms and entrance halls. An office or lab is not always included.')}
             action={{
-              label: 'Zoeken bij KU Leuven',
+              label: t('Zoeken bij KU Leuven', 'Search at KU Leuven'),
               onPress: () => void WebBrowser.openBrowserAsync(data.sourceUrl),
             }}
           />
@@ -302,11 +306,14 @@ export default function LokalenScreen() {
 function positionNote(state: PositionState): string | null {
   switch (state.kind) {
     case 'denied':
-      return 'Zonder locatie vertrekt de route bij de bushalte. Je kan dat aanzetten in de instellingen van je toestel.';
+      return t('Zonder locatie vertrekt de route bij de bushalte. Je kan dat aanzetten in de instellingen van je toestel.', 'Without location the route starts at the bus stop. You can turn that on in your device settings.');
     case 'unavailable':
-      return 'Je positie is niet te bepalen, bijvoorbeeld binnen in een gebouw. De route vertrekt bij de bushalte.';
+      return t('Je positie is niet te bepalen, bijvoorbeeld binnen in een gebouw. De route vertrekt bij de bushalte.', 'Your position cannot be determined, for example inside a building. The route starts at the bus stop.');
     case 'away':
-      return `Je staat ${Math.round(state.metres / 100) / 10} km van de campus. Deze kaart houdt op aan de rand van Celestijnenlaan 200; gebruik "In kaart-app" om er te geraken.`;
+      return t(
+        `Je staat ${Math.round(state.metres / 100) / 10} km van de campus. Deze kaart houdt op aan de rand van Celestijnenlaan 200; gebruik t('In kaart-app', 'In maps app') om er te geraken.`,
+        `You are ${Math.round(state.metres / 100) / 10} km from campus. This map stops at the edge of Celestijnenlaan 200; use "In maps app" to get there.`,
+      );
     default:
       return null;
   }

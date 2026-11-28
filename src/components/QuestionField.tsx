@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import type { AppTicketQuestion } from '../api/contract';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { t } from '../i18n';
 
 export type AnswerValue = string | boolean | string[];
 
@@ -31,7 +32,7 @@ export function QuestionField({
     <View style={styles.field}>
       <Text style={styles.label}>
         {question.label}
-        {question.required ? '' : ' (mag leeg blijven)'}
+        {question.required ? '' : t(' (mag leeg blijven)', ' (optional)')}
       </Text>
       {question.description ? <Text style={styles.hint}>{question.description}</Text> : null}
 

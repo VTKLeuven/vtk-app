@@ -11,6 +11,7 @@ import { useApp } from '../state/app';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
 import { HeadScroll } from '../components/HeadScroll';
+import { t } from '../i18n';
 
 /**
  * De werkgroepen, per werkingsjaar.
@@ -31,7 +32,7 @@ export default function WerkgroepenScreen() {
     `${locale}:${year ?? ''}`,
   );
 
-  if (resource.loading) return <Loading label="Werkgroepen ophalen" />;
+  if (resource.loading) return <Loading label={t('Werkgroepen ophalen', 'Loading working groups')} />;
   if (!resource.data) {
     return (
       <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
@@ -43,8 +44,8 @@ export default function WerkgroepenScreen() {
   return (
     <>
       <HeadScroll head={<PageHead
-        title="Werkgroepen"
-        subtitle={data.year ? `Werkingsjaar ${data.year}-${data.year + 1}` : undefined}
+        title={t('Werkgroepen', 'Working groups')}
+        subtitle={data.year ? t(`Werkingsjaar ${data.year}-${data.year + 1}`, `Academic year ${data.year}-${data.year + 1}`) : undefined}
       />} style={styles.root} contentContainerStyle={styles.content}>
         {data.years.length > 1 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.years}>
@@ -53,7 +54,7 @@ export default function WerkgroepenScreen() {
                 key={option}
                 accessibilityRole="button"
                 accessibilityState={{ selected: option === data.year }}
-                accessibilityLabel={`Werkingsjaar ${option}-${option + 1}`}
+                accessibilityLabel={t(`Werkingsjaar ${option}-${option + 1}`, `Academic year ${option}-${option + 1}`)}
                 onPress={() => setYear(option)}
                 style={[styles.year, option === data.year && styles.yearActive]}
               >
@@ -66,7 +67,7 @@ export default function WerkgroepenScreen() {
         ) : null}
 
         {data.groups.length === 0 ? (
-          <Empty title="Geen werkgroepen" hint="Er staat voor dit jaar niets ingevuld." />
+          <Empty title={t('Geen werkgroepen', 'No working groups')} hint={t('Er staat voor dit jaar niets ingevuld.', 'Nothing has been filled in for this year.')} />
         ) : null}
 
         {data.groups.map((group) => (
@@ -77,7 +78,7 @@ export default function WerkgroepenScreen() {
             <Text style={styles.groupName}>{group.name}</Text>
             {group.description ? <Prose>{group.description}</Prose> : null}
             {group.people.length === 0 ? (
-              <Text style={styles.hint}>Dit jaar nog niemand ingevuld.</Text>
+              <Text style={styles.hint}>{t('Dit jaar nog niemand ingevuld.', 'Nobody filled in yet this year.')}</Text>
             ) : (
               <View style={styles.people}>
                 {group.people.map((person, index) => (

@@ -1,3 +1,4 @@
+import { t } from './i18n';
 /**
  * Wat er in een gescande QR zat.
  *
@@ -38,4 +39,4 @@ export function scanKindOf(raw: string): ScanKind {
 
 /** Een zin bij een code die we niet herkennen. Zegt wat het wél had moeten zijn. */
 export const UNKNOWN_SCAN_MESSAGE =
-  'Dit is geen VTK-code. De scanner leest een ticket, een uitnodiging om te scannen, de code aan de fakbar of de pas van een student.';
+  t('Dit is geen VTK-code. De scanner leest een ticket, een uitnodiging om te scannen, de code aan de fakbar of de pas van een student.', 'This is not a VTK code. The scanner reads a ticket, an invitation to scan, the code at the student bar or a student pass.');

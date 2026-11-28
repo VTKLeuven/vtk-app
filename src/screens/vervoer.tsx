@@ -28,6 +28,7 @@ import { useApp } from '../state/app';
 import { IS_DARK } from '../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING, TRANSPORT, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
+import { t } from '../i18n';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOURS = 24;
@@ -221,16 +222,16 @@ export default function VervoerScreen() {
   const head = (
     <PageHead
       title={shownWeek?.weekNumber ? `Week ${shownWeek.weekNumber}` : 'Transport'}
-      subtitle={shownWeek ? weekLabel(shownWeek.weekStart, locale) : 'De ritten van Logistiek'}
+      subtitle={shownWeek ? weekLabel(shownWeek.weekStart, locale) : t('De ritten van Logistiek', 'The rides of Logistics')}
       right={
         current ? (
           <Pressable
             accessibilityRole="link"
-            accessibilityLabel="Een rit aanvragen, opent logistiek.vtk.be"
+            accessibilityLabel={t('Een rit aanvragen, opent logistiek.vtk.be', 'Request a ride, opens logistiek.vtk.be')}
             onPress={() => void WebBrowser.openBrowserAsync(current.logistiekUrl)}
             style={({ pressed }) => [styles.request, pressed && styles.pressed]}
           >
-            <Text style={styles.requestLabel}>Rit aanvragen ↗</Text>
+            <Text style={styles.requestLabel}>{t('Rit aanvragen ↗', 'Request a ride ↗')}</Text>
           </Pressable>
         ) : undefined
       }
@@ -386,7 +387,7 @@ export default function VervoerScreen() {
               <View style={styles.zoom}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Inzoomen, minder uren in beeld"
+                  accessibilityLabel={t('Inzoomen, minder uren in beeld', 'Zoom in, fewer hours in view')}
                   accessibilityState={{ disabled: zoom >= MAX_ZOOM }}
                   disabled={zoom >= MAX_ZOOM}
                   onPress={() => zoomTo(zoom * 1.5)}
@@ -396,7 +397,7 @@ export default function VervoerScreen() {
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Uitzoomen, meer uren in beeld"
+                  accessibilityLabel={t('Uitzoomen, meer uren in beeld', 'Zoom out, more hours in view')}
                   accessibilityState={{ disabled: zoom <= 1 }}
                   disabled={zoom <= 1}
                   onPress={() => zoomTo(zoom / 1.5)}
@@ -440,7 +441,7 @@ export default function VervoerScreen() {
 
 /** "vrij", "1 rit", "4 ritten", zoals `tripCount` op logistiek. */
 function tripCount(count: number): string {
-  return count === 0 ? 'vrij' : count === 1 ? '1 rit' : `${count} ritten`;
+  return count === 0 ? t('vrij', 'free') : count === 1 ? t('1 rit', '1 ride') : t(`${count} ritten`, `${count} rides`);
 }
 
 /** "nov" */
@@ -484,9 +485,13 @@ function TripBlock({
     trip.title,
     trip.requester,
     vehicle?.name,
-    `${formatTime(trip.start, locale)} tot ${formatTime(trip.end, locale)}`,
-    trip.driver ? `chauffeur ${trip.driver}` : awaitsDriver ? 'nog geen chauffeur' : 'de aanvrager rijdt zelf',
-    trip.destination ? `naar ${trip.destination}` : null,
+    `${formatTime(trip.start, locale)} - ${formatTime(trip.end, locale)}`,
+    trip.driver
+      ? t(`chauffeur ${trip.driver}`, `driver ${trip.driver}`)
+      : awaitsDriver
+        ? t('nog geen chauffeur', 'no driver yet')
+        : t('de aanvrager rijdt zelf', 'the requester drives'),
+    trip.destination ? t(`naar ${trip.destination}`, `to ${trip.destination}`) : null,
   ]
     .filter(Boolean)
     .join(', ');
@@ -549,11 +554,11 @@ function TripBlock({
           </Text>
         ) : awaitsDriver ? (
           <Text style={[styles.blockLine, styles.blockNoDriverText]} numberOfLines={1}>
-            Nog geen chauffeur
+            {t('Nog geen chauffeur', 'No driver yet')}
           </Text>
         ) : (
           <Text style={[styles.blockLine, styles.blockMuted, onFill]} numberOfLines={1}>
-            Rijdt zelf
+            {t('Rijdt zelf', 'Drives themselves')}
           </Text>
         )}
         {trip.destination ? (
@@ -582,24 +587,24 @@ function TripSheet({
   const awaitsDriver = trip ? !trip.driver && (vehicle?.needsDriver ?? true) : false;
   const rows = trip
     ? ([
-        ['Wanneer', `${dayName(dayKeyOf(trip.start), locale)}, ${formatTime(trip.start, locale)} tot ${
+        [t('Wanneer', 'When'), `${dayName(dayKeyOf(trip.start), locale)}, ${formatTime(trip.start, locale)} ${t('tot', 'to')} ${
           endKey(trip) === dayKeyOf(trip.start) ? '' : `${dayName(endKey(trip), locale)} `
         }${formatTime(trip.end, locale)}`],
-        vehicle ? ['Voertuig', vehicle.name] : null,
-        ['Chauffeur', trip.driver ?? (awaitsDriver ? 'Nog geen chauffeur' : 'De aanvrager rijdt zelf')],
-        trip.helpers.length > 0 ? ['Bijrijders', trip.helpers.join(', ')] : null,
-        trip.requester ? ['Post', trip.requester] : null,
-        trip.submittedBy ? ['Aangevraagd door', trip.submittedBy] : null,
-        trip.purpose ? ['Waarvoor', trip.purpose] : null,
-        trip.cargo ? ['Mee te nemen', trip.cargo] : null,
-        trip.destination ? ['Naar', trip.destination] : null,
+        vehicle ? [t('Voertuig', 'Vehicle'), vehicle.name] : null,
+        [t('Chauffeur', 'Driver'), trip.driver ?? (awaitsDriver ? t('Nog geen chauffeur', 'No driver yet') : t('De aanvrager rijdt zelf', 'The requester drives'))],
+        trip.helpers.length > 0 ? [t('Bijrijders', 'Passengers'), trip.helpers.join(', ')] : null,
+        trip.requester ? [t('Post', 'Position'), trip.requester] : null,
+        trip.submittedBy ? [t('Aangevraagd door', 'Requested by'), trip.submittedBy] : null,
+        trip.purpose ? [t('Waarvoor', 'Purpose'), trip.purpose] : null,
+        trip.cargo ? [t('Mee te nemen', 'To bring'), trip.cargo] : null,
+        trip.destination ? [t('Naar', 'To'), trip.destination] : null,
       ].filter(Boolean) as [string, string][])
     : [];
 
   return (
     <Modal visible={trip !== null} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.sheetRoot}>
-        <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel="Sluiten" />
+        <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel={t('Sluiten', 'Close')} />
         {trip ? (
           <View style={[styles.sheet, { paddingBottom: insets.bottom + SPACING.lg }]}>
             <View style={styles.sheetHead}>
@@ -608,15 +613,15 @@ function TripSheet({
                 <Text style={styles.sheetTitle}>{trip.title}</Text>
                 <Text style={styles.hint}>
                   {[
-                    trip.status === 'REQUESTED' ? 'Nog te beslissen' : trip.status === 'COMPLETED' ? 'Afgerond' : 'Goedgekeurd',
-                    trip.leg === 'HEEN' ? 'heen' : trip.leg === 'TERUG' ? 'terug' : null,
-                    trip.mine ? 'van jouw post' : null,
+                    trip.status === 'REQUESTED' ? t('Nog te beslissen', 'To be decided') : trip.status === 'COMPLETED' ? t('Afgerond', 'Completed') : t('Goedgekeurd', 'Approved'),
+                    trip.leg === 'HEEN' ? t('heen', 'outbound') : trip.leg === 'TERUG' ? t('terug', 'return') : null,
+                    trip.mine ? t('van jouw post', 'of your position') : null,
                   ]
                     .filter(Boolean)
                     .join(' · ')}
                 </Text>
               </View>
-              <Pressable onPress={onClose} hitSlop={12} accessibilityRole="button" accessibilityLabel="Sluiten">
+              <Pressable onPress={onClose} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('Sluiten', 'Close')}>
                 <X size={20} color={COLORS.muted} />
               </Pressable>
             </View>
@@ -624,7 +629,7 @@ function TripSheet({
               {rows.map(([label, value]) => (
                 <View key={label} style={styles.detail}>
                   <Text style={styles.detailLabel}>{label}</Text>
-                  <Text style={[styles.detailValue, label === 'Chauffeur' && awaitsDriver && styles.noDriver]}>
+                  <Text style={[styles.detailValue, label === t('Chauffeur', 'Driver') && awaitsDriver && styles.noDriver]}>
                     <Linked text={value} />
                   </Text>
                 </View>

@@ -6,6 +6,7 @@ import type {
   AppPlanningSession,
   AppPlanningVtkEvent,
 } from '../api/contract';
+import { IS_EN, t } from '../i18n';
 
 /**
  * Wat de planning van de app uit een `AppPlanning` berekent: welke dagen het
@@ -26,12 +27,12 @@ export function toneOf(type: string): Tone {
 }
 
 export const TYPE_LABELS: Record<string, string> = {
-  college: 'Hoorcollege',
-  practicum: 'Practicum',
-  oefenzitting: 'Oefenzitting',
-  excursie: 'Excursie',
-  opdracht: 'Opdracht',
-  other: 'Sessie',
+  college: t('Hoorcollege', 'Lecture'),
+  practicum: t('Practicum', 'Practical'),
+  oefenzitting: t('Oefenzitting', 'Exercise session'),
+  excursie: t('Excursie', 'Excursion'),
+  opdracht: t('Opdracht', 'Assignment'),
+  other: t('Sessie', 'Session'),
 };
 
 /** Waar een blok of een regel in de dagstrook vandaan komt; het detailblad leest dit. */
@@ -98,12 +99,13 @@ export function isoWeek(date: string): number {
   return Math.floor(daysBetween(`${y}-01-01`, thursday) / 7) + 1;
 }
 
-const WEEKDAYS = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
-const MONTHS = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
-const MONTHS_LONG = [
-  'januari', 'februari', 'maart', 'april', 'mei', 'juni',
-  'juli', 'augustus', 'september', 'oktober', 'november', 'december',
-];
+const WEEKDAYS = IS_EN ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
+const MONTHS = IS_EN
+  ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  : ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+const MONTHS_LONG = IS_EN
+  ? ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  : ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
 
 export function weekdayShort(date: string): string {
   return WEEKDAYS[weekdayOf(date)];
@@ -209,7 +211,7 @@ export function contentByDay(planning: AppPlanning, showHidden: boolean): Map<st
         ref,
       });
     } else {
-      const prefix = item.kind === 'deadline' ? 'Deadline' : 'Verplicht';
+      const prefix = item.kind === 'deadline' ? 'Deadline' : t('Verplicht', 'Mandatory');
       day(item.date).chips.push({
         key: `i:${item.id}`,
         label: `${item.time ? `${item.time} ` : ''}${prefix}: ${item.title}`,

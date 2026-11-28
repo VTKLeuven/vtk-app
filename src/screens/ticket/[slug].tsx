@@ -18,6 +18,7 @@ import { useTabRouter } from '../../navigation';
 import { encodeQuantities } from '../../ticketOrder';
 import { COLORS, SPACING, TYPE } from '../../theme/tokens';
 import { EventView } from '../evenement/[id]';
+import { t } from '../../i18n';
 
 /**
  * Tickets kopen, stap één: welke tickets en hoeveel.
@@ -124,7 +125,7 @@ function Shop({
 
         {event.description ? (
           <>
-            <ShopHeading>Over dit event</ShopHeading>
+            <ShopHeading>{t('Over dit event', 'About this event')}</ShopHeading>
             <Card>
               <Prose>{event.description}</Prose>
             </Card>

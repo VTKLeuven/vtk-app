@@ -18,6 +18,7 @@ import type { AppTodayTask } from '../api/contract';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from './HomeSection';
+import { t } from '../i18n';
 
 /**
  * Eén ding dat op jou wacht: je broodje, je shift van vanavond, je ticket.
@@ -130,7 +131,7 @@ export function LinkCard({
     <Pressable
       accessibilityRole={external ? 'link' : 'button'}
       accessibilityLabel={`${title}, ${detail}`}
-      accessibilityHint={external ? 'Opent in de browser' : undefined}
+      accessibilityHint={external ? t('Opent in de browser', 'Opens in the browser') : undefined}
       onPress={onPress}
       style={({ pressed }) => [styles.card, photo ? styles.cardPhoto : null, pressed && styles.pressed]}
     >

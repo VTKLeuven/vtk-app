@@ -18,6 +18,7 @@ import { useTabRouter } from '../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
 import { HeadScroll } from '../components/HeadScroll';
+import { t } from '../i18n';
 
 /**
  * Profiel: wie je bent, en je shiften.
@@ -49,15 +50,13 @@ export default function ProfielScreen() {
   if (!viewer) {
     return (
       <>
-        <HeadScroll head={<PageHead title="Profiel" subtitle="Log in met je VTK-account" />} contentContainerStyle={styles.content} style={styles.root}>
+        <HeadScroll head={<PageHead title={t('Profiel', 'Profile')} subtitle={t('Log in met je VTK-account', 'Log in with your VTK account')} />} contentContainerStyle={styles.content} style={styles.root}>
           <Card>
-            <Text style={styles.title}>Nog niet ingelogd</Text>
+            <Text style={styles.title}>{t('Nog niet ingelogd', 'Not logged in yet')}</Text>
             <Text style={styles.body}>
-              Je kan de app zonder account gebruiken om alles te lezen. Bestellen, tickets en je
-              gegevens vragen wel een login. Dat gaat met hetzelfde account als op vtk.be,
-              KU Leuven-login inbegrepen.
+              {t('Je kan de app zonder account gebruiken om alles te lezen. Bestellen, tickets en je gegevens vragen wel een login. Dat gaat met hetzelfde account als op vtk.be, KU Leuven-login inbegrepen.', 'You can use the app without an account to read everything. Ordering, tickets and your details do need a login. That uses the same account as on vtk.be, KU Leuven login included.')}
             </Text>
-            <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+            <Button label={t('Inloggen', 'Log in')} onPress={() => router.push('/inloggen')} />
           </Card>
           <Settings
             locale={locale}
@@ -73,7 +72,7 @@ export default function ProfielScreen() {
 
   return (
     <>
-      <HeadScroll head={<PageHead title="Profiel" subtitle={viewer.email} />}
+      <HeadScroll head={<PageHead title={t('Profiel', 'Profile')} subtitle={viewer.email} />}
         contentContainerStyle={styles.content}
         style={styles.root}
         refreshControl={
@@ -103,14 +102,14 @@ export default function ProfielScreen() {
           <Card featured>
             <Text style={styles.title}>
               {gate === 'onboarding'
-                ? 'Je profiel is nog niet af'
-                : 'Je studie is nog niet bevestigd'}
+                ? t('Je profiel is nog niet af', 'Your profile is not complete yet')
+                : t('Je studie is nog niet bevestigd', 'Your studies are not confirmed yet')}
             </Text>
             <Text style={styles.body}>
-              Zolang dit openstaat, blijven bestellen en tickets gesloten.
+              {t('Zolang dit openstaat, blijven bestellen en tickets gesloten.', 'As long as this is open, ordering and tickets stay closed.')}
             </Text>
             <Button
-              label="Nu afwerken"
+              label={t('Nu afwerken', 'Complete now')}
               onPress={() => router.push({ pathname: '/poort', params: { gate } })}
             />
           </Card>
@@ -118,33 +117,33 @@ export default function ProfielScreen() {
 
         <Row
           icon={<TicketCheck color={COLORS.strong} size={20} />}
-          label="Mijn tickets"
+          label={t('Mijn tickets', 'My tickets')}
           onPress={() => router.push('/tickets?tab=mijne')}
         />
         <Row
           icon={<Sandwich color={COLORS.strong} size={20} />}
-          label="Mijn broodjes"
+          label={t('Mijn broodjes', 'My sandwiches')}
           onPress={() => router.push('/broodjes')}
         />
         <Row
           icon={<Coins color={COLORS.strong} size={20} />}
-          label="Mijn bonnetjes"
+          label={t('Mijn bonnetjes', 'My vouchers')}
           onPress={() => router.push('/bonnetjes')}
         />
         <Row
           icon={<Wrench color={COLORS.strong} size={20} />}
-          label="Shiften"
+          label={t('Shiften', 'Shifts')}
           onPress={() => router.push('/shiften')}
         />
         <Row
           icon={<Bell color={COLORS.strong} size={20} />}
-          label="Meldingen"
+          label={t('Meldingen', 'Notifications')}
           onPress={() => router.push('/meldingen')}
         />
 
         {data && data.upcomingShifts.length > 0 ? (
           <>
-            <SectionTitle>Jouw shiften</SectionTitle>
+            <SectionTitle>{t('Jouw shiften', 'Your shifts')}</SectionTitle>
             <Card>
               {data.upcomingShifts.map((shift) => (
                 <View key={shift.id} style={styles.shift}>
@@ -162,12 +161,12 @@ export default function ProfielScreen() {
         {data && data.totalShifts > 0 ? (
           <Card>
             <View style={styles.statRow}>
-              <Text style={styles.body}>Shiften gedaan</Text>
+              <Text style={styles.body}>{t('Shiften gedaan', 'Shifts done')}</Text>
               <Text style={styles.title}>{data.totalShifts}</Text>
             </View>
             {data.unpaidShiftsThisYear > 0 ? (
               <View style={styles.statRow}>
-                <Text style={styles.body}>Nog uit te betalen dit jaar</Text>
+                <Text style={styles.body}>{t('Nog uit te betalen dit jaar', 'Still to be paid out this year')}</Text>
                 <Text style={styles.title}>{data.unpaidShiftsThisYear}</Text>
               </View>
             ) : null}
@@ -176,13 +175,17 @@ export default function ProfielScreen() {
 
         {viewer.groups.length > 0 ? (
           <>
-            <SectionTitle>Jouw posten en werkgroepen</SectionTitle>
+            <SectionTitle>{t('Jouw posten en werkgroepen', 'Your positions and working groups')}</SectionTitle>
             <Card>
               {viewer.groups.map((group) => (
                 <View key={group.id} style={styles.groupRow}>
                   <Text style={styles.groupName}>{group.name}</Text>
                   <Text style={styles.hint}>
-                    {group.type === 'PRAESIDIUM' ? 'Post' : group.type === 'JAARWERKING' ? 'Jaarwerking' : 'Werkgroep'}
+                    {group.type === 'PRAESIDIUM'
+                      ? t('Post', 'Board position')
+                      : group.type === 'JAARWERKING'
+                        ? t('Jaarwerking', 'Year team')
+                        : t('Werkgroep', 'Working group')}
                   </Text>
                 </View>
               ))}
@@ -190,14 +193,13 @@ export default function ProfielScreen() {
           </>
         ) : null}
 
-        <SectionTitle>Op de site</SectionTitle>
+        <SectionTitle>{t('Op de site', 'On the website')}</SectionTitle>
         <Card>
           <Text style={styles.body}>
-            Je gegevens wijzigen, je verbonden apps en je privacygegevens staan op de site. Die
-            formulieren hebben hun eigen regels, en die willen we niet op twee plaatsen hebben.
+            {t('Je gegevens wijzigen, je verbonden apps en je privacygegevens staan op de site. Die formulieren hebben hun eigen regels, en die willen we niet op twee plaatsen hebben.', 'Changing your details, your connected apps and your privacy data are on the website. Those forms have their own rules, and we do not want them in two places.')}
           </Text>
           <Button
-            label="Mijn account op vtk.be"
+            label={t('Mijn account op vtk.be', 'My account on vtk.be')}
             variant="ghost"
             onPress={() => void WebBrowser.openBrowserAsync(`${baseUrl()}/account`)}
           />
@@ -205,7 +207,7 @@ export default function ProfielScreen() {
               5.1.1(v)). Dat formulier staat op de site, met zijn eigen bevestiging;
               een rechtstreekse link ernaartoe is wat Apple toelaat. */}
           <Button
-            label="Account verwijderen"
+            label={t('Account verwijderen', 'Delete account')}
             variant="ghost"
             onPress={() => void WebBrowser.openBrowserAsync(`${baseUrl()}/account#privacy`)}
           />
@@ -218,7 +220,7 @@ export default function ProfielScreen() {
         />
 
         <Button
-          label="Uitloggen"
+          label={t('Uitloggen', 'Log out')}
           variant="ghost"
           busy={signingOut}
           onPress={() => {
@@ -267,9 +269,9 @@ function Settings({
 }) {
   return (
     <>
-      <SectionTitle>Instellingen</SectionTitle>
+      <SectionTitle>{t('Instellingen', 'Settings')}</SectionTitle>
       <Card>
-        <Text style={styles.title}>Taal</Text>
+        <Text style={styles.title}>{t('Taal', 'Language')}</Text>
         <Text style={styles.body}>
           {locale === 'nl' ? 'De app staat in het Nederlands.' : 'The app is set to English.'}
         </Text>
@@ -282,10 +284,9 @@ function Settings({
       <Card>
         <Text style={styles.title}>Server</Text>
         <Text style={styles.body}>
-          Standaard praat de app met vtk.be. Wijzig dit enkel om te testen tegen een andere
-          omgeving.
+          {t('Standaard praat de app met vtk.be. Wijzig dit enkel om te testen tegen een andere omgeving.', 'By default the app talks to vtk.be. Only change this to test against another environment.')}
         </Text>
-        <Button label="Server instellen" variant="ghost" onPress={onOpenServer} />
+        <Button label={t('Server instellen', 'Set server')} variant="ghost" onPress={onOpenServer} />
       </Card>
     </>
   );

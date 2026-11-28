@@ -14,6 +14,7 @@ import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
 import { HeadScroll } from '../components/HeadScroll';
+import { t } from '../i18n';
 
 /**
  * Bonnetjes: je shiften van dit jaar, wat ze opleverden en wat je ermee kan.
@@ -39,19 +40,19 @@ export default function BonnetjesScreen() {
   const { locale, viewer } = useApp();
   const resource = useResource(
     'bonnetjes',
-    () => (viewer ? fetchVouchers(locale) : Promise.reject(new Error('Niet ingelogd'))),
+    () => (viewer ? fetchVouchers(locale) : Promise.reject(new Error(t('Niet ingelogd', 'Not logged in')))),
     `${viewer?.id ?? 'anon'}:${locale}`,
   );
 
   if (!viewer) {
     return (
       <>
-        <HeadScroll head={<PageHead title="Bonnetjes" />} contentContainerStyle={styles.content} style={styles.root}>
+        <HeadScroll head={<PageHead title={t('Bonnetjes', 'Vouchers')} />} contentContainerStyle={styles.content} style={styles.root}>
           <View style={styles.pad}>
             <Card>
-              <Text style={styles.title}>Log eerst in</Text>
-              <Text style={styles.body}>Je bonnetjes hangen aan je shiften en dus aan je account.</Text>
-              <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+              <Text style={styles.title}>{t('Log eerst in', 'Log in first')}</Text>
+              <Text style={styles.body}>{t('Je bonnetjes hangen aan je shiften en dus aan je account.', 'Your vouchers come from your shifts and so are linked to your account.')}</Text>
+              <Button label={t('Inloggen', 'Log in')} onPress={() => router.push('/inloggen')} />
             </Card>
           </View>
         </HeadScroll>
@@ -59,7 +60,7 @@ export default function BonnetjesScreen() {
     );
   }
 
-  if (resource.loading) return <Loading label="Bonnetjes ophalen" />;
+  if (resource.loading) return <Loading label={t('Bonnetjes ophalen', 'Loading vouchers')} />;
   if (!resource.data) {
     return (
       <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
@@ -72,7 +73,7 @@ export default function BonnetjesScreen() {
 
   return (
     <>
-      <HeadScroll head={<PageHead title="Bonnetjes" subtitle="Eén per begonnen uur shift" />}
+      <HeadScroll head={<PageHead title={t('Bonnetjes', 'Vouchers')} subtitle={t('Eén per begonnen uur shift', 'One per started hour of shift')} />}
         contentContainerStyle={styles.content}
         style={styles.root}
         refreshControl={
@@ -88,20 +89,20 @@ export default function BonnetjesScreen() {
         ) : null}
 
         <View style={[styles.pad, styles.section]}>
-          <SectionHeading>Je bonnetjes</SectionHeading>
+          <SectionHeading>{t('Je bonnetjes', 'Your vouchers')}</SectionHeading>
           <View style={styles.balanceRow}>
             <View style={styles.balance}>
               <RewardCoins
                 display={formatVouchers(balance, locale)}
-                label={`${formatVouchers(balance, locale)} ${balance === 1 ? 'bonnetje' : 'bonnetjes'} open`}
+                label={`${formatVouchers(balance, locale)} ${balance === 1 ? t('bonnetje open', 'voucher available') : t('bonnetjes open', 'vouchers available')}`}
                 size="lg"
               />
-              <Text style={styles.hint}>{balance === 1 ? 'staat open' : 'staan open'}</Text>
+              <Text style={styles.hint}>{balance === 1 ? t('staat open', 'available') : t('staan open', 'available')}</Text>
             </View>
             {earned !== undefined && used !== undefined ? (
               <View style={styles.sums}>
-                <Sum label="Ooit verdiend" value={formatVouchers(earned, locale)} />
-                <Sum label="Al gebruikt" value={formatVouchers(used, locale)} />
+                <Sum label={t('Ooit verdiend', 'Earned in total')} value={formatVouchers(earned, locale)} />
+                <Sum label={t('Al gebruikt', 'Used')} value={formatVouchers(used, locale)} />
               </View>
             ) : null}
           </View>
@@ -110,34 +111,31 @@ export default function BonnetjesScreen() {
         <View style={styles.pad}>
           {balance > 0 ? (
             <View style={styles.passBlock}>
-              <PassCode caption="Laat dit scannen om ermee te betalen." />
+              <PassCode caption={t('Laat dit scannen om ermee te betalen.', 'Have this scanned to pay with them.')} />
               <Text style={styles.hint}>
-                Aan de toog en aan de afhaalbalie van het Theokot. Wie aanvaardt, ziet eerst je naam
-                en je saldo en tikt dan pas een aantal in.
+                {t('Aan de toog en aan de afhaalbalie van het Theokot. Wie aanvaardt, ziet eerst je naam en je saldo en tikt dan pas een aantal in.', 'At the bar and at the Theokot pickup desk. The person accepting first sees your name and balance and only then enters an amount.')}
               </Text>
             </View>
           ) : (
             <Card>
               <Text style={styles.body}>
-                Je hebt geen openstaande bonnetjes. Ze komen er vanzelf bij zodra een shift waarop
-                je stond, voorbij is.
+                {t('Je hebt geen openstaande bonnetjes. Ze komen er vanzelf bij zodra een shift waarop je stond, voorbij is.', 'You have no vouchers available. They are added automatically once a shift you were on is over.')}
               </Text>
-              <Button label="Shiften bekijken" variant="ghost" onPress={() => router.push('/shiften')} />
+              <Button label={t('Shiften bekijken', 'View shifts')} variant="ghost" onPress={() => router.push('/shiften')} />
             </Card>
           )}
         </View>
 
         {spent.length > 0 ? (
-          <Register title="Recent gebruikt" entries={spent} locale={locale} />
+          <Register title={t('Recent gebruikt', 'Recently used')} entries={spent} locale={locale} />
         ) : null}
         {earnedEntries.length > 0 ? (
-          <Register title="Recent verdiend" entries={earnedEntries} locale={locale} />
+          <Register title={t('Recent verdiend', 'Recently earned')} entries={earnedEntries} locale={locale} />
         ) : null}
 
         {history.length > 0 && earned === undefined ? (
           <Text style={[styles.hint, styles.pad]}>
-            Deze lijst telt niet op naar het getal hierboven. Bonnetjes die een beheerder in geld
-            uitbetaalde, gaan wel van je saldo af maar staan hier niet in.
+            {t('Deze lijst telt niet op naar het getal hierboven. Bonnetjes die een beheerder in geld uitbetaalde, gaan wel van je saldo af maar staan hier niet in.', 'This list does not add up to the number above. Vouchers that an admin paid out in money are deducted from your balance but are not listed here.')}
           </Text>
         ) : null}
       </HeadScroll>
@@ -146,7 +144,7 @@ export default function BonnetjesScreen() {
 }
 
 function shifts(n: number): string {
-  return n === 1 ? '1 shift' : `${n} shiften`;
+  return n === 1 ? '1 shift' : t(`${n} shiften`, `${n} shifts`);
 }
 
 /**
@@ -156,19 +154,22 @@ function shifts(n: number): string {
  */
 function Hero({ year, locale }: { year: AppShiftYear; locale: 'nl' | 'en' }) {
   const { count, tier, next } = year;
-  const lede = [`Je deed dit werkingsjaar ${shifts(count)}.`];
-  if (!next) lede.push('Hoger dan dit gaat de ladder niet.');
+  const lede = [t(`Je deed dit werkingsjaar ${shifts(count)}.`, `You did ${shifts(count)} this academic year.`)];
+  if (!next) lede.push(t('Hoger dan dit gaat de ladder niet.', 'The ladder does not go higher than this.'));
   else {
     const left = next.min - count;
     const unlocksPresale = next.min === year.presaleAt && !year.inPraesidiumNow;
     lede.push(
       unlocksPresale
-        ? `Nog ${shifts(left)} tot ${next.name}, en dan zit je in de voorverkoop.`
-        : `Nog ${shifts(left)} tot ${next.name}.`,
+        ? t(
+            `Nog ${shifts(left)} tot ${next.name}, en dan zit je in de voorverkoop.`,
+            `${shifts(left)} more until ${next.name}, and then you are in the presale.`,
+          )
+        : t(`Nog ${shifts(left)} tot ${next.name}.`, `${shifts(left)} more until ${next.name}.`),
     );
   }
-  if (year.inPraesidiumNow) lede.push('Als praesidiumlid zit je al in de voorverkoop.');
-  else if (count >= year.presaleAt) lede.push('Je zit in de voorverkoop.');
+  if (year.inPraesidiumNow) lede.push(t('Als praesidiumlid zit je al in de voorverkoop.', 'As a praesidium member you are already in the presale.'));
+  else if (count >= year.presaleAt) lede.push(t('Je zit in de voorverkoop.', 'You are in the presale.'));
 
   // De ladder van laag naar hoog, met "Jij" voor de eerste titel die je nog niet hebt.
   const rows: ({ kind: 'tier'; min: number; name: string } | { kind: 'you' })[] = [];
@@ -186,24 +187,29 @@ function Hero({ year, locale }: { year: AppShiftYear; locale: 'nl' | 'en' }) {
     <View style={styles.hero}>
       <View style={styles.heroTop}>
         <View style={styles.flex}>
-          <Text style={styles.eyebrow}>WERKINGSJAAR {year.label}</Text>
-          <Text style={[styles.tier, !tier && styles.tierEmpty]}>{tier ? tier.name : 'Nog geen titel'}</Text>
+          <Text style={styles.eyebrow}>
+            {t('WERKINGSJAAR', 'ACADEMIC YEAR')} {year.label}
+          </Text>
+          <Text style={[styles.tier, !tier && styles.tierEmpty]}>{tier ? tier.name : t('Nog geen titel', 'No title yet')}</Text>
         </View>
         <View style={styles.earned}>
           <RewardCoins
             display={formatVouchers(year.vouchers, locale)}
-            label={`${formatVouchers(year.vouchers, locale)} bonnetjes verdiend dit werkingsjaar`}
+            label={t(
+              `${formatVouchers(year.vouchers, locale)} bonnetjes verdiend dit werkingsjaar`,
+              `${formatVouchers(year.vouchers, locale)} vouchers earned this academic year`,
+            )}
             size="lg"
             withheld={year.praesidium}
           />
           <Text style={[styles.hint, styles.right]}>
-            {year.praesidium ? 'geen bonnetjes in een praesidiumjaar' : 'verdiend dit jaar'}
+            {year.praesidium ? t('geen bonnetjes in een praesidiumjaar', 'no vouchers in a praesidium year') : t('verdiend dit jaar', 'earned this year')}
           </Text>
         </View>
       </View>
       <Text style={styles.body}>{lede.join(' ')}</Text>
 
-      <View style={styles.ladder} accessibilityLabel="Titels per aantal shiften">
+      <View style={styles.ladder} accessibilityLabel={t('Titels per aantal shiften', 'Titles per number of shifts')}>
         <View style={styles.rail} />
         {rows.map((row) => {
           if (row.kind === 'you') {
@@ -211,7 +217,7 @@ function Hero({ year, locale }: { year: AppShiftYear; locale: 'nl' | 'en' }) {
               <View key="you" style={styles.step}>
                 <View style={[styles.node, styles.nodeYou]} />
                 <View style={styles.youPill}>
-                  <Text style={styles.youText}>Jij: {shifts(count)}</Text>
+                  <Text style={styles.youText}>{t('Jij:', 'You:')} {shifts(count)}</Text>
                 </View>
               </View>
             );
@@ -222,7 +228,10 @@ function Hero({ year, locale }: { year: AppShiftYear; locale: 'nl' | 'en' }) {
               key={row.min}
               style={styles.step}
               accessible
-              accessibilityLabel={`${row.name}, vanaf ${shifts(row.min)}${state === 'done' ? ', gehaald' : ''}`}
+              accessibilityLabel={t(
+                `${row.name}, vanaf ${shifts(row.min)}${state === 'done' ? ', gehaald' : ''}`,
+                `${row.name}, from ${shifts(row.min)}${state === 'done' ? ', reached' : ''}`,
+              )}
             >
               <View
                 style={[
@@ -240,7 +249,7 @@ function Hero({ year, locale }: { year: AppShiftYear; locale: 'nl' | 'en' }) {
               {row.min === year.presaleAt ? (
                 <View style={styles.presale}>
                   <Ticket color={COLORS.ink} size={12} />
-                  <Text style={styles.presaleText}>Voorverkoop</Text>
+                  <Text style={styles.presaleText}>{t('Voorverkoop', 'Presale')}</Text>
                 </View>
               ) : null}
             </View>
@@ -280,7 +289,7 @@ function Register({
           <View key={entry.id} style={styles.entry}>
             <Text style={styles.entryWhen}>{formatShortDate(entry.at, locale, false)}</Text>
             <Text style={styles.entryWhat} numberOfLines={2}>
-              {entry.id.startsWith('theokot:') ? 'Broodje aan de afhaalbalie' : entry.label}
+              {entry.id.startsWith('theokot:') ? t('Broodje aan de afhaalbalie', 'Sandwich at the pickup desk') : entry.label}
             </Text>
             <Text style={entry.kind === 'earned' ? styles.plus : styles.minus}>
               {entry.kind === 'earned' ? '+' : '-'}

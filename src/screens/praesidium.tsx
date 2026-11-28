@@ -10,6 +10,7 @@ import { useApp } from '../state/app';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
 import { HeadScroll } from '../components/HeadScroll';
+import { t } from '../i18n';
 
 /** Hoeveel jaren los in de balk staan; de rest zit erachter. */
 const YEARS_IN_BAR = 5;
@@ -32,7 +33,7 @@ export default function PraesidiumScreen() {
     `${locale}:${year ?? ''}`,
   );
 
-  if (resource.loading) return <Loading label="Praesidium ophalen" />;
+  if (resource.loading) return <Loading label={t('Praesidium ophalen', 'Loading praesidium')} />;
   if (!resource.data) {
     return (
       <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
@@ -46,8 +47,8 @@ export default function PraesidiumScreen() {
     <>
       <HeadScroll head={<PageHead
         title="Praesidium"
-        subtitle={`Werkingsjaar ${data.year}-${data.year + 1}`}
-        kicker="De ploeg"
+        subtitle={t(`Werkingsjaar ${data.year}-${data.year + 1}`, `Academic year ${data.year}-${data.year + 1}`)}
+        kicker={t('De ploeg', 'The team')}
       />} style={styles.root} contentContainerStyle={styles.content}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.years}>
           {visibleYears.map((option) => (
@@ -55,7 +56,7 @@ export default function PraesidiumScreen() {
               key={option}
               accessibilityRole="button"
               accessibilityState={{ selected: option === data.year }}
-              accessibilityLabel={`Werkingsjaar ${option}-${option + 1}`}
+              accessibilityLabel={t(`Werkingsjaar ${option}-${option + 1}`, `Academic year ${option}-${option + 1}`)}
               onPress={() => setYear(option)}
               style={[styles.year, option === data.year && styles.yearActive]}
             >
@@ -67,19 +68,19 @@ export default function PraesidiumScreen() {
           {!showAll && data.years.length > YEARS_IN_BAR ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Toon oudere jaren"
+              accessibilityLabel={t('Toon oudere jaren', 'Show older years')}
               onPress={() => setShowAll(true)}
               style={styles.year}
             >
-              <Text style={styles.yearLabel}>ouder</Text>
+              <Text style={styles.yearLabel}>{t('ouder', 'older')}</Text>
             </Pressable>
           ) : null}
         </ScrollView>
 
         {data.groups.length === 0 ? (
           <Empty
-            title="Geen gegevens"
-            hint={`Voor ${data.year}-${data.year + 1} staat er nog niemand ingevuld.`}
+            title={t('Geen gegevens', 'No data')}
+            hint={t(`Voor ${data.year}-${data.year + 1} staat er nog niemand ingevuld.`, `Nobody has been filled in for ${data.year}-${data.year + 1} yet.`)}
           />
         ) : null}
 

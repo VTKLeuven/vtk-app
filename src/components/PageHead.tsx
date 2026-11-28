@@ -11,6 +11,7 @@ import { COLORS, FONTS, RADIUS, SPACING } from '../theme/tokens';
 import type { AppImageCrop } from '../api/contract';
 import { CroppedPhoto } from './CroppedPhoto';
 import { CARD_SHADOW } from './HomeSection';
+import { t } from '../i18n';
 
 export type HeadTab<T extends string> = {
   value: T;
@@ -61,7 +62,7 @@ export function PageHead<T extends string = string>({
   kicker,
   right,
   back = true,
-  backLabel = 'Terug',
+  backLabel = t('Terug', 'Back'),
   tabs,
   compact = false,
   inline = false,
@@ -176,12 +177,12 @@ export function PageHead<T extends string = string>({
           hitSlop={8}
           style={({ pressed }) => [
             styles.back,
-            backLabel !== 'Terug' && styles.backWithLabel,
+            backLabel !== t('Terug', 'Back') && styles.backWithLabel,
             pressed && styles.pressed,
           ]}
         >
           <ChevronLeft color={COLORS.yellow} size={21} strokeWidth={2.4} />
-          {backLabel !== 'Terug' ? <Text style={styles.backLabel}>{backLabel}</Text> : null}
+          {backLabel !== t('Terug', 'Back') ? <Text style={styles.backLabel}>{backLabel}</Text> : null}
         </Pressable>
       ) : compact ? null : (
         <View style={styles.noBack} />
@@ -269,7 +270,7 @@ export function PhotoHead({
   subtitle,
   pin,
   back = true,
-  backLabel = 'Terug',
+  backLabel = t('Terug', 'Back'),
   height = 260,
   crop,
   children,

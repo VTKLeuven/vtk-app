@@ -1,4 +1,5 @@
 import { ApiError } from './api/client';
+import { t } from './i18n';
 
 /**
  * Wat de ticketpagina doorgeeft aan het scherm waar je bestelt: per tickettype
@@ -26,37 +27,37 @@ export function decodeQuantities(value: string | undefined): Record<string, numb
 /** De melding bij een geweigerde bestelling; de codes komen van `TicketCheckoutError`. */
 export function checkoutErrorText(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return 'Geen verbinding met vtk.be. Probeer het straks opnieuw.';
+    return t('Geen verbinding met vtk.be. Probeer het straks opnieuw.', 'No connection to vtk.be. Try again later.');
   }
   switch (error.code) {
     case 'EVENT_NOT_ON_SALE':
-      return 'De verkoop voor dit event is intussen gesloten.';
+      return t('De verkoop voor dit event is intussen gesloten.', 'Sales for this event have closed in the meantime.');
     case 'SOLD_OUT':
-      return 'Er zijn niet genoeg tickets meer beschikbaar.';
+      return t('Er zijn niet genoeg tickets meer beschikbaar.', 'There are not enough tickets left.');
     case 'LOGIN_REQUIRED':
-      return 'Voor dit ticket moet je ingelogd zijn.';
+      return t('Voor dit ticket moet je ingelogd zijn.', 'You need to be logged in for this ticket.');
     case 'TOO_MANY_RESERVATIONS':
-      return 'Je hebt al een bestelling lopen. Rond die eerst af of wacht tot ze vervalt.';
+      return t('Je hebt al een bestelling lopen. Rond die eerst af of wacht tot ze vervalt.', 'You already have an order in progress. Finish it first or wait until it expires.');
     case 'FREE_TICKET_LIMIT':
-      return 'Je hebt het maximum aan gratis tickets bereikt.';
+      return t('Je hebt het maximum aan gratis tickets bereikt.', 'You have reached the maximum number of free tickets.');
     case 'HONORARY_PRICE_USED':
-      return 'Je erelidticket voor dit event heb je al. Kies de gewone prijs.';
+      return t('Je erelidticket voor dit event heb je al. Kies de gewone prijs.', 'You already have your honorary member ticket for this event. Choose the regular price.');
     case 'HONORARY_TICKET_LIMIT':
-      return 'Als erelid koop je voor dit event één ticket, en dat heb je al.';
+      return t('Als erelid koop je voor dit event één ticket, en dat heb je al.', 'As an honorary member you can buy one ticket for this event, and you already have it.');
     case 'MEMBERSHIP_REQUIRED':
-      return 'Dit ticket is enkel voor leden van VTK.';
+      return t('Dit ticket is enkel voor leden van VTK.', 'This ticket is for VTK members only.');
     case 'INVALID_TICKET_TYPE':
-      return 'Een gekozen tickettype is niet meer beschikbaar.';
+      return t('Een gekozen tickettype is niet meer beschikbaar.', 'A chosen ticket type is no longer available.');
     case 'INVALID_QUANTITY':
-      return 'Dat aantal kan niet voor dit tickettype.';
+      return t('Dat aantal kan niet voor dit tickettype.', 'That quantity is not possible for this ticket type.');
     case 'INVALID_ANSWER':
-      return 'Een van de antwoorden is niet geldig. Kijk de vragen nog eens na.';
+      return t('Een van de antwoorden is niet geldig. Kijk de vragen nog eens na.', 'One of the answers is not valid. Check the questions again.');
     case 'PAYMENT_UNAVAILABLE':
-      return 'De betaaldienst is even niet bereikbaar. Probeer het straks opnieuw.';
+      return t('De betaaldienst is even niet bereikbaar. Probeer het straks opnieuw.', 'The payment service is unavailable right now. Try again later.');
     case 'BUSY':
       // Een 503 van de checkout bij een rush: er is niets besteld en meteen
       // opnieuw proberen kan lukken, dus niet "straks".
-      return 'Het is heel druk. Je bestelling is niet doorgegaan; probeer meteen opnieuw.';
+      return t('Het is heel druk. Je bestelling is niet doorgegaan; probeer meteen opnieuw.', 'It is very busy. Your order did not go through; try again right away.');
     default:
       return error.message;
   }
@@ -68,19 +69,19 @@ export function checkoutErrorText(error: unknown): string {
  */
 export function paymentErrorText(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return 'Geen verbinding met vtk.be. Probeer het straks opnieuw.';
+    return t('Geen verbinding met vtk.be. Probeer het straks opnieuw.', 'No connection to vtk.be. Try again later.');
   }
   switch (error.code) {
     case 'RESERVATION_EXPIRED':
-      return 'Je tickets waren te lang gereserveerd en zijn weer vrijgegeven. Bestel opnieuw.';
+      return t('Je tickets waren te lang gereserveerd en zijn weer vrijgegeven. Bestel opnieuw.', 'Your tickets were reserved for too long and have been released. Order again.');
     case 'PAYMENT_IN_PROGRESS':
     case 'PAYMENT_PENDING_ELSEWHERE':
-      return 'Er loopt al een betaling voor deze bestelling. Wacht even en kijk dan bij Mijn tickets.';
+      return t('Er loopt al een betaling voor deze bestelling. Wacht even en kijk dan bij Mijn tickets.', 'A payment for this order is already in progress. Wait a moment and then check My tickets.');
     case 'ORDER_NOT_PAYABLE':
-      return 'Deze bestelling kan niet meer betaald worden. Bestel opnieuw.';
+      return t('Deze bestelling kan niet meer betaald worden. Bestel opnieuw.', 'This order can no longer be paid. Order again.');
     case 'BUSY':
-      return 'Het is heel druk. Probeer meteen opnieuw.';
+      return t('Het is heel druk. Probeer meteen opnieuw.', 'It is very busy. Try again right away.');
     default:
-      return 'De betaaldienst is even niet bereikbaar. Probeer het straks opnieuw.';
+      return t('De betaaldienst is even niet bereikbaar. Probeer het straks opnieuw.', 'The payment service is unavailable right now. Try again later.');
   }
 }

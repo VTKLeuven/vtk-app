@@ -47,6 +47,7 @@ import { CudiOrderCard, euro } from './CudiOrderCard';
 import type { StudiesTabs } from './tabs';
 import { CARD_SHADOW } from '../HomeSection';
 import { HeadScroll } from '../HeadScroll';
+import { IS_EN, t } from '../../i18n';
 
 /**
  * Wanneer een oudere cudi geen maximum meestuurt: één. Strenger dan cudi kan nooit
@@ -148,7 +149,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
       tabs={tabs}
       right={
         viewer ? (
-          <YellowHeadButton label="Al je bestellingen" onPress={() => router.push('/cudi-bestellingen')}>
+          <YellowHeadButton label={t('Al je bestellingen', 'All your orders')} onPress={() => router.push('/cudi-bestellingen')}>
             <ShoppingBag color={COLORS.yellow} size={19} />
           </YellowHeadButton>
         ) : undefined
@@ -160,10 +161,10 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
           style={styles.headLogo}
           tintColor={IS_DARK ? COLORS.ink : undefined}
           contentFit="contain"
-          accessibilityLabel="Cursusdienst"
+          accessibilityLabel={t('Cursusdienst', 'Course shop')}
         />
         <Text style={styles.headStatus}>
-          {hours && !hours.unavailable ? hoursLine(hours.openNow, hours.detail) : 'Je cursussen reserveren en afhalen'}
+          {hours && !hours.unavailable ? hoursLine(hours.openNow, hours.detail) : t('Je cursussen reserveren en afhalen', 'Reserve and collect your course books')}
         </Text>
       </View>
     </YellowHead>
@@ -174,12 +175,11 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
       <>
         <HeadScroll head={head} style={styles.root} contentContainerStyle={styles.content}>
           <Card>
-            <Text style={styles.title}>Log eerst in</Text>
+            <Text style={styles.title}>{t('Log eerst in', 'Log in first')}</Text>
             <Text style={styles.body}>
-              Een reservatie hangt aan jouw naam. Met je VTK-account reserveer je hier, zonder apart
-              account bij de cursusdienst.
+              {t('Een reservatie hangt aan jouw naam. Met je VTK-account reserveer je hier, zonder apart account bij de cursusdienst.', 'A reservation is linked to your name. With your VTK account you reserve here, without a separate course shop account.')}
             </Text>
-            <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+            <Button label={t('Inloggen', 'Log in')} onPress={() => router.push('/inloggen')} />
           </Card>
         </HeadScroll>
       </>
@@ -191,9 +191,9 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
       <>
         {head}
         <Empty
-          title="Reserveren kan hier nog niet"
-          hint="Op cudi.vtk.be wel, met hetzelfde VTK-account."
-          action={{ label: 'Naar cudi.vtk.be', onPress: () => void WebBrowser.openBrowserAsync('https://cudi.vtk.be/vtk/shop') }}
+          title={t('Reserveren kan hier nog niet', 'Reserving is not possible here yet')}
+          hint={t('Op cudi.vtk.be wel, met hetzelfde VTK-account.', 'It is on cudi.vtk.be, with the same VTK account.')}
+          action={{ label: t('Naar cudi.vtk.be', 'To cudi.vtk.be'), onPress: () => void WebBrowser.openBrowserAsync('https://cudi.vtk.be/vtk/shop') }}
         />
       </>
     );
@@ -203,7 +203,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
     return (
       <>
         {head}
-        <Loading label="De cursusdienst ophalen" />
+        <Loading label={t('De cursusdienst ophalen', 'Loading the course shop')} />
       </>
     );
   }
@@ -228,9 +228,12 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
   };
 
   const clearCart = () =>
-    Alert.alert('Mandje leegmaken?', `${count} ${count === 1 ? 'artikel' : 'artikels'} uit je mandje halen.`, [
-      { text: 'Behouden', style: 'cancel' },
-      { text: 'Leegmaken', style: 'destructive', onPress: () => setCart({}) },
+    Alert.alert(t('Mandje leegmaken?', 'Empty basket?'), t(
+      `${count} ${count === 1 ? 'artikel' : 'artikels'} uit je mandje halen.`,
+      `Remove ${count} ${count === 1 ? 'item' : 'items'} from your basket.`,
+    ), [
+      { text: t('Behouden', 'Keep'), style: 'cancel' },
+      { text: t('Leegmaken', 'Empty'), style: 'destructive', onPress: () => setCart({}) },
     ]);
 
   const startConfirm = () => {
@@ -255,7 +258,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
             return next;
           });
         }
-        Alert.alert('Niet gereserveerd', result.message);
+        Alert.alert(t('Niet gereserveerd', 'Not reserved'), result.message);
         void catalog.reload();
         return;
       }
@@ -267,7 +270,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
       void catalog.reload();
     } catch (error) {
       setConfirming(false);
-      Alert.alert('Niet gereserveerd', messageFor(error instanceof Error ? error : null));
+      Alert.alert(t('Niet gereserveerd', 'Not reserved'), messageFor(error instanceof Error ? error : null));
     } finally {
       setBusy(null);
     }
@@ -280,7 +283,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
       await WebBrowser.openBrowserAsync(checkoutUrl);
       void overview.reload();
     } catch (error) {
-      Alert.alert('Betalen lukte niet', messageFor(error instanceof Error ? error : null));
+      Alert.alert(t('Betalen lukte niet', 'Payment failed'), messageFor(error instanceof Error ? error : null));
     } finally {
       setBusy(null);
     }
@@ -321,22 +324,22 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
         {data.gate ? (
           <Card featured>
             <Text style={styles.title}>
-              {data.gate.kind === 'TERMS' ? 'Eerst één keer naar de cursusdienst' : 'De webshop staat dicht'}
+              {data.gate.kind === 'TERMS' ? t('Eerst één keer naar de cursusdienst', 'Visit the course shop once first') : t('De webshop staat dicht', 'The webshop is closed')}
             </Text>
             <Text style={styles.body}>
               {data.gate.kind === 'TERMS'
-                ? 'Log er eenmalig in met je VTK-account en aanvaard de voorwaarden. Daarna reserveer je hier.'
-                : 'De cursusdienst heeft online bestellen voorlopig uitgezet.'}
+                ? t('Log er eenmalig in met je VTK-account en aanvaard de voorwaarden. Daarna reserveer je hier.', 'Log in there once with your VTK account and accept the terms. After that you reserve here.')
+                : t('De cursusdienst heeft online bestellen voorlopig uitgezet.', 'The course shop has turned off online ordering for now.')}
             </Text>
             {data.gate.kind === 'TERMS' ? (
-              <Button label="Verder op de cursusdienst" onPress={() => openStep(data.gate!.url, 'Cursusdienst')} />
+              <Button label={t('Verder op de cursusdienst', 'Continue at the course shop')} onPress={() => openStep(data.gate!.url, t('Cursusdienst', 'Course shop'))} />
             ) : null}
           </Card>
         ) : null}
 
         {closedMessage ? (
           <Card featured>
-            <Text style={styles.title}>Reserveren kan nu niet</Text>
+            <Text style={styles.title}>{t('Reserveren kan nu niet', 'Reserving is not possible now')}</Text>
             <Text style={styles.body}>{closedMessage}</Text>
           </Card>
         ) : null}
@@ -375,12 +378,12 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
 
         {!data.gate ? (
           <View style={styles.block}>
-            <Text accessibilityRole="header" style={styles.heading}>{searching ? 'Zoeken' : 'Voor jouw vakken'}</Text>
+            <Text accessibilityRole="header" style={styles.heading}>{searching ? t('Zoeken', 'Search') : t('Voor jouw vakken', 'For your courses')}</Text>
             <SearchField
               value={query}
               onChange={setQuery}
-              placeholder="Zoek een vak of cursus"
-              label="Zoeken in de cursusdienst"
+              placeholder={t('Zoek een vak of cursus', 'Search a course or course book')}
+              label={t('Zoeken in de cursusdienst', 'Search the course shop')}
               style={styles.search}
             />
             {searching ? (
@@ -391,14 +394,14 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
               ) : search.catalog ? (
                 <>
                   <Text style={styles.hint}>
-                    {search.catalog.searchedAll ? 'In het hele aanbod van de cursusdienst.' : 'In de vakken op je profiel.'}
+                    {search.catalog.searchedAll ? t('In het hele aanbod van de cursusdienst.', 'In the whole course shop catalogue.') : t('In de vakken op je profiel.', 'In the courses on your profile.')}
                   </Text>
                   {/* Eerst wat voor iedereen is, dan je eigen vakken, dan de rest
                       van het aanbod. Welke vakken van jou zijn, zegt de catalogus
                       zonder zoekterm ("Voor jouw vakken"). */}
                   {search.catalog.general.length > 0 ? (
                     <>
-                      <Text style={styles.searchGroup}>Algemeen</Text>
+                      <Text style={styles.searchGroup}>{t('Algemeen', 'General')}</Text>
                       <GeneralGroups
                         groups={search.catalog.general}
                         cart={cart}
@@ -415,7 +418,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
                       <>
                         {own.length > 0 ? (
                           <>
-                            <Text style={styles.searchGroup}>Je vakken</Text>
+                            <Text style={styles.searchGroup}>{t('Je vakken', 'Your courses')}</Text>
                             <SubjectList
                               catalog={{ ...search.catalog, subjects: own }}
                               cart={cart}
@@ -426,7 +429,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
                         ) : null}
                         {other.length > 0 ? (
                           <>
-                            <Text style={styles.searchGroup}>{own.length > 0 || ownIds.size > 0 ? 'Andere vakken' : 'Vakken'}</Text>
+                            <Text style={styles.searchGroup}>{own.length > 0 || ownIds.size > 0 ? t('Andere vakken', 'Other courses') : t('Vakken', 'Courses')}</Text>
                             <SubjectList
                               catalog={{ ...search.catalog, subjects: other }}
                               cart={cart}
@@ -439,25 +442,25 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
                     );
                   })()}
                   {search.catalog.subjects.length === 0 && search.catalog.general.length === 0 ? (
-                    <Text style={styles.hint}>Niets gevonden voor {`“${query.trim()}”`}.</Text>
+                    <Text style={styles.hint}>{t(`Niets gevonden voor “${query.trim()}”.`, `Nothing found for “${query.trim()}”.`)}</Text>
                   ) : null}
                 </>
               ) : null
             ) : catalog.loading && !catalog.data ? (
-              <Loading label="Het aanbod ophalen" />
+              <Loading label={t('Het aanbod ophalen', 'Loading the catalogue')} />
             ) : !catalog.data ? (
               <ErrorState message={messageFor(catalog.error)} onRetry={() => void catalog.refresh()} />
             ) : !catalog.data.hasProfileSubjects ? (
               <Card>
-                <Text style={styles.title}>Duid eerst je vakken aan</Text>
+                <Text style={styles.title}>{t('Duid eerst je vakken aan', 'Select your courses first')}</Text>
                 <Text style={styles.body}>
                   Je ziet hier de cursussen van de vakken op je profiel bij de cursusdienst. Kies ze één
                   keer; daarna staan ze hier.
                 </Text>
                 <Button
-                  label="Vakken kiezen"
+                  label={t('Vakken kiezen', 'Choose courses')}
                   variant="ghost"
-                  onPress={() => openStep(catalog.data!.subjectsUrl, 'Je vakken')}
+                  onPress={() => openStep(catalog.data!.subjectsUrl, t('Je vakken', 'Your courses'))}
                 />
               </Card>
             ) : catalog.data.subjects.length === 0 ? (
@@ -477,7 +480,7 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
               style={({ pressed }) => [styles.collapse, pressed && styles.pressed]}
             >
               <View style={styles.flex}>
-                <Text style={styles.collapseTitle}>Voor iedereen</Text>
+                <Text style={styles.collapseTitle}>{t('Voor iedereen', 'For everyone')}</Text>
                 <Text style={styles.hint} numberOfLines={1}>
                   {shown.general.reduce((sum, group) => sum + group.articles.length, 0)} artikels:{' '}
                   {shown.general.map((group) => group.type.toLocaleLowerCase('nl')).join(', ')}
@@ -492,10 +495,10 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
         ) : null}
 
         <MarginRegister
-          title="Op cudi.vtk.be"
+          title={t('Op cudi.vtk.be', 'On cudi.vtk.be')}
           links={[
-            { label: 'Tweedehands', url: `${cudiBase}/secondhand` },
-            { label: 'Printen', url: `${cudiBase}/printer` },
+            { label: t('Tweedehands', 'Second-hand'), url: `${cudiBase}/secondhand` },
+            { label: t('Printen', 'Printing'), url: `${cudiBase}/printer` },
           ].map((link) => ({
             label: link.label,
             external: true,
@@ -513,15 +516,15 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
             </Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Mandje leegmaken"
+              accessibilityLabel={t('Mandje leegmaken', 'Empty basket')}
               onPress={clearCart}
               hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
             >
-              <Text style={styles.barLink}>Mandje leegmaken</Text>
+              <Text style={styles.barLink}>{t('Mandje leegmaken', 'Empty basket')}</Text>
             </Pressable>
           </View>
           <View style={styles.barButton}>
-            <Button label="Reserveren" disabled={!ordering.open} onPress={startConfirm} />
+            <Button label={t('Reserveren', 'Reserve')} disabled={!ordering.open} onPress={startConfirm} />
           </View>
         </View>
       ) : null}
@@ -531,16 +534,16 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
           <Pressable
             style={styles.scrim}
             onPress={() => busy === null && setConfirming(false)}
-            accessibilityLabel="Sluiten"
+            accessibilityLabel={t('Sluiten', 'Close')}
           />
           <View style={[styles.sheet, { paddingBottom: insets.bottom + SPACING.lg }]}>
             <View style={styles.sheetHead}>
-              <Text style={styles.sheetTitle}>Je reservatie</Text>
+              <Text style={styles.sheetTitle}>{t('Je reservatie', 'Your reservation')}</Text>
               <Pressable
                 onPress={() => setConfirming(false)}
                 disabled={busy !== null}
                 hitSlop={12}
-                accessibilityLabel="Sluiten"
+                accessibilityLabel={t('Sluiten', 'Close')}
                 accessibilityRole="button"
               >
                 <X size={20} color={COLORS.muted} />
@@ -557,14 +560,14 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
                         {article.title}
                       </Text>
                       <Text style={[styles.meta, article.availableNow ? styles.readyText : styles.waitText]}>
-                        {article.availableNow ? 'Ligt meteen klaar' : 'Op de wachtlijst tot er een binnen is'}
+                        {article.availableNow ? t('Ligt meteen klaar', 'Ready right away') : t('Op de wachtlijst tot er een binnen is', 'On the waiting list until one comes in')}
                       </Text>
                     </View>
                     <Text style={styles.price}>{euro(article.price * quantity)}</Text>
                   </View>
                 ))}
                 <View style={styles.sheetTotal}>
-                  <Text style={styles.title}>Totaal</Text>
+                  <Text style={styles.title}>{t('Totaal', 'Total')}</Text>
                   <Text style={styles.price}>{euro(total)}</Text>
                 </View>
               </CardList>
@@ -573,8 +576,8 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
                 <View style={styles.choices} accessibilityRole="radiogroup">
                   {(
                     [
-                      { value: 'ONSITE', label: 'Betalen bij het afhalen', hint: 'Aan de balie van de cursusdienst' },
-                      { value: 'ONLINE', label: 'Nu online betalen', hint: 'Daarna opent de betaalpagina' },
+                      { value: 'ONSITE', label: t('Betalen bij het afhalen', 'Pay at pickup'), hint: t('Aan de balie van de cursusdienst', 'At the course shop desk') },
+                      { value: 'ONLINE', label: t('Nu online betalen', 'Pay online now'), hint: t('Daarna opent de betaalpagina', 'Then the payment page opens') },
                     ] as const
                   ).map((choice) => {
                     const active = paymentChoice === choice.value;
@@ -600,14 +603,14 @@ export function CudiView({ tabs, linked }: { tabs: StudiesTabs; linked: boolean 
               ) : (
                 <Text style={styles.hint}>
                   {ordering.paymentMode === 'ONLINE_ONLY'
-                    ? 'Je betaalt meteen online; na het reserveren opent de betaalpagina.'
-                    : 'Je betaalt bij het afhalen, aan de balie van de cursusdienst.'}
+                    ? t('Je betaalt meteen online; na het reserveren opent de betaalpagina.', 'You pay online right away; the payment page opens after reserving.')
+                    : t('Je betaalt bij het afhalen, aan de balie van de cursusdienst.', 'You pay at pickup, at the course shop desk.')}
                 </Text>
               )}
             </ScrollView>
 
             <View style={styles.sheetButtons}>
-              <Button label="Reserveren" busy={busy === 'submit'} onPress={() => void submit()} />
+              <Button label={t('Reserveren', 'Reserve')} busy={busy === 'submit'} onPress={() => void submit()} />
             </View>
           </View>
         </View>
@@ -673,7 +676,7 @@ function ReadyCard({
   return (
     <Card featured>
       <View style={styles.readyHead}>
-        <Text style={[styles.title, styles.flex]}>Klaar om af te halen</Text>
+        <Text style={[styles.title, styles.flex]}>{t('Klaar om af te halen', 'Ready for pickup')}</Text>
         <Text style={[styles.pill, styles.pillOk]}>{ready.length}</Text>
       </View>
       <View style={styles.readyLines}>
@@ -685,8 +688,11 @@ function ReadyCard({
             </Text>
             <Text style={styles.meta}>
               {line.pickupDeadline
-                ? `Tot ${formatDayShort(line.pickupDeadline, locale)} ${formatTime(line.pickupDeadline, locale)}`
-                : 'Ligt klaar'}
+                ? t(
+                    `Tot ${formatDayShort(line.pickupDeadline, locale)} ${formatTime(line.pickupDeadline, locale)}`,
+                    `Until ${formatDayShort(line.pickupDeadline, locale)} ${formatTime(line.pickupDeadline, locale)}`,
+                  )
+                : t('Ligt klaar', 'Ready')}
               {' · '}#{order.number}
             </Text>
           </View>
@@ -696,19 +702,19 @@ function ReadyCard({
         <View style={styles.slot}>
           <CalendarClock size={18} color={COLORS.okInk} />
           <Text style={[styles.slotText, styles.flex]}>
-            Je tijdslot: {formatDayShort(next.start, locale)} {formatTime(next.start, locale)} -{' '}
+            {t('Je tijdslot:', 'Your time slot:')} {formatDayShort(next.start, locale)} {formatTime(next.start, locale)} -{' '}
             {formatTime(next.end, locale)}
           </Text>
         </View>
       ) : null}
       {usesSlots ? (
         <Button
-          label={next ? 'Tijdslot wijzigen' : 'Tijdslot reserveren'}
+          label={next ? t('Tijdslot wijzigen', 'Change time slot') : t('Tijdslot reserveren', 'Book a time slot')}
           variant={next ? 'ghost' : 'primary'}
           onPress={onTimeslots}
         />
       ) : (
-        <Text style={styles.hint}>Kom langs tijdens de openingsuren, hierboven.</Text>
+        <Text style={styles.hint}>{t('Kom langs tijdens de openingsuren, hierboven.', 'Come by during the opening hours, above.')}</Text>
       )}
     </Card>
   );
@@ -734,8 +740,11 @@ function TimeslotCard({
       accessibilityRole="button"
       accessibilityLabel={
         next
-          ? `Je tijdslot, ${formatDayShort(next.start, locale)} ${formatTime(next.start, locale)}. Wijzigen`
-          : 'Een tijdslot reserveren om af te halen'
+          ? t(
+              `Je tijdslot, ${formatDayShort(next.start, locale)} ${formatTime(next.start, locale)}. Wijzigen`,
+              `Your time slot, ${formatDayShort(next.start, locale)} ${formatTime(next.start, locale)}. Change`,
+            )
+          : t('Een tijdslot reserveren om af te halen', 'Book a time slot for pickup')
       }
       onPress={onOpen}
       style={({ pressed }) => [styles.slotCard, pressed && styles.pressed]}
@@ -744,11 +753,11 @@ function TimeslotCard({
         <CalendarClock size={20} color={COLORS.onYellow} />
       </View>
       <View style={styles.flex}>
-        <Text style={styles.title}>{next ? 'Je tijdslot' : 'Tijdslot reserveren'}</Text>
+        <Text style={styles.title}>{next ? t('Je tijdslot', 'Your time slot') : t('Tijdslot reserveren', 'Book a time slot')}</Text>
         <Text style={styles.meta}>
           {next
             ? `${formatDayShort(next.start, locale)} ${formatTime(next.start, locale)} - ${formatTime(next.end, locale)}`
-            : 'Kies wanneer je je cursussen komt afhalen'}
+            : t('Kies wanneer je je cursussen komt afhalen', 'Choose when you come to collect your course books')}
         </Text>
       </View>
       <ChevronRight size={18} color={COLORS.muted} />
@@ -885,17 +894,17 @@ function ArticleRow({
           ) : null}
           {reserved ? (
             reserved.kind === 'ASSIGNED' ? (
-              <Text style={[styles.pill, styles.pillMine]}>Ligt voor je klaar</Text>
+              <Text style={[styles.pill, styles.pillMine]}>{t('Ligt voor je klaar', 'Ready for you')}</Text>
             ) : (
-              <Text style={[styles.pill, styles.pillLow]}>Gereserveerd</Text>
+              <Text style={[styles.pill, styles.pillLow]}>{t('Gereserveerd', 'Reserved')}</Text>
             )
           ) : bought ? (
-            <Text style={[styles.pill, styles.pillOk]}>Al gekocht</Text>
+            <Text style={[styles.pill, styles.pillOk]}>{t('Al gekocht', 'Already bought')}</Text>
           ) : article.stock ? (
             <Text style={[styles.pill, stockStyle]}>{article.stock.label}</Text>
           ) : null}
           {!article.orderable && orderingOpen && !reserved && !bought ? (
-            <Text style={[styles.pill, styles.pillFull]}>Nu niet online te reserveren</Text>
+            <Text style={[styles.pill, styles.pillFull]}>{t('Nu niet online te reserveren', 'Not available to reserve online now')}</Text>
           ) : null}
         </View>
         {article.orderable && max > 0 ? (
@@ -910,20 +919,20 @@ function PlacedNotice({ result }: { result: Placed }) {
   const ready = result.items.filter((item) => item.status === 'ASSIGNED').reduce((s, i) => s + i.quantity, 0);
   const waiting = result.items.filter((item) => item.status === 'BOOKED').reduce((s, i) => s + i.quantity, 0);
   const parts = [
-    ready > 0 ? `${ready} ${ready === 1 ? 'ligt' : 'liggen'} klaar` : null,
-    waiting > 0 ? `${waiting} op de wachtlijst` : null,
+    ready > 0 ? t(`${ready} ${ready === 1 ? 'ligt' : 'liggen'} klaar`, `${ready} ready`) : null,
+    waiting > 0 ? t(`${waiting} op de wachtlijst`, `${waiting} on the waiting list`) : null,
   ].filter(Boolean);
   return (
     <Card featured>
       <View style={styles.readyHead}>
         <Check size={18} color={COLORS.okInk} />
-        <Text style={[styles.title, styles.flex]}>Gereserveerd</Text>
+        <Text style={[styles.title, styles.flex]}>{t('Gereserveerd', 'Reserved')}</Text>
       </View>
       <Text style={styles.body}>
         {parts.join(', ')}.{' '}
         {waiting > 0
-          ? 'De cursusdienst mailt je zodra er iets voor je klaarligt.'
-          : 'Kies hierboven een tijdslot om af te halen.'}
+          ? t('De cursusdienst mailt je zodra er iets voor je klaarligt.', 'The course shop emails you as soon as something is ready for you.')
+          : t('Kies hierboven een tijdslot om af te halen.', 'Choose a time slot above for pickup.')}
       </Text>
     </Card>
   );
@@ -1144,7 +1153,7 @@ function HoursCard({
   open: boolean;
   onToggle: () => void;
 }) {
-  const weekday = new Intl.DateTimeFormat('nl-BE', { timeZone: 'Europe/Brussels', weekday: 'long' })
+  const weekday = new Intl.DateTimeFormat(t('nl-BE', 'en-GB'), { timeZone: 'Europe/Brussels', weekday: 'long' })
     .format(new Date())
     .slice(0, 2)
     .toLowerCase();
@@ -1154,13 +1163,16 @@ function HoursCard({
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
-        accessibilityLabel={`Openingsuren van de cursusdienst, ${open ? 'dichtklappen' : 'de hele week tonen'}`}
+        accessibilityLabel={t(
+          `Openingsuren van de cursusdienst, ${open ? 'dichtklappen' : 'de hele week tonen'}`,
+          `Opening hours of the course shop, ${open ? 'collapse' : 'show the whole week'}`,
+        )}
         onPress={onToggle}
         style={({ pressed }) => [styles.hoursHead, pressed && styles.pressed]}
       >
         <Clock color={COLORS.strong} size={18} />
         <View style={styles.flex}>
-          <Text style={styles.hoursTitle}>Openingsuren</Text>
+          <Text style={styles.hoursTitle}>{t('Openingsuren', 'Opening hours')}</Text>
           {!open ? (
             <Text style={[styles.hoursSummary, hours.openNow && styles.hoursSummaryOpen]} numberOfLines={1}>
               {hoursLine(hours.openNow, hours.detail)}
@@ -1192,6 +1204,13 @@ function HoursCard({
 
 function hoursLine(openNow: boolean, detail: string): string {
   const text = detail.trim();
+  // Met `?locale=en` schrijft de server de uren in het Engels, zoals bij `ServiceList`.
+  if (IS_EN) {
+    if (openNow) return text.startsWith('until') ? `Open ${text}` : 'Open now';
+    if (text === 'closed') return 'Closed';
+    if (text.startsWith('opens')) return `Closed, o${text.slice(1)}`;
+    return `Closed, opens ${text}`;
+  }
   if (openNow) return text.startsWith('tot') ? `Open ${text}` : 'Nu open';
   if (text === 'gesloten') return 'Gesloten';
   if (text.startsWith('opent')) return `Gesloten, o${text.slice(1)}`;

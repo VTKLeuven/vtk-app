@@ -32,6 +32,7 @@ import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { HeadScroll } from '../components/HeadScroll';
+import { t } from '../i18n';
 
 const SIDE = SPACING.xl - 4;
 /** Tot zoveel plaatsen tonen we bolletjes; daarboven "3/12". */
@@ -97,7 +98,7 @@ export default function ShiftenScreen() {
   };
 
   const head = (
-    <YellowHead title="Shiften" subtitle="Help mee en verdien bonnetjes" back>
+    <YellowHead title={t('Shiften', 'Shifts')} subtitle={t('Help mee en verdien bonnetjes', 'Help out and earn vouchers')} back>
       {days.length > 0 ? <DaySquares days={days} selected={selected} locale={locale} onSelect={jumpTo} /> : null}
     </YellowHead>
   );
@@ -108,9 +109,9 @@ export default function ShiftenScreen() {
         {head}
         <View style={styles.padded}>
           <Card>
-            <Text style={styles.title}>Log eerst in</Text>
-            <Text style={styles.body}>Inschrijven op een shift hangt aan je account.</Text>
-            <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+            <Text style={styles.title}>{t('Log eerst in', 'Log in first')}</Text>
+            <Text style={styles.body}>{t('Inschrijven op een shift hangt aan je account.', 'Signing up for a shift is linked to your account.')}</Text>
+            <Button label={t('Inloggen', 'Log in')} onPress={() => router.push('/inloggen')} />
           </Card>
         </View>
       </View>
@@ -121,7 +122,7 @@ export default function ShiftenScreen() {
     return (
       <View style={styles.root}>
         {head}
-        <Loading label="Shiften ophalen" />
+        <Loading label={t('Shiften ophalen', 'Loading shifts')} />
       </View>
     );
   }
@@ -169,8 +170,8 @@ export default function ShiftenScreen() {
         {days.length === 0 ? (
           <Empty
             flush
-            title="Geen shiften"
-            hint="Er staat nu niets open. Nieuwe shiften verschijnen hier zodra ze ingepland zijn."
+            title={t('Geen shiften', 'No shifts')}
+            hint={t('Er staat nu niets open. Nieuwe shiften verschijnen hier zodra ze ingepland zijn.', 'Nothing is open right now. New shifts show up here as soon as they are scheduled.')}
           />
         ) : null}
 
@@ -278,8 +279,8 @@ function DaySquares({
             accessibilityState={{ selected: active }}
             accessibilityLabel={[
               formatDay(day.shifts[0].start, locale),
-              mine ? 'je staat op een shift' : null,
-              open === 0 ? 'alles volzet' : `${open} met plaats`,
+              mine ? t('je staat op een shift', 'you are on a shift') : null,
+              open === 0 ? t('alles volzet', 'all full') : t(`${open} met plaats`, `${open} with spots left`),
             ]
               .filter(Boolean)
               .join(', ')}
@@ -302,7 +303,10 @@ function DaySquares({
 
 /** Een bolletje per plaats, gevuld wat bezet is; bij veel plaatsen "3/12". */
 function Spots({ shift }: { shift: AppShift }) {
-  const label = `${shift.takenSpots} van ${shift.maxParticipants} plaatsen bezet`;
+  const label = t(
+    `${shift.takenSpots} van ${shift.maxParticipants} plaatsen bezet`,
+    `${shift.takenSpots} of ${shift.maxParticipants} spots taken`,
+  );
   if (shift.maxParticipants > MAX_PIPS) {
     return (
       <Text style={styles.spotsText} accessibilityLabel={label}>
@@ -345,7 +349,7 @@ function ShiftRow({
       onChanged();
     } catch (error) {
       Alert.alert(
-        kind === 'register' ? 'Inschrijven lukte niet' : 'Uitschrijven lukte niet',
+        kind === 'register' ? t('Inschrijven lukte niet', 'Signing up failed') : t('Uitschrijven lukte niet', 'Unregistering failed'),
         shiftErrorText(error),
       );
       // Ook bij een fout opnieuw ophalen: "vol" en "al begonnen" betekenen
@@ -358,11 +362,14 @@ function ShiftRow({
 
   const confirmUnregister = () => {
     Alert.alert(
-      'Uitschrijven',
-      `Je schrijft je uit voor ${shift.name} op ${formatDay(shift.start, locale)}. De plaats komt weer vrij voor iemand anders.`,
+      t('Uitschrijven', 'Unregister'),
+      t(
+        `Je schrijft je uit voor ${shift.name} op ${formatDay(shift.start, locale)}. De plaats komt weer vrij voor iemand anders.`,
+        `You unregister from ${shift.name} on ${formatDay(shift.start, locale)}. The spot becomes available for someone else.`,
+      ),
       [
-        { text: 'Blijven staan', style: 'cancel' },
-        { text: 'Uitschrijven', style: 'destructive', onPress: () => void act('unregister') },
+        { text: t('Blijven staan', 'Stay'), style: 'cancel' },
+        { text: t('Uitschrijven', 'Unregister'), style: 'destructive', onPress: () => void act('unregister') },
       ],
     );
   };
@@ -378,7 +385,7 @@ function ShiftRow({
       onChanged();
     } catch (error) {
       setReplaceable(!next);
-      Alert.alert('Niet opgeslagen', shiftErrorText(error));
+      Alert.alert(t('Niet opgeslagen', 'Not saved'), shiftErrorText(error));
     }
   };
 
@@ -389,7 +396,10 @@ function ShiftRow({
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
-        accessibilityLabel={`${shift.name}, ${formatTime(shift.start, locale)} tot ${formatTime(shift.end, locale)}, ${shift.location}`}
+        accessibilityLabel={t(
+          `${shift.name}, ${formatTime(shift.start, locale)} tot ${formatTime(shift.end, locale)}, ${shift.location}`,
+          `${shift.name}, ${formatTime(shift.start, locale)} to ${formatTime(shift.end, locale)}, ${shift.location}`,
+        )}
         onPress={() => setOpen(!open)}
         style={({ pressed }) => [styles.shiftRow, pressed && styles.pressed]}
       >
@@ -407,7 +417,7 @@ function ShiftRow({
             {shift.reward > 0 ? (
               <RewardCoins
                 display={String(shift.reward)}
-                label={`${shift.reward} ${shift.reward === 1 ? 'bonnetje' : 'bonnetjes'}`}
+                label={`${shift.reward} ${shift.reward === 1 ? t('bonnetje', 'voucher') : t('bonnetjes', 'vouchers')}`}
                 size="sm"
               />
             ) : null}
@@ -416,7 +426,7 @@ function ShiftRow({
         {shift.registered ? (
           <View style={styles.mineTag}>
             <Check size={14} color={COLORS.onYellow} strokeWidth={2.8} />
-            <Text style={styles.mineTagText}>Jij</Text>
+            <Text style={styles.mineTagText}>{t('Jij', 'You')}</Text>
           </View>
         ) : (
           <>
@@ -424,7 +434,7 @@ function ShiftRow({
             {shift.canRegister ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Inschrijven voor ${shift.name}`}
+                accessibilityLabel={t(`Inschrijven voor ${shift.name}`, `Sign up for ${shift.name}`)}
                 disabled={busy}
                 onPress={() => void act('register')}
                 hitSlop={6}
@@ -433,7 +443,7 @@ function ShiftRow({
                 <Plus size={18} color={COLORS.onSelectedAccent} strokeWidth={2.6} />
               </Pressable>
             ) : (
-              <Text style={styles.closed}>{full ? 'Volzet' : 'Gesloten'}</Text>
+              <Text style={styles.closed}>{full ? t('Volzet', 'Full') : t('Gesloten', 'Closed')}</Text>
             )}
           </>
         )}
@@ -444,23 +454,23 @@ function ShiftRow({
           {shift.openToInternationals ? (
             <View style={styles.factRow}>
               <Globe color={COLORS.muted} size={14} />
-              <Text style={styles.hint}>Ook zonder Nederlands</Text>
+              <Text style={styles.hint}>{t('Ook zonder Nederlands', 'Also without Dutch')}</Text>
             </View>
           ) : null}
           {shift.description ? <Text style={styles.body}>{shift.description}</Text> : null}
           {shift.instructions ? <Prose>{shift.instructions}</Prose> : null}
 
           <View style={styles.factRow}>
-            <Text style={styles.factLabel}>Levert op</Text>
+            <Text style={styles.factLabel}>{t('Levert op', 'Earns')}</Text>
             {shift.reward > 0 ? (
               <RewardCoins
                 display={String(shift.reward)}
-                label={`${shift.reward} ${shift.reward === 1 ? 'bonnetje' : 'bonnetjes'}`}
+                label={`${shift.reward} ${shift.reward === 1 ? t('bonnetje', 'voucher') : t('bonnetjes', 'vouchers')}`}
               />
             ) : (
               // Nul is wat de shift jou oplevert, meestal omdat je dat werkingsjaar in
               // het praesidium zit; de server zegt niet waarom, dus de app ook niet.
-              <Text style={styles.hint}>Levert jou geen bonnetjes op</Text>
+              <Text style={styles.hint}>{t('Levert jou geen bonnetjes op', 'Earns you no vouchers')}</Text>
             )}
           </View>
 
@@ -468,10 +478,10 @@ function ShiftRow({
           {shift.roster ? (
             <View style={styles.roster}>
               <Text style={styles.factLabel}>
-                Ingeschreven ({shift.takenSpots}/{shift.maxParticipants})
+                {t('Ingeschreven', 'Signed up')} ({shift.takenSpots}/{shift.maxParticipants})
               </Text>
               {shift.roster.length === 0 ? (
-                <Text style={styles.hint}>Nog niemand.</Text>
+                <Text style={styles.hint}>{t('Nog niemand.', 'Nobody yet.')}</Text>
               ) : (
                 <View style={styles.people}>
                   {shift.roster.map((person, index) => (
@@ -486,7 +496,7 @@ function ShiftRow({
                       </View>
                       <Text style={styles.personName} numberOfLines={1}>
                         {person.name}
-                        {person.isSelf ? <Text style={styles.hint}> (jij)</Text> : null}
+                        {person.isSelf ? <Text style={styles.hint}>{t(' (jij)', ' (you)')}</Text> : null}
                       </Text>
                     </View>
                   ))}
@@ -498,10 +508,9 @@ function ShiftRow({
           {shift.replaceableOption && (shift.registered || shift.canRegister) ? (
             <View style={styles.switchRow}>
               <View style={styles.flex}>
-                <Text style={styles.switchLabel}>Een student mag mijn plaats innemen</Text>
+                <Text style={styles.switchLabel}>{t('Een student mag mijn plaats innemen', 'A student may take my spot')}</Text>
                 <Text style={styles.hint}>
-                  Schrijft er zich een student in terwijl de shift vol is, dan neemt die je plaats
-                  in. Je krijgt dan een mail en hoeft niet meer te komen.
+                  {t('Schrijft er zich een student in terwijl de shift vol is, dan neemt die je plaats in. Je krijgt dan een mail en hoeft niet meer te komen.', 'If a student signs up while the shift is full, they take your spot. You get an email and no longer need to come.')}
                 </Text>
               </View>
               <Switch
@@ -511,18 +520,17 @@ function ShiftRow({
                 }
                 trackColor={{ true: COLORS.yellow, false: COLORS.line2 }}
                 thumbColor={COLORS.plate}
-                accessibilityLabel="Een student mag mijn plaats innemen"
+                accessibilityLabel={t('Een student mag mijn plaats innemen', 'A student may take my spot')}
               />
             </View>
           ) : null}
 
           {shift.registered ? (
             shift.canUnregister ? (
-              <Button label="Uitschrijven" variant="ghost" busy={busy} onPress={confirmUnregister} />
+              <Button label={t('Uitschrijven', 'Unregister')} variant="ghost" busy={busy} onPress={confirmUnregister} />
             ) : (
               <Text style={styles.hint}>
-                Uitschrijven kan niet meer: de shift begint binnen het etmaal. Kan je echt niet,
-                laat het dan weten aan de verantwoordelijke.
+                {t('Uitschrijven kan niet meer: de shift begint binnen het etmaal. Kan je echt niet, laat het dan weten aan de verantwoordelijke.', 'You can no longer unregister: the shift starts within 24 hours. If you really cannot make it, let the person in charge know.')}
               </Text>
             )
           ) : null}
@@ -541,20 +549,20 @@ function ShiftRow({
  */
 function shiftErrorText(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return 'Geen verbinding met vtk.be. Probeer het straks opnieuw.';
+    return t('Geen verbinding met vtk.be. Probeer het straks opnieuw.', 'No connection to vtk.be. Try again later.');
   }
   const text = error.message.toLowerCase();
-  if (text.includes('overlap')) return 'Je staat al op een shift die hiermee overlapt.';
-  if (text.includes('full')) return 'Deze shift is intussen volzet.';
-  if (text.includes('started')) return 'Deze shift is al begonnen.';
-  if (text.includes('already registered')) return 'Je stond hier al op ingeschreven.';
-  if (text.includes('only praesidium')) return 'Enkel een praesidiumlid kan vervangen worden.';
-  if (text.includes('not registered')) return 'Je staat niet (meer) op deze shift.';
-  if (text.includes('closed')) return 'Deze shift is al begonnen.';
+  if (text.includes('overlap')) return t('Je staat al op een shift die hiermee overlapt.', 'You are already on a shift that overlaps with this one.');
+  if (text.includes('full')) return t('Deze shift is intussen volzet.', 'This shift is full in the meantime.');
+  if (text.includes('started')) return t('Deze shift is al begonnen.', 'This shift has already started.');
+  if (text.includes('already registered')) return t('Je stond hier al op ingeschreven.', 'You were already signed up for this.');
+  if (text.includes('only praesidium')) return t('Enkel een praesidiumlid kan vervangen worden.', 'Only a praesidium member can be replaced.');
+  if (text.includes('not registered')) return t('Je staat niet (meer) op deze shift.', 'You are not (or no longer) on this shift.');
+  if (text.includes('closed')) return t('Deze shift is al begonnen.', 'This shift has already started.');
   if (error.status === 409) {
-    return 'Uitschrijven kan niet meer: de shift begint binnen het etmaal.';
+    return t('Uitschrijven kan niet meer: de shift begint binnen het etmaal.', 'You can no longer unregister: the shift starts within 24 hours.');
   }
-  if (error.isNotFound) return 'Deze shift bestaat niet meer.';
+  if (error.isNotFound) return t('Deze shift bestaat niet meer.', 'This shift no longer exists.');
   return error.message;
 }
 

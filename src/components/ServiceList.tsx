@@ -14,6 +14,7 @@ import { useApp } from '../state/app';
 import { IS_DARK } from '../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from './HomeSection';
+import { t } from '../i18n';
 
 /**
  * De logo's van de drie diensten, zoals de openingsurenband op de site ze toont
@@ -148,12 +149,15 @@ function TheokotNext({ locale }: { locale: AppLocale }) {
 
   if (next?.order) {
     const count = next.order.lines.reduce((sum, line) => sum + line.quantity, 0);
-    const what = count === 1 ? 'Je broodje' : `Je ${count} broodjes`;
+    const what = count === 1 ? t('Je broodje', 'Your sandwich') : t(`Je ${count} broodjes`, `Your ${count} sandwiches`);
     return (
       <ExtraLink
         icon={<Sandwich size={18} color={COLORS.onYellow} />}
-        title={`${what}: ${dayWord(next.pickupStart, locale)} van ${formatTime(next.pickupStart, locale)} tot ${formatTime(next.pickupEnd, locale)}`}
-        detail="Af te halen aan het Theokot met je studentenkaart"
+        title={t(
+          `${what}: ${dayWord(next.pickupStart, locale)} van ${formatTime(next.pickupStart, locale)} tot ${formatTime(next.pickupEnd, locale)}`,
+          `${what}: ${dayWord(next.pickupStart, locale)} from ${formatTime(next.pickupStart, locale)} to ${formatTime(next.pickupEnd, locale)}`,
+        )}
+        detail={t('Af te halen aan het Theokot met je studentenkaart', 'Pick up at the Theokot with your student card')}
         onPress={() => router.push('/broodjes')}
       />
     );
@@ -161,8 +165,8 @@ function TheokotNext({ locale }: { locale: AppLocale }) {
   return (
     <ExtraLink
       icon={<Sandwich size={18} color={COLORS.onYellow} />}
-      title="Broodjes bestellen"
-      detail={viewer ? 'Bestel en haal af met je studentenkaart' : 'Log in om te bestellen'}
+      title={t('Broodjes bestellen', 'Order sandwiches')}
+      detail={viewer ? t('Bestel en haal af met je studentenkaart', 'Order and pick up with your student card') : t('Log in om te bestellen', 'Log in to order')}
       onPress={() => router.push('/broodjes')}
     />
   );
@@ -190,11 +194,14 @@ function CudiSlot({ locale }: { locale: AppLocale }) {
       icon={<CalendarClock size={18} color={COLORS.onYellow} />}
       title={
         mine
-          ? `Je tijdslot: ${dayWord(mine.start, locale)} van ${formatTime(mine.start, locale)} tot ${formatTime(mine.end, locale)}`
-          : 'Nog geen tijdslot gereserveerd'
+          ? t(
+              `Je tijdslot: ${dayWord(mine.start, locale)} van ${formatTime(mine.start, locale)} tot ${formatTime(mine.end, locale)}`,
+              `Your time slot: ${dayWord(mine.start, locale)} from ${formatTime(mine.start, locale)} to ${formatTime(mine.end, locale)}`,
+            )
+          : t('Nog geen tijdslot gereserveerd', 'No time slot booked yet')
       }
-      detail={mine ? 'Tik om een ander uur te kiezen' : 'Kies een tijdslot om je cursussen af te halen'}
-      action={mine ? undefined : 'Reserveer'}
+      detail={mine ? t('Tik om een ander uur te kiezen', 'Tap to pick another time') : t('Kies een tijdslot om je cursussen af te halen', 'Pick a time slot to collect your course books')}
+      action={mine ? undefined : t('Reserveer', 'Book')}
       onPress={() => router.push(viewer ? '/cudi-tijdsloten' : '/inloggen')}
     />
   );

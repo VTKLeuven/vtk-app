@@ -8,6 +8,7 @@ import { STUDIES_TABS, type StudiesTab, type StudiesTabs } from '../components/s
 import { useApp } from '../state/app';
 import { useTabParam } from '../useTabParam';
 import { useTrackView } from '../usage';
+import { t } from '../i18n';
 
 /**
  * Studies: alles rond je vakken, in drie tabbladen in de kop.
@@ -43,8 +44,8 @@ export default function StudiesScreen() {
     value: tab,
     onChange: setTab,
     options: [
-      { value: 'blokken', label: 'Blokken' },
-      { value: 'cudi', label: 'Cursusdienst' },
+      { value: 'blokken', label: t('Blokken', 'Studying') },
+      { value: 'cudi', label: t('Cursusdienst', 'Course shop') },
       { value: 'burgieclan', label: 'Burgieclan' },
     ],
   };

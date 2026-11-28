@@ -24,6 +24,7 @@ import { useTabRouter } from '../../navigation';
 import { encodeQuantities } from '../../ticketOrder';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW } from '../../components/HomeSection';
+import { t } from '../../i18n';
 
 /**
  * Eén evenement.
@@ -139,9 +140,9 @@ export function EventView({ id }: { id: string }) {
         notes: event.description ? markdownToPlainText(event.description).slice(0, 600) : null,
       });
       if (result.ok) {
-        Alert.alert('In je agenda gezet', `De afspraak staat in ${result.calendarTitle}.`);
+        Alert.alert(t('In je agenda gezet', 'Added to your calendar'), t(`De afspraak staat in ${result.calendarTitle}.`, `The event is in ${result.calendarTitle}.`));
       } else {
-        Alert.alert('Niet gelukt', addResultMessage(result));
+        Alert.alert(t('Niet gelukt', 'Did not work'), addResultMessage(result));
       }
     } finally {
       setAddingToCalendar(false);
@@ -178,7 +179,7 @@ export function EventView({ id }: { id: string }) {
 
         <View style={styles.body}>
           <CardList>
-            <Fact label="Wanneer">
+            <Fact label={t('Wanneer', 'When')}>
               {series && upcomingMoments.length > 0 ? (
                 <View style={styles.moments}>
                   {shownMoments.map((moment, index) => (
@@ -200,7 +201,7 @@ export function EventView({ id }: { id: string }) {
                   {upcomingMoments.length > MOMENTS_VISIBLE ? (
                     <Pressable accessibilityRole="button" onPress={() => setAllDays(!allDays)} hitSlop={8}>
                       <Text style={styles.momentsToggle}>
-                        {allDays ? 'Minder dagen' : `Toon alle ${upcomingMoments.length} dagen`}
+                        {allDays ? t('Minder dagen', 'Fewer days') : t(`Toon alle ${upcomingMoments.length} dagen`, `Show all ${upcomingMoments.length} days`)}
                       </Text>
                     </Pressable>
                   ) : null}
@@ -212,12 +213,12 @@ export function EventView({ id }: { id: string }) {
               )}
             </Fact>
             {event.location ? (
-              <Fact label="Waar">
+              <Fact label={t('Waar', 'Where')}>
                 <Text style={styles.factText}>{event.location}</Text>
               </Fact>
             ) : null}
             {themes ? (
-              <Fact label="Thema">
+              <Fact label={t('Thema', 'Theme')}>
                 <Text style={styles.factText}>{themes}</Text>
               </Fact>
             ) : null}
@@ -231,7 +232,7 @@ export function EventView({ id }: { id: string }) {
           ) : null}
           {event.formSlug ? (
             <Button
-              label="Inschrijven"
+              label={t('Inschrijven', 'Sign up')}
               variant={event.ticketSlug ? 'ghost' : 'primary'}
               onPress={() =>
                 void WebBrowser.openBrowserAsync(`${baseUrl()}/formulieren/${event.formSlug}`)
@@ -244,7 +245,7 @@ export function EventView({ id }: { id: string }) {
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ selected: event.interested }}
-                accessibilityLabel={event.interested ? 'Uit mijn lijst halen' : 'In mijn lijst zetten'}
+                accessibilityLabel={event.interested ? t('Uit mijn lijst halen', 'Remove from my list') : t('In mijn lijst zetten', 'Add to my list')}
                 onPress={toggleInterest}
                 style={({ pressed }) => [
                   styles.action,
@@ -258,7 +259,7 @@ export function EventView({ id }: { id: string }) {
                   size={17}
                 />
                 <Text style={[styles.actionLabel, event.interested ? styles.onYellowText : styles.actionLabelPrimary]}>
-                  {event.interested ? 'In mijn lijst' : 'Ik ga misschien'}
+                  {event.interested ? t('In mijn lijst', 'In my list') : t('Ik ga misschien', 'I might go')}
                 </Text>
               </Pressable>
             </View>
@@ -274,7 +275,7 @@ export function EventView({ id }: { id: string }) {
                   : `${event.interestedCount} studenten komen. `
                 : ''}
               {viewer && event.interested
-                ? 'Je krijgt een dag vooraf een bericht. Dit is geen inschrijving en geen ticket.'
+                ? t('Je krijgt een dag vooraf een bericht. Dit is geen inschrijving en geen ticket.', 'You get a notification a day before. This is not a registration and not a ticket.')
                 : ''}
             </Text>
           ) : null}
@@ -285,7 +286,7 @@ export function EventView({ id }: { id: string }) {
             // andere handelingen bovenaan en niet onder de beschrijving: wie zich
             // wil registreren, zocht die knop onderaan de pagina.
             <Button
-              label={event.urlLabel ?? 'Meer info'}
+              label={event.urlLabel ?? t('Meer info', 'More info')}
               variant="ghost"
               onPress={() => void WebBrowser.openBrowserAsync(event.url as string)}
             />
@@ -298,22 +299,22 @@ export function EventView({ id }: { id: string }) {
             <CardList>
               <SaveRow
                 icon={Smartphone}
-                label="In de agenda van je telefoon"
-                hint="Eén afspraak in Apple of Google Agenda, met een herinnering. Daarna staat ze los van de app."
-                action="Toevoegen"
+                label={t('In de agenda van je telefoon', 'In your phone calendar')}
+                hint={t('Eén afspraak in Apple of Google Agenda, met een herinnering. Daarna staat ze los van de app.', 'One event in Apple or Google Calendar, with a reminder. After that it is separate from the app.')}
+                action={t('Toevoegen', 'Add')}
                 busy={addingToCalendar}
                 onPress={() => void addToCalendar()}
               />
               {plannable ? (
                 <SaveRow
                   icon={inPlanning ? CalendarCheck : CalendarPlus}
-                  label={inPlanning ? 'Staat in je planning' : 'In je planning, naast je lessen'}
+                  label={inPlanning ? t('Staat in je planning', 'In your planning') : t('In je planning, naast je lessen', 'In your planning, next to your classes')}
                   hint={
                     inPlanning
-                      ? 'Onder Kalender > Planning en in de agenda die je planning exporteert.'
-                      : 'Komt onder Kalender > Planning tussen je lessen, en in de agenda die je planning exporteert.'
+                      ? t('Onder Kalender > Planning en in de agenda die je planning exporteert.', 'Under Calendar > Planning and in the calendar your planning exports to.')
+                      : t('Komt onder Kalender > Planning tussen je lessen, en in de agenda die je planning exporteert.', 'Shows under Calendar > Planning between your classes, and in the calendar your planning exports to.')
                   }
-                  action={inPlanning ? 'Weghalen' : 'Toevoegen'}
+                  action={inPlanning ? t('Weghalen', 'Remove') : t('Toevoegen', 'Add')}
                   active={inPlanning}
                   busy={planning.busy}
                   onPress={togglePlanning}
@@ -328,14 +329,14 @@ export function EventView({ id }: { id: string }) {
                 hitSlop={6}
                 style={({ pressed }) => [styles.gotIt, pressed && styles.actionPressed]}
               >
-                <Text style={styles.gotItLabel}>Begrepen, niet meer uitleggen</Text>
+                <Text style={styles.gotItLabel}>{t('Begrepen, niet meer uitleggen', 'Got it, do not explain again')}</Text>
               </Pressable>
             </CardList>
           ) : (
             <View style={styles.saveButtons}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="In de agenda van je telefoon zetten"
+                accessibilityLabel={t('In de agenda van je telefoon zetten', 'Add to your phone calendar')}
                 accessibilityState={{ busy: addingToCalendar }}
                 disabled={addingToCalendar}
                 onPress={() => void addToCalendar()}
@@ -343,13 +344,13 @@ export function EventView({ id }: { id: string }) {
               >
                 <Smartphone color={COLORS.ink} size={18} />
                 <Text style={styles.saveButtonLabel} numberOfLines={1}>
-                  In je agenda
+                  {t('In je agenda', 'In your calendar')}
                 </Text>
               </Pressable>
               {plannable ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={inPlanning ? 'Uit je planning halen' : 'In je planning zetten, naast je lessen'}
+                  accessibilityLabel={inPlanning ? t('Uit je planning halen', 'Remove from your planning') : t('In je planning zetten, naast je lessen', 'Add to your planning, next to your classes')}
                   accessibilityState={{ selected: inPlanning, busy: planning.busy }}
                   disabled={planning.busy}
                   onPress={togglePlanning}
@@ -361,11 +362,11 @@ export function EventView({ id }: { id: string }) {
                 >
                   {inPlanning ? <CalendarCheck color={COLORS.onYellow} size={18} /> : <CalendarPlus color={COLORS.ink} size={18} />}
                   <Text style={[styles.saveButtonLabel, inPlanning && styles.onYellowText]} numberOfLines={1}>
-                    {inPlanning ? 'In je planning' : 'In planning'}
+                    {inPlanning ? t('In je planning', 'In your planning') : t('In planning', 'In planning')}
                   </Text>
                 </Pressable>
               ) : null}
-              <HeadButton accessibilityLabel="Wat is het verschil?" onPress={() => setExplain(true)}>
+              <HeadButton accessibilityLabel={t('Wat is het verschil?', 'What is the difference?')} onPress={() => setExplain(true)}>
                 <Info color={COLORS.ink} size={19} />
               </HeadButton>
             </View>
@@ -373,7 +374,7 @@ export function EventView({ id }: { id: string }) {
 
           {event.description ? (
             <View style={styles.about}>
-              <SectionHeading>Over dit event</SectionHeading>
+              <SectionHeading>{t('Over dit event', 'About this event')}</SectionHeading>
               <Prose>{event.description}</Prose>
             </View>
           ) : null}

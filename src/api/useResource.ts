@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { NetworkError } from './client';
 import { readCache, writeCache } from '../storage';
+import { t } from '../i18n';
 
 /**
  * Eén scherm dat gegevens ophaalt.
@@ -176,9 +177,9 @@ export function useResource<T>(
 
 /** De zin die bij een mislukte ophaling hoort. Netwerk en server zijn niet hetzelfde. */
 export function messageFor(error: Error | null): string {
-  if (!error) return 'Er ging iets mis.';
+  if (!error) return t('Er ging iets mis.', 'Something went wrong.');
   if (error instanceof NetworkError || error.name === 'NetworkError') {
-    return 'Geen verbinding. Kijk je netwerk na en probeer opnieuw.';
+    return t('Geen verbinding. Kijk je netwerk na en probeer opnieuw.', 'No connection. Check your network and try again.');
   }
   return error.message;
 }

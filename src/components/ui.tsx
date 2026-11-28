@@ -12,6 +12,7 @@ import {
 import { IS_DARK } from '../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from './HomeSection';
+import { t } from '../i18n';
 
 /**
  * De bouwstenen die op elk scherm terugkomen, in de taal van de nieuwe Home
@@ -206,9 +207,9 @@ export function ErrorState({
 }) {
   return (
     <View style={styles.state}>
-      <Text style={styles.stateTitle}>Dat lukte niet</Text>
+      <Text style={styles.stateTitle}>{t('Dat lukte niet', 'That did not work')}</Text>
       <Text style={styles.stateHint}>{message}</Text>
-      {onRetry ? <Button label="Opnieuw proberen" onPress={onRetry} variant="ghost" /> : null}
+      {onRetry ? <Button label={t('Opnieuw proberen', 'Try again')} onPress={onRetry} variant="ghost" /> : null}
     </View>
   );
 }
@@ -218,7 +219,7 @@ export function ErrorState({
  * "Shiften ophalen" schrijft, leest als een website. Het label blijft wel voor
  * VoiceOver en TalkBack, die anders enkel "bezig" zeggen.
  */
-export function Loading({ label = 'Bezig met laden' }: { label?: string }) {
+export function Loading({ label = t('Bezig met laden', 'Loading') }: { label?: string }) {
   return (
     <View style={styles.loading} accessible accessibilityRole="progressbar" accessibilityLabel={label}>
       <ActivityIndicator size="large" color={COLORS.strong} />
@@ -234,7 +235,7 @@ export function StaleNotice({ onRetry }: { onRetry: () => void }) {
   return (
     <Pressable accessibilityRole="button" onPress={onRetry} style={styles.stale}>
       <Text style={styles.staleText}>
-        Niet vernieuwd. Je ziet wat er de vorige keer opgehaald is. Tik om opnieuw te proberen.
+        {t('Niet vernieuwd. Je ziet wat er de vorige keer opgehaald is. Tik om opnieuw te proberen.', 'Not refreshed. You are seeing what was loaded last time. Tap to try again.')}
       </Text>
     </Pressable>
   );
@@ -308,7 +309,7 @@ export function MarginRegister({
           <Pressable
             key={link.label}
             accessibilityRole={link.external ? 'link' : 'button'}
-            accessibilityLabel={link.external ? `${link.label}, opent een browser` : link.label}
+            accessibilityLabel={link.external ? t(`${link.label}, opent een browser`, `${link.label}, opens a browser`) : link.label}
             onPress={link.onPress}
             hitSlop={4}
             style={({ pressed }) => [styles.registerRow, pressed && styles.registerPressed]}

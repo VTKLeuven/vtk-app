@@ -32,6 +32,7 @@ import type {
   ScannerManifestEntry,
 } from '../../scanner/types';
 import { HistoryRow } from './SessionPanel';
+import { t } from '../../i18n';
 
 /**
  * Hoeveel het klavier onderaan het scherm inneemt, nul wanneer het weg is.
@@ -89,11 +90,11 @@ function Sheet({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.sheetRoot}>
-        <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel="Sluiten" />
+        <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel={t('Sluiten', 'Close')} />
         <View style={[styles.sheet, { paddingBottom: SPACING.xxl + keyboard }]}>
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>{title}</Text>
-            <Pressable onPress={onClose} hitSlop={12} accessibilityLabel="Sluiten" accessibilityRole="button">
+            <Pressable onPress={onClose} hitSlop={12} accessibilityLabel={t('Sluiten', 'Close')} accessibilityRole="button">
               <X size={20} color={SCANNER.textMuted} />
             </Pressable>
           </View>
@@ -145,13 +146,13 @@ export function NameListSheet({
   }, [manifest, query]);
 
   return (
-    <Sheet visible={visible} title="Op naam" onClose={onClose}>
+    <Sheet visible={visible} title={t('Op naam', 'By name')} onClose={onClose}>
       <View style={styles.searchRow}>
         <Search size={17} color={SCANNER.textMuted} />
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Zoek een naam"
+          placeholder={t('Zoek een naam', 'Search a name')}
           placeholderTextColor={SCANNER.textMuted}
           style={styles.searchInput}
           autoCorrect={false}
@@ -160,17 +161,17 @@ export function NameListSheet({
       </View>
       {manifest ? (
         <Text style={styles.hint}>
-          {results.total} van {manifest.tickets.length} deelnemers
-          {results.total > results.rows.length ? ` · eerste ${results.rows.length} getoond` : ''}
+          {t(`${results.total} van ${manifest.tickets.length} deelnemers`, `${results.total} of ${manifest.tickets.length} attendees`)}
+          {results.total > results.rows.length ? t(` · eerste ${results.rows.length} getoond`, ` · first ${results.rows.length} shown`) : ''}
         </Text>
       ) : (
-        <Text style={styles.hint}>Geen ticketlijst op dit toestel.</Text>
+        <Text style={styles.hint}>{t('Geen ticketlijst op dit toestel.', 'No ticket list on this device.')}</Text>
       )}
       <FlatList
         data={results.rows}
         keyExtractor={(entry) => entry.code}
         keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={manifest ? <Text style={styles.hint}>Geen deelnemer gevonden.</Text> : undefined}
+        ListEmptyComponent={manifest ? <Text style={styles.hint}>{t('Geen deelnemer gevonden.', 'No attendee found.')}</Text> : undefined}
         renderItem={({ item }) => {
           const inside = item.checkedIn || scannedCodes.has(item.code);
           return (
@@ -189,10 +190,10 @@ export function NameListSheet({
                 disabled={inside}
                 onPress={() => onCheckIn(item.code)}
                 accessibilityRole="button"
-                accessibilityLabel={`${inside ? 'Binnen' : 'Inchecken'}: ${item.name}`}
+                accessibilityLabel={`${inside ? t('Binnen', 'In') : t('Inchecken', 'Check in')}: ${item.name}`}
               >
                 <Text style={[styles.checkInText, inside && styles.checkInTextDisabled]}>
-                  {inside ? 'Binnen' : 'Inchecken'}
+                  {inside ? t('Binnen', 'In') : t('Inchecken', 'Check in')}
                 </Text>
               </Pressable>
             </View>
@@ -224,11 +225,11 @@ export function HistorySheet({
   onClose: () => void;
 }) {
   return (
-    <Sheet visible={visible} title="Recente scans" onClose={onClose}>
+    <Sheet visible={visible} title={t('Recente scans', 'Recent scans')} onClose={onClose}>
       <FlatList
         data={history}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.hint}>Nog geen scans aan deze ingang</Text>}
+        ListEmptyComponent={<Text style={styles.hint}>{t('Nog geen scans aan deze ingang', 'No scans at this entrance yet')}</Text>}
         renderItem={({ item }) => (
           <HistoryRow
             item={item}
@@ -254,11 +255,11 @@ export function ManualSheet({
   const [code, setCode] = useState('');
 
   return (
-    <Sheet visible={visible} title="Ticketcode" onClose={onClose}>
+    <Sheet visible={visible} title={t('Ticketcode', 'Ticket code')} onClose={onClose}>
       <TextInput
         value={code}
         onChangeText={setCode}
-        placeholder="Vul de code in"
+        placeholder={t('Vul de code in', 'Enter the code')}
         placeholderTextColor={SCANNER.textMuted}
         style={styles.codeInput}
         autoCapitalize="none"
@@ -281,7 +282,7 @@ export function ManualSheet({
         }}
         accessibilityRole="button"
       >
-        <Text style={styles.primaryText}>Controleren</Text>
+        <Text style={styles.primaryText}>{t('Controleren', 'Check')}</Text>
       </Pressable>
     </Sheet>
   );
@@ -318,11 +319,11 @@ export function CardReaderSheet({
   }
 
   return (
-    <Sheet visible={visible} title="Studentenkaart" onClose={onClose}>
+    <Sheet visible={visible} title={t('Studentenkaart', 'Student card')} onClose={onClose}>
       <View style={styles.cardWaiting}>
         <IdCard size={30} color={SCANNER.accent} />
-        <Text style={styles.cardTitle}>Wachtend op een kaart</Text>
-        <Text style={styles.hint}>Houd de kaart op de lezer.</Text>
+        <Text style={styles.cardTitle}>{t('Wachtend op een kaart', 'Waiting for a card')}</Text>
+        <Text style={styles.hint}>{t('Houd de kaart op de lezer.', 'Hold the card on the reader.')}</Text>
       </View>
       <TextInput
         ref={inputRef}
@@ -341,17 +342,17 @@ export function CardReaderSheet({
 }
 
 const SCANNER_ERRORS: Record<string, string> = {
-  USER_NOT_FOUND: 'Die persoon bestaat niet of is niet actief',
-  GRANT_NOT_FOUND: 'Die scanner stond er al niet meer bij',
+  USER_NOT_FOUND: t('Die persoon bestaat niet of is niet actief', 'That person does not exist or is not active'),
+  GRANT_NOT_FOUND: t('Die scanner stond er al niet meer bij', 'That scanner was already removed'),
   GRANT_ROLE_CONFLICT:
-    'Die persoon heeft al een andere rol op dit event; pas die aan bij Toegang in het beheer',
-  FORBIDDEN: 'Je mag geen scanners beheren voor dit event',
-  UNAUTHENTICATED: 'Je sessie is verlopen',
+    t('Die persoon heeft al een andere rol op dit event; pas die aan bij Toegang in het beheer', 'That person already has another role for this event; change it under Access in the admin'),
+  FORBIDDEN: t('Je mag geen scanners beheren voor dit event', 'You are not allowed to manage scanners for this event'),
+  UNAUTHENTICATED: t('Je sessie is verlopen', 'Your session has expired'),
 };
 
 function scannerErrorMessage(error: unknown): string {
   const code = error instanceof ApiError ? error.code : undefined;
-  return (code && SCANNER_ERRORS[code]) || 'Er ging iets mis';
+  return (code && SCANNER_ERRORS[code]) || t('Er ging iets mis', 'Something went wrong');
 }
 
 /**
@@ -438,7 +439,7 @@ export function ScannersSheet({
       } catch {
         if (!stopped) {
           setInviteUrl(null);
-          setError('De QR kon niet worden geladen');
+          setError(t('De QR kon niet worden geladen', 'The QR could not be loaded'));
         }
       }
     }
@@ -474,8 +475,8 @@ export function ScannersSheet({
     <Sheet visible={visible} title="Scanners" onClose={onClose}>
       <Text style={styles.hint}>
         {openScanning
-          ? 'Elke praesidiumpost kan dit event al scannen. Voeg hier enkel mensen van buiten het praesidium toe.'
-          : 'De scanlijst van dit event staat dicht: enkel wie hier staat, kan scannen.'}
+          ? t('Elke praesidiumpost kan dit event al scannen. Voeg hier enkel mensen van buiten het praesidium toe.', 'Every praesidium position can already scan this event. Only add people from outside the praesidium here.')
+          : t('De scanlijst van dit event staat dicht: enkel wie hier staat, kan scannen.', 'The scan list of this event is closed: only the people listed here can scan.')}
       </Text>
 
       <View style={styles.searchRow}>
@@ -483,7 +484,7 @@ export function ScannersSheet({
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Naam, e-mail of r-nummer"
+          placeholder={t('Naam, e-mail of r-nummer', 'Name, email or r-number')}
           placeholderTextColor={SCANNER.textMuted}
           style={styles.searchInput}
           autoCorrect={false}
@@ -500,7 +501,7 @@ export function ScannersSheet({
       >
         <QrCode size={17} color={qrOpen ? SCANNER.accentInk : SCANNER.text} />
         <Text style={[styles.qrToggleText, qrOpen && styles.qrToggleTextOn]}>
-          {qrOpen ? 'QR verbergen' : 'Toon QR om te laten scannen'}
+          {qrOpen ? t('QR verbergen', 'Hide QR') : t('Toon QR om te laten scannen', 'Show QR to have it scanned')}
         </Text>
       </Pressable>
 
@@ -532,15 +533,15 @@ export function ScannersSheet({
         keyExtractor={(candidate) => candidate.id}
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
-          results.length > 0 ? <Text style={styles.hint}>Zoekresultaten</Text> : undefined
+          results.length > 0 ? <Text style={styles.hint}>{t('Zoekresultaten', 'Search results')}</Text> : undefined
         }
         ListFooterComponent={
           <View>
-            <Text style={styles.hint}>Toegevoegd</Text>
+            <Text style={styles.hint}>{t('Toegevoegd', 'Added')}</Text>
             {scanners === null ? (
               <ActivityIndicator color={SCANNER.accent} style={styles.listSpinner} />
             ) : scanners.length === 0 ? (
-              <Text style={styles.hint}>Niemand extra toegevoegd</Text>
+              <Text style={styles.hint}>{t('Niemand extra toegevoegd', 'Nobody extra added')}</Text>
             ) : (
               scanners.map((scanner) => (
                 <View key={scanner.grantId} style={styles.personRow}>
@@ -562,7 +563,7 @@ export function ScannersSheet({
                     disabled={busyId === scanner.grantId}
                     hitSlop={8}
                     accessibilityRole="button"
-                    accessibilityLabel={`Toegang intrekken: ${scanner.name}`}
+                    accessibilityLabel={t(`Toegang intrekken: ${scanner.name}`, `Revoke access: ${scanner.name}`)}
                   >
                     {busyId === scanner.grantId ? (
                       <ActivityIndicator size="small" color={SCANNER.textMuted} />
@@ -592,7 +593,7 @@ export function ScannersSheet({
                 disabled={already || busyId === item.id}
                 onPress={() => void mutate(() => addEventScanner(eventId, item.id), item.id)}
                 accessibilityRole="button"
-                accessibilityLabel={`Toevoegen als scanner: ${item.name}`}
+                accessibilityLabel={t(`Toevoegen als scanner: ${item.name}`, `Add as scanner: ${item.name}`)}
               >
                 {busyId === item.id ? (
                   <ActivityIndicator size="small" color={SCANNER.accentInk} />
@@ -600,7 +601,7 @@ export function ScannersSheet({
                   <UserPlus size={14} color={already ? SCANNER.textMuted : SCANNER.accentInk} />
                 )}
                 <Text style={[styles.checkInText, already && styles.checkInTextDisabled]}>
-                  {already ? 'Staat erbij' : 'Toevoegen'}
+                  {already ? t('Staat erbij', 'Added') : t('Toevoegen', 'Add')}
                 </Text>
               </Pressable>
             </View>
@@ -626,8 +627,8 @@ export function GateSheet({
   onClose: () => void;
 }) {
   return (
-    <Sheet visible={visible} title="Ingang" onClose={onClose}>
-      {gates.length === 0 ? <Text style={styles.hint}>Geen actieve ingang</Text> : null}
+    <Sheet visible={visible} title={t('Ingang', 'Entrance')} onClose={onClose}>
+      {gates.length === 0 ? <Text style={styles.hint}>{t('Geen actieve ingang', 'No active entrance')}</Text> : null}
       {gates.map((gate) => (
         <Pressable
           key={gate.id}

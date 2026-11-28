@@ -4,6 +4,7 @@ import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import type { AppPhoto } from '../api/contract';
 import { COLORS } from '../theme/tokens';
+import { t } from '../i18n';
 
 /** De naad tussen twee foto's, zoals een contactblad. */
 const GAP = 2;
@@ -64,7 +65,7 @@ export function PhotoMosaic({
     <Pressable
       key={photo.id}
       accessibilityRole="imagebutton"
-      accessibilityLabel={`Foto ${index + 1} van ${photos.length}`}
+      accessibilityLabel={t(`Foto ${index + 1} van ${photos.length}`, `Photo ${index + 1} of ${photos.length}`)}
       onPress={() => onOpen(index)}
       style={({ pressed }) => pressed && styles.pressed}
     >

@@ -50,6 +50,7 @@ import { PersonalSheet, type ItemDraft, type PersonalTarget } from './PersonalSh
 import { CourseList, SemesterGrid } from './OverviewViews';
 import { ModeBar, PLANNING_MODES, ToolbarButton, type PlanningMode } from './ViewPicker';
 import { YellowRoundButton } from '../YellowHead';
+import { t } from '../../i18n';
 
 const GUTTER = 44;
 const HOUR = 52;
@@ -198,7 +199,7 @@ export const PlanningView = memo(function PlanningView({
     </ModeBar>
   );
   const settingsButton = data?.subscribed ? (
-    <ToolbarButton label="Instellingen van de planning" onPress={() => setSettings(true)}>
+    <ToolbarButton label={t('Instellingen van de planning', 'Planning settings')} onPress={() => setSettings(true)}>
       <Settings2 size={19} color={COLORS.ink} />
     </ToolbarButton>
   ) : null;
@@ -228,10 +229,9 @@ export const PlanningView = memo(function PlanningView({
         }}
         onClose={() => setSettings(false)}
       />
-      <Sheet visible={relinking} title="Ander lessenrooster koppelen" onClose={() => setRelinking(false)}>
+      <Sheet visible={relinking} title={t('Ander lessenrooster koppelen', 'Link another timetable')} onClose={() => setRelinking(false)}>
         <Text style={styles.setupText}>
-          Met een andere link begint een nieuw rooster: wat je bij lessen aanduidde, gaat weg. Je
-          wekelijkse regels, je deadlines en je VTK-evenementen blijven.
+          {t('Met een andere link begint een nieuw rooster: wat je bij lessen aanduidde, gaat weg. Je wekelijkse regels, je deadlines en je VTK-evenementen blijven.', 'A different link starts a new timetable: what you marked on classes is removed. Your weekly rules, deadlines and VTK events stay.')}
         </Text>
         <SetupForm handle={handle} initial={data.icsUrl} onDone={() => setRelinking(false)} />
       </Sheet>
@@ -242,7 +242,7 @@ export const PlanningView = memo(function PlanningView({
     return (
       <View style={styles.root}>
         {renderHead(null)}
-        <Loading label="Planning ophalen" />
+        <Loading label={t('Planning ophalen', 'Loading planning')} />
       </View>
     );
   }
@@ -261,8 +261,8 @@ export const PlanningView = memo(function PlanningView({
         {renderHead(null)}
         <View style={styles.padded}>
           <Empty
-            title="Planning nog niet beschikbaar"
-            hint="De koppeling met Burgieclan staat op deze server nog niet aan."
+            title={t('Planning nog niet beschikbaar', 'Planning not available yet')}
+            hint={t('De koppeling met Burgieclan staat op deze server nog niet aan.', 'The Burgieclan link is not enabled on this server yet.')}
           />
         </View>
       </View>
@@ -308,15 +308,13 @@ export const PlanningView = memo(function PlanningView({
         >
           <GraduationCap size={18} color={COLORS.ink} />
           <Text style={styles.blokHintText}>
-            Enkel je examens plannen? De blokkalender werkt ook zonder lessenrooster.
+            {t('Enkel je examens plannen? De blokkalender werkt ook zonder lessenrooster.', 'Only planning your exams? The exam calendar also works without a timetable.')}
           </Text>
           <ChevronRight size={18} color={COLORS.muted} />
         </Pressable>
-        <Text style={styles.setupTitle}>Je lessenrooster en VTK in één agenda</Text>
+        <Text style={styles.setupTitle}>{t('Je lessenrooster en VTK in één agenda', 'Your timetable and VTK in one calendar')}</Text>
         <Text style={styles.setupText}>
-          Koppel je KU Leuven-lessenrooster één keer. Je planning is dezelfde als die op Burgieclan:
-          vink lessen af, verberg de groepen waar je niet naartoe gaat, zet VTK-evenementen erbij, en
-          abonneer je agenda-app op het geheel.
+          {t('Koppel je KU Leuven-lessenrooster één keer. Je planning is dezelfde als die op Burgieclan: vink lessen af, verberg de groepen waar je niet naartoe gaat, zet VTK-evenementen erbij, en abonneer je agenda-app op het geheel.', 'Link your KU Leuven timetable once. Your planning is the same as on Burgieclan: check off classes, hide the groups you do not attend, add VTK events, and subscribe your calendar app to all of it.')}
         </Text>
         <SetupForm handle={handle} />
         </View>
@@ -330,7 +328,10 @@ export const PlanningView = memo(function PlanningView({
     const index = semester ? keys.indexOf(semester) : -1;
     const eyebrow = overview
       ? overview.current
-        ? `${semesterName(overview.key)} · week ${overview.current} van ${overview.totalWeeks}`
+        ? t(
+            `${semesterName(overview.key)} · week ${overview.current} van ${overview.totalWeeks}`,
+            `${semesterName(overview.key)} · week ${overview.current} of ${overview.totalWeeks}`,
+          )
         : `${semesterName(overview.key)} · ${shortDay(overview.firstDate)} - ${shortDay(overview.lastDate)}`
       : null;
     return (
@@ -355,8 +356,8 @@ export const PlanningView = memo(function PlanningView({
             ) : null}
             {!overview ? (
               <Empty
-                title="Nog geen lessen"
-                hint="Zodra je lessenrooster lessen bevat, zie je hier per vak wat je afvinkte en wat je nog moet inhalen."
+                title={t('Nog geen lessen', 'No classes yet')}
+                hint={t('Zodra je lessenrooster lessen bevat, zie je hier per vak wat je afvinkte en wat je nog moet inhalen.', 'As soon as your timetable has classes, you see here per course what you checked off and what you still need to catch up on.')}
               />
             ) : mode === 'vak' ? (
               <CourseList
@@ -391,8 +392,8 @@ export const PlanningView = memo(function PlanningView({
             <Pressable style={styles.warning} onPress={() => setSettings(true)} accessibilityRole="button">
               <AlertTriangle size={16} color={COLORS.ink} />
               <Text style={styles.warningText}>
-                Je lessenrooster kon niet bijgewerkt worden: {data.syncError} Tik om opnieuw te proberen of
-                een andere link te koppelen.
+                {t('Je lessenrooster kon niet bijgewerkt worden:', 'Your timetable could not be updated:')} {data.syncError}{' '}
+                {t('Tik om opnieuw te proberen of een andere link te koppelen.', 'Tap to try again or link another link.')}
               </Text>
             </Pressable>
           ) : null
@@ -430,10 +431,10 @@ export const PlanningView = memo(function PlanningView({
         }
         toolbarRight={
           <>
-            <ToolbarButton label="Exporteren naar je agenda" onPress={() => setExporting(true)}>
+            <ToolbarButton label={t('Exporteren naar je agenda', 'Export to your calendar')} onPress={() => setExporting(true)}>
               <CalendarPlus size={19} color={COLORS.ink} />
             </ToolbarButton>
-            <ToolbarButton label="Instellingen van de planning" onPress={() => setSettings(true)}>
+            <ToolbarButton label={t('Instellingen van de planning', 'Planning settings')} onPress={() => setSettings(true)}>
               <Settings2 size={19} color={COLORS.ink} />
             </ToolbarButton>
           </>
@@ -680,7 +681,7 @@ function useDragToPlace({
     duration: useSharedValue(DRAFT_MINUTES),
     visible: useSharedValue(0),
     scroll: scrollShared,
-    title: useRef('Nieuw'),
+    title: useRef(t('Nieuw', 'New')),
     setLabel: useRef<((label: string) => void) | null>(null),
   };
   const state = useRef({
@@ -765,7 +766,7 @@ function useDragToPlace({
         d.item = null;
         d.duration = DRAFT_MINUTES;
         d.grab = DRAFT_MINUTES / 2;
-        overlay.title.current = 'Nieuw';
+        overlay.title.current = t('Nieuw', 'New');
       }
       d.active = true;
       d.x = x;
@@ -929,7 +930,7 @@ const DayHead = memo(function DayHead({
           {more > 0 ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Nog ${more} op deze dag`}
+              accessibilityLabel={t(`Nog ${more} op deze dag`, `${more} more on this day`)}
               onPress={() => onSelect(chips[shown.length].ref)}
               style={styles.chip}
             >
@@ -1046,7 +1047,7 @@ const DayColumn = memo(function DayColumn({
           ]}
         >
           <Text style={styles.draftTime}>{clock(draft.startMin)}</Text>
-          <Text style={styles.draftTitle}>Nieuw</Text>
+          <Text style={styles.draftTitle}>{t('Nieuw', 'New')}</Text>
         </View>
       ) : null}
     </View>
@@ -1081,10 +1082,10 @@ function Progress({
           </Text>
           {previous && next ? (
             <View style={styles.navButtons}>
-              <YellowRoundButton label="Vorig semester" disabled={previous.disabled} onPress={previous.onPress}>
+              <YellowRoundButton label={t('Vorig semester', 'Previous semester')} disabled={previous.disabled} onPress={previous.onPress}>
                 <ChevronLeft size={17} color={COLORS.strong} strokeWidth={2.4} />
               </YellowRoundButton>
-              <YellowRoundButton label="Volgend semester" disabled={next.disabled} onPress={next.onPress}>
+              <YellowRoundButton label={t('Volgend semester', 'Next semester')} disabled={next.disabled} onPress={next.onPress}>
                 <ChevronRight size={17} color={COLORS.strong} strokeWidth={2.4} />
               </YellowRoundButton>
             </View>
@@ -1097,7 +1098,10 @@ function Progress({
       <View
         style={styles.progressBar}
         accessible
-        accessibilityLabel={`${totals.done} van ${total} lessen afgevinkt, ${totals.missed} in te halen`}
+        accessibilityLabel={t(
+          `${totals.done} van ${total} lessen afgevinkt, ${totals.missed} in te halen`,
+          `${totals.done} of ${total} classes checked off, ${totals.missed} to catch up`,
+        )}
       >
         <View style={{ width: share(totals.done), backgroundColor: COLORS.strong }} />
         <View style={{ width: share(totals.missed), backgroundColor: PLANNING.catchupFill }} />
@@ -1105,17 +1109,19 @@ function Progress({
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendSwatch, { backgroundColor: COLORS.strong }]} />
-          <Text style={styles.legendLabel}>Afgevinkt</Text>
+          <Text style={styles.legendLabel}>{t('Afgevinkt', 'Checked off')}</Text>
         </View>
         {totals.missed > 0 ? (
           <View style={styles.legendItem}>
             <View style={[styles.legendSwatch, { backgroundColor: PLANNING.catchupFill }]} />
-            <Text style={styles.legendLabel}>{totals.missed} in te halen</Text>
+            <Text style={styles.legendLabel}>{t(`${totals.missed} in te halen`, `${totals.missed} to catch up`)}</Text>
           </View>
         ) : null}
         {totals.mandatoryLeft > 0 ? (
           <Text style={styles.legendLabel}>
-            {totals.mandatoryLeft} verplicht{totals.mandatoryLeft === 1 ? 'e les' : 'e lessen'} nog te komen
+            {totals.mandatoryLeft === 1
+              ? t('1 verplichte les nog te komen', '1 mandatory class still to come')
+              : t(`${totals.mandatoryLeft} verplichte lessen nog te komen`, `${totals.mandatoryLeft} mandatory classes still to come`)}
           </Text>
         ) : null}
       </View>

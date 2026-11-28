@@ -38,6 +38,7 @@ import {
 } from '../../components/scanner/Sheets';
 import { useScanner } from '../../scanner/useScanner';
 import { COLORS, FONTS, HIT_TARGET, RADIUS, SCANNER, SPACING } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 type Sheet = 'none' | 'gate' | 'manual' | 'card' | 'names' | 'history' | 'scanners';
 
@@ -79,7 +80,7 @@ export default function ScanScreen() {
     return (
       <SafeAreaView style={[styles.screen, styles.center]}>
         <ActivityIndicator color={SCANNER.accent} />
-        <Text style={styles.muted}>Scanner laden</Text>
+        <Text style={styles.muted}>{t('Scanner laden', 'Loading scanner')}</Text>
       </SafeAreaView>
     );
   }
@@ -88,7 +89,7 @@ export default function ScanScreen() {
     return (
       <SafeAreaView style={[styles.screen, styles.center]}>
         <XCircle size={32} color={SCANNER.countRejected} />
-        <Text style={styles.errorTitle}>Scanner niet beschikbaar</Text>
+        <Text style={styles.errorTitle}>{t('Scanner niet beschikbaar', 'Scanner not available')}</Text>
         <Text style={styles.muted}>{scanner.bootstrapError}</Text>
         <Pressable
           style={styles.retry}
@@ -96,10 +97,10 @@ export default function ScanScreen() {
           accessibilityRole="button"
         >
           <RefreshCw size={16} color={SCANNER.accentInk} />
-          <Text style={styles.retryText}>Opnieuw proberen</Text>
+          <Text style={styles.retryText}>{t('Opnieuw proberen', 'Try again')}</Text>
         </Pressable>
         <Pressable onPress={close} hitSlop={12} accessibilityRole="button">
-          <Text style={styles.muted}>Sluiten</Text>
+          <Text style={styles.muted}>{t('Sluiten', 'Close')}</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -112,7 +113,7 @@ export default function ScanScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['bottom']}>
       <PageHead
-        kicker="Tickets scannen"
+        kicker={t('Tickets scannen', 'Scan tickets')}
         title={bootstrap.event.title}
         back={false}
         compact
@@ -133,14 +134,14 @@ export default function ScanScreen() {
             </View>
             {bootstrap.canManageScanners ? (
               <HeadButton
-                accessibilityLabel="Scanners beheren"
+                accessibilityLabel={t('Scanners beheren', 'Manage scanners')}
                 onPress={() => setSheet('scanners')}
                 disabled={!scanner.online}
               >
                 <UserRoundCog size={20} color={COLORS.ink} />
               </HeadButton>
             ) : null}
-            <HeadButton accessibilityLabel="Scanner sluiten" onPress={close}>
+            <HeadButton accessibilityLabel={t('Scanner sluiten', 'Close scanner')} onPress={close}>
               <X size={21} color={COLORS.ink} />
             </HeadButton>
           </View>
@@ -152,10 +153,10 @@ export default function ScanScreen() {
         onPress={() => setSheet('gate')}
         disabled={bootstrap.gates.length === 0}
         accessibilityRole="button"
-        accessibilityLabel="Ingang kiezen"
+        accessibilityLabel={t('Ingang kiezen', 'Choose entrance')}
       >
         <MapPin size={15} color={SCANNER.textMuted} />
-        <Text style={styles.gateText}>{gateName ?? 'Geen actieve ingang'}</Text>
+        <Text style={styles.gateText}>{gateName ?? t('Geen actieve ingang', 'No active entrance')}</Text>
         {bootstrap.gates.length > 0 ? <ChevronDown size={15} color={SCANNER.textMuted} /> : null}
       </Pressable>
 
@@ -187,7 +188,7 @@ export default function ScanScreen() {
           <View style={styles.cameraEmpty}>
             <Camera size={32} color={SCANNER.onStatusMuted} />
             <Text style={styles.cameraEmptyTitle}>
-              {permission?.granted ? 'Camera is uitgeschakeld' : 'Cameratoegang is nodig'}
+              {permission?.granted ? t('Camera is uitgeschakeld', 'Camera is turned off') : t('Cameratoegang is nodig', 'Camera access is needed')}
             </Text>
             <Pressable
               style={[styles.retry, styles.retryOnDark]}
@@ -199,7 +200,7 @@ export default function ScanScreen() {
             >
               <Camera size={16} color={COLORS.ink} />
               <Text style={[styles.retryText, styles.retryTextOnDark]}>
-                {permission?.granted ? 'Camera starten' : 'Toegang geven'}
+                {permission?.granted ? t('Camera starten', 'Start camera') : t('Toegang geven', 'Grant access')}
               </Text>
             </Pressable>
             {permission && !permission.canAskAgain && !permission.granted ? (
@@ -229,26 +230,26 @@ export default function ScanScreen() {
       <View style={styles.tools}>
         <Tool
           icon={<Flashlight size={19} color={torchOn ? SCANNER.accentInk : SCANNER.text} />}
-          label="Zaklamp"
+          label={t('Zaklamp', 'Flashlight')}
           active={torchOn}
           disabled={!cameraReady}
           onPress={() => setTorchOn((current) => !current)}
         />
         <Tool
           icon={<Keyboard size={19} color={SCANNER.text} />}
-          label="Handmatig"
+          label={t('Handmatig', 'Manual')}
           onPress={() => setSheet('manual')}
         />
         <Tool
           icon={<Users size={19} color={SCANNER.text} />}
-          label="Op naam"
+          label={t('Op naam', 'By name')}
           disabled={!scanner.manifest}
           onPress={() => setSheet('names')}
         />
         {bootstrap.event.cardCheckIn ? (
           <Tool
             icon={<IdCard size={19} color={SCANNER.text} />}
-            label="Kaartlezer"
+            label={t('Kaartlezer', 'Card reader')}
             onPress={() => setSheet('card')}
           />
         ) : null}
@@ -263,10 +264,13 @@ export default function ScanScreen() {
           style={styles.historyButton}
           onPress={() => setSheet('history')}
           accessibilityRole="button"
-          accessibilityLabel={`Recente scans openen, ${scanner.history.length} op dit toestel`}
+          accessibilityLabel={t(
+            `Recente scans openen, ${scanner.history.length} op dit toestel`,
+            `Open recent scans, ${scanner.history.length} on this device`,
+          )}
         >
           <History size={17} color={SCANNER.textMuted} />
-          <Text style={styles.historyButtonLabel}>Recente scans</Text>
+          <Text style={styles.historyButtonLabel}>{t('Recente scans', 'Recent scans')}</Text>
           <Text style={styles.historyButtonCount}>{scanner.history.length}</Text>
           <ChevronRight size={16} color={SCANNER.textMuted} />
         </Pressable>

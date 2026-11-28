@@ -9,6 +9,7 @@ import { PageHead } from '../src/components/PageHead';
 import { Button, Card } from '../src/components/ui';
 import { useApp } from '../src/state/app';
 import { COLORS, RADIUS, SPACING, TYPE } from '../src/theme/tokens';
+import { t } from '../src/i18n';
 
 /**
  * Tegen welke server de app praat.
@@ -52,10 +53,10 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.root}>
-      <PageHead title="Server" subtitle="Waar de app zijn gegevens haalt" />
+      <PageHead title="Server" subtitle={t('Waar de app zijn gegevens haalt', 'Where the app gets its data')} />
       <ScrollView contentContainerStyle={styles.content}>
         <Card>
-          <Text style={styles.label}>Adres</Text>
+          <Text style={styles.label}>{t('Adres', 'Address')}</Text>
           <TextInput
             value={value}
             onChangeText={(next) => {
@@ -70,14 +71,16 @@ export default function SettingsScreen() {
             style={styles.input}
           />
           <Text style={styles.hint}>
-            Standaard: {defBase}. Voor een lokale test vul je hier je cloudflared-tunnel in;
-            een gewone localhost werkt niet, want de login vraagt HTTPS.
+            {t(
+              `Standaard: ${defBase}. Voor een lokale test vul je hier je cloudflared-tunnel in; een gewone localhost werkt niet, want de login vraagt HTTPS.`,
+              `Default: ${defBase}. For a local test, enter your cloudflared tunnel here; a plain localhost does not work, because the login requires HTTPS.`,
+            )}
           </Text>
           <View style={styles.buttonStack}>
-            <Button label={saved ? 'Bewaard' : 'Bewaren'} onPress={save} />
+            <Button label={saved ? t('Bewaard', 'Saved') : t('Bewaren', 'Save')} onPress={save} />
             {value !== defBase ? (
               <Button
-                label={`Herstel naar ${defBase}`}
+                label={t(`Herstel naar ${defBase}`, `Reset to ${defBase}`)}
                 variant="ghost"
                 onPress={resetToDefault}
               />
@@ -86,24 +89,26 @@ export default function SettingsScreen() {
         </Card>
 
         <Card>
-          <Text style={styles.label}>Tijdelijke opslag (cache)</Text>
+          <Text style={styles.label}>{t('Tijdelijke opslag (cache)', 'Temporary storage (cache)')}</Text>
           <Text style={styles.hint}>
-            Schermen bewaren gegevens tijdelijk lokaal zodat ze meteen laden. Als foto{"'"}s of albums
-            niet verschijnen door verouderde gegevens, kan je de cache hier direct legen.
+            {t(
+              "Schermen bewaren gegevens tijdelijk lokaal zodat ze meteen laden. Als foto's of albums niet verschijnen door verouderde gegevens, kan je de cache hier direct legen.",
+              'Screens keep data locally for a while so they load right away. If photos or albums do not show up because of outdated data, you can clear the cache here.',
+            )}
           </Text>
           <Button
-            label={cacheCleared ? 'Cache is geleegd' : 'Cache nu legen'}
+            label={cacheCleared ? t('Cache is geleegd', 'Cache cleared') : t('Cache nu legen', 'Clear cache now')}
             variant="ghost"
             onPress={emptyCache}
           />
         </Card>
 
         <Card>
-          <Text style={styles.label}>Over deze app</Text>
-          <Text style={styles.hint}>Versie {Constants.expoConfig?.version ?? '?'}</Text>
+          <Text style={styles.label}>{t('Over deze app', 'About this app')}</Text>
+          <Text style={styles.hint}>{t('Versie', 'Version')} {Constants.expoConfig?.version ?? '?'}</Text>
         </Card>
 
-        <Button label="Sluiten" variant="ghost" onPress={() => router.back()} />
+        <Button label={t('Sluiten', 'Close')} variant="ghost" onPress={() => router.back()} />
       </ScrollView>
     </View>
   );

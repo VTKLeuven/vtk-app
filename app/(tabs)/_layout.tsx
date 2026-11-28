@@ -3,6 +3,7 @@ import { BookOpen, CalendarDays, House, LayoutGrid, Ticket, type LucideIcon } fr
 import { StyleSheet, Text, View, type ColorValue } from 'react-native';
 
 import { COLORS, FONTS, RADIUS } from '../../src/theme/tokens';
+import { t } from '../../src/i18n';
 
 /**
  * De tabbalk: het enige wat deze app echt anders maakt dan de site.
@@ -76,7 +77,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="kalender"
         options={{
-          title: 'Kalender',
+          title: t('Kalender', 'Calendar'),
           tabBarIcon: tabIcon(CalendarDays),
         }}
       />
@@ -97,7 +98,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="meer"
         options={{
-          title: 'Meer',
+          title: t('Meer', 'More'),
           tabBarIcon: tabIcon(LayoutGrid),
         }}
       />

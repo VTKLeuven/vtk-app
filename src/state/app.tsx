@@ -4,7 +4,8 @@ import { fetchBootstrap } from '../api/bootstrap';
 import { NetworkError } from '../api/client';
 import type { AppBootstrap, AppLocale, AppViewer } from '../api/contract';
 import { pendingGate } from '../auth/session';
-import { getPref, readCache, setPref, writeCache } from '../storage';
+import { applyLanguage, LANG } from '../i18n';
+import { readCache, writeCache } from '../storage';
 
 /**
  * De schil van de app: wie er ingelogd is, welke tabs het CMS heeft, en de
@@ -17,7 +18,6 @@ import { getPref, readCache, setPref, writeCache } from '../storage';
  */
 
 const CACHE_KEY = 'bootstrap';
-const LOCALE_KEY = 'locale';
 
 type AppState = {
   bootstrap: AppBootstrap | null;
@@ -37,13 +37,14 @@ type AppState = {
 const AppContext = createContext<AppState | null>(null);
 
 export function readStoredLocale(): AppLocale {
-  return getPref(LOCALE_KEY) === 'en' ? 'en' : 'nl';
+  return LANG;
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const cached = useMemo(() => readCache<AppBootstrap>(CACHE_KEY), []);
   const [bootstrap, setBootstrap] = useState<AppBootstrap | null>(cached?.value ?? null);
-  const [locale, setLocaleState] = useState<AppLocale>(readStoredLocale);
+  // De taal ligt vast bij de start (`src/i18n.ts`); wisselen herstart de app.
+  const locale: AppLocale = LANG;
   const [loading, setLoading] = useState(!cached);
   const [stale, setStale] = useState(Boolean(cached));
   const [error, setError] = useState<Error | null>(null);
@@ -73,8 +74,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [load, locale]);
 
   const setLocale = useCallback((next: AppLocale) => {
-    setPref(LOCALE_KEY, next);
-    setLocaleState(next);
+    void applyLanguage(next);
   }, []);
 
   const value = useMemo<AppState>(

@@ -30,6 +30,7 @@ import { askPushOnce } from '../push';
 import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { t } from '../i18n';
 
 /** Zoveel evenementen staan er onder "Ook binnenkort"; de rest staat in Kalender. */
 const MAX_LATER = 30;
@@ -107,7 +108,7 @@ export default function HomeScreen() {
     [week.data, resource.data, day],
   );
 
-  if (resource.loading) return <Loading label="VTK openen" />;
+  if (resource.loading) return <Loading label={t('VTK openen', 'Open VTK')} />;
   if (!resource.data) {
     return (
       <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
@@ -127,7 +128,10 @@ export default function HomeScreen() {
       <HomeShortcut />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Bonnetjes, ${formatVouchers(today.vouchers ?? 0, locale)} openstaand`}
+        accessibilityLabel={t(
+          `Bonnetjes, ${formatVouchers(today.vouchers ?? 0, locale)} openstaand`,
+          `Vouchers, ${formatVouchers(today.vouchers ?? 0, locale)} available`,
+        )}
         onPress={() => router.push('/bonnetjes')}
         hitSlop={6}
         style={({ pressed }) => [styles.pill, pressed && styles.pressedHead]}
@@ -193,7 +197,7 @@ export default function HomeScreen() {
 
         {/* Wat op jou wacht, tussen je lessen en de Alma's: na "wat heb ik nu"
             komt "wat moet ik nog doen". Onderaan altijd KURT, voor een bibplaats. */}
-        <HomeSection title="Voor jou">
+        <HomeSection title={t('Voor jou', 'For you')}>
           <View style={styles.stack}>
             {today.tasks.map((task, index) => (
               <TaskCard key={`${task.kind}-${task.at ?? index}`} task={task} />
@@ -202,8 +206,8 @@ export default function HomeScreen() {
                 broodje staat. Niet meer onder "Snel naar": twee keer is één te veel. */}
             {today.tasks.some((task) => task.kind === 'theokot-order' || task.kind === 'theokot-pickup') ? null : (
               <LinkCard
-                title="Broodjes bestellen"
-                detail="Bij het Theokot, af te halen met je studentenkaart."
+                title={t('Broodjes bestellen', 'Order sandwiches')}
+                detail={t('Bij het Theokot, af te halen met je studentenkaart.', 'At the Theokot, pick up with your student card.')}
                 icon={Sandwich}
                 photo={THEOKOT_CARD_PHOTO}
                 external={false}
@@ -212,7 +216,7 @@ export default function HomeScreen() {
             )}
             {bakske ? (
               <LinkCard
-                title="Het nieuwste bakske"
+                title={t('Het nieuwste bakske', 'The latest Bakske')}
                 detail={bakske.issue ?? bakske.title}
                 photo={bakske.coverUrl ? { uri: mediaUrl(bakske.coverUrl) as string } : null}
                 external={!bakske.pages?.length}
@@ -220,8 +224,8 @@ export default function HomeScreen() {
               />
             ) : null}
             <LinkCard
-              title="Een bibplaats nodig?"
-              detail="Reserveer een plaats in een bib van KU Leuven via KURT."
+              title={t('Een bibplaats nodig?', 'Need a library seat?')}
+              detail={t('Reserveer een plaats in een bib van KU Leuven via KURT.', 'Book a seat in a KU Leuven library via KURT.')}
               onPress={() => void WebBrowser.openBrowserAsync(KURT_URL)}
             />
           </View>
@@ -237,7 +241,7 @@ export default function HomeScreen() {
               <Prose>{today.announcement.body}</Prose>
               {today.announcement.ctaUrl ? (
                 <Button
-                  label={today.announcement.ctaLabel ?? 'Meer weten'}
+                  label={today.announcement.ctaLabel ?? t('Meer weten', 'Learn more')}
                   variant="ghost"
                   onPress={() =>
                     void WebBrowser.openBrowserAsync(today.announcement!.ctaUrl as string)
@@ -250,11 +254,11 @@ export default function HomeScreen() {
 
         {later.length > 0 ? (
           <HomeSection
-            title="Ook binnenkort"
+            title={t('Ook binnenkort', 'Coming up')}
             bleed
             link={{
-              label: 'Kalender',
-              accessibilityLabel: 'Naar de evenementen in de kalender',
+              label: t('Kalender', 'Calendar'),
+              accessibilityLabel: t('Naar de evenementen in de kalender', 'To the events in the calendar'),
               // Het tabblad Evenementen, en niet de planning waarop Kalender opent.
               onPress: () => router.push({ pathname: '/kalender', params: { tab: 'agenda', n: String(Date.now()) } }),
             }}
@@ -277,7 +281,7 @@ export default function HomeScreen() {
           </HomeSection>
         ) : null}
 
-        <HomeSection title="Snel naar">
+        <HomeSection title={t('Snel naar', 'Quick links')}>
           <Shortcuts
             onOpen={(route) => {
               // `/studies?tab=cudi`: de query als parameter, anders komt het vraagteken in het pad.
@@ -292,12 +296,12 @@ export default function HomeScreen() {
         {!viewer ? (
           <View style={styles.block}>
             <Card featured>
-              <Text style={styles.cardTitle}>Log in met je VTK-account</Text>
+              <Text style={styles.cardTitle}>{t('Log in met je VTK-account', 'Log in with your VTK account')}</Text>
               <Text style={styles.cardBody}>
                 Zonder inloggen kan je alles lezen. Broodjes, tickets, je bonnetjes en je shiften
                 vragen een account; hetzelfde als op de site, KU Leuven-login inbegrepen.
               </Text>
-              <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+              <Button label={t('Inloggen', 'Log in')} onPress={() => router.push('/inloggen')} />
             </Card>
           </View>
         ) : null}
@@ -328,7 +332,7 @@ function LaterCard({
 }) {
   const start = displayStart(event);
   const key = dayKeyOf(start);
-  const badge = (key === addDays(today, 1) ? 'Morgen' : formatDayShort(start, locale))
+  const badge = (key === addDays(today, 1) ? t('Morgen', 'Tomorrow') : formatDayShort(start, locale))
     .replace(/\./g, '')
     .toUpperCase();
   const meta = [event.allDay ? null : formatTime(start, locale), event.location].filter(Boolean).join(' · ');
@@ -381,7 +385,7 @@ const SHORTCUTS: {
   { key: 'media', label: 'Media', to: '/media', photo: require('../../assets/snel/sport.jpg') },
   {
     key: 'cursusdienst',
-    label: 'Cursusdienst',
+    label: t('Cursusdienst', 'Course shop'),
     to: '/studies?tab=cudi',
     photo: require('../../assets/snel/cursusdienst.jpg'),
   },
@@ -403,7 +407,7 @@ function Shortcuts({
         <Pressable
           key={item.key}
           accessibilityRole="button"
-          accessibilityLabel={item.external ? `${item.label}, opent cudi.vtk.be` : item.label}
+          accessibilityLabel={item.external ? t(`${item.label}, opent cudi.vtk.be`, `${item.label}, opens cudi.vtk.be`) : item.label}
           onPress={() => (item.external ? onExternal(item.to) : onOpen(item.to))}
           style={({ pressed }) => [styles.aanbod, pressed && styles.aanbodPressed]}
         >
@@ -423,7 +427,7 @@ function Shortcuts({
             {item.external ? (
               <ExternalLink color={COLORS.muted} size={13} />
             ) : (
-              <Text style={styles.ontdek}>Ontdek</Text>
+              <Text style={styles.ontdek}>{t('Ontdek', 'Discover')}</Text>
             )}
           </View>
         </Pressable>

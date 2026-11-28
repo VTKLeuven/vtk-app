@@ -21,6 +21,7 @@ import { formatLongDate } from '../../format';
 import { savePhotoToLibrary, sharePhoto, type SaveOutcome } from '../../savePhoto';
 import { useApp } from '../../state/app';
 import { COLORS, SPACING } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 /**
  * Eén fotoalbum.
@@ -55,7 +56,7 @@ export default function AlbumScreen() {
     setJustSaved(false);
   }, []);
 
-  if (resource.loading) return <Loading label="Album ophalen" />;
+  if (resource.loading) return <Loading label={t('Album ophalen', 'Loading album')} />;
   if (!resource.data) {
     return (
       <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
@@ -89,11 +90,11 @@ export default function AlbumScreen() {
         setTimeout(() => setJustSaved(false), 2000);
       } else if (outcome.status === 'geweigerd') {
         Alert.alert(
-          'Geen toegang tot je fotos',
-          'De app mag niets aan je fotobibliotheek toevoegen. Je kan dat aanzetten in de instellingen van je telefoon, of de foto delen en van daaruit bewaren.',
+          t('Geen toegang tot je fotos', 'No access to your photos'),
+          t('De app mag niets aan je fotobibliotheek toevoegen. Je kan dat aanzetten in de instellingen van je telefoon, of de foto delen en van daaruit bewaren.', 'The app is not allowed to add to your photo library. You can turn that on in your phone settings, or share the photo and save it from there.'),
         );
       } else if (outcome.status === 'mislukt') {
-        Alert.alert('Dat lukte niet', outcome.reason);
+        Alert.alert(t('Dat lukte niet', 'That did not work'), outcome.reason);
       }
     } finally {
       setBusy(null);
@@ -108,7 +109,7 @@ export default function AlbumScreen() {
         photos={photos}
         width={width}
         onOpen={changeIndex}
-        empty={<Empty title="Leeg album" hint="Er staan nog geen foto's in dit album." />}
+        empty={<Empty title={t('Leeg album', 'Empty album')} hint={t("Er staan nog geen foto's in dit album.", 'There are no photos in this album yet.')} />}
         // De kop staat in de lijst en schuift mee weg.
         header={
           <View>
@@ -153,7 +154,7 @@ export default function AlbumScreen() {
             <View style={styles.actions}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Deel deze foto"
+                accessibilityLabel={t('Deel deze foto', 'Share this photo')}
                 accessibilityState={{ busy: busy === 'delen' }}
                 disabled={busy !== null}
                 onPress={() => void handle('delen')}
@@ -169,7 +170,7 @@ export default function AlbumScreen() {
 
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={justSaved ? 'Bewaard' : 'Bewaar deze foto'}
+                accessibilityLabel={justSaved ? t('Bewaard', 'Saved') : t('Bewaar deze foto', 'Save this photo')}
                 accessibilityState={{ busy: busy === 'bewaren' }}
                 disabled={busy !== null}
                 onPress={() => void handle('bewaren')}

@@ -2,6 +2,7 @@ import { Search, X } from 'lucide-react-native';
 import { Pressable, StyleSheet, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { t } from '../i18n';
 
 /**
  * Het zoekveld: een pill met een vergrootglas ervoor.
@@ -48,7 +49,7 @@ export function SearchField({
       {value.length > 0 ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Zoekterm wissen"
+          accessibilityLabel={t('Zoekterm wissen', 'Clear search')}
           onPress={() => onChange('')}
           hitSlop={12}
         >

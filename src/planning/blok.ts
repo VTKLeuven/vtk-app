@@ -1,5 +1,6 @@
 import type { AppPlanning, AppPlanningExam, AppPlanningTask } from '../api/contract';
 import { addDays, daysBetween, mondayOf } from './grid';
+import { t } from '../i18n';
 
 /**
  * De blokkalender, zoals het tabblad Blok in de planner van Burgieclan
@@ -115,9 +116,9 @@ export function shiftMonth(month: string, by: number): string {
 /** "vandaag", "morgen", "over 12 dagen". */
 export function dayDistance(date: string, today: string): string {
   const days = daysBetween(today, date);
-  if (days === 0) return 'vandaag';
-  if (days === 1) return 'morgen';
-  if (days > 1) return `over ${days} dagen`;
-  if (days === -1) return 'gisteren';
-  return `${-days} dagen geleden`;
+  if (days === 0) return t('vandaag', 'today');
+  if (days === 1) return t('morgen', 'tomorrow');
+  if (days > 1) return t(`over ${days} dagen`, `in ${days} days`);
+  if (days === -1) return t('gisteren', 'yesterday');
+  return t(`${-days} dagen geleden`, `${-days} days ago`);
 }

@@ -20,6 +20,7 @@ import { useTabRouter } from '../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW } from '../components/HomeSection';
 import { HeadScroll } from '../components/HeadScroll';
+import { t } from '../i18n';
 
 /** Ruim genoeg voor een alinea; dezelfde grens als op de site (`MAX_OPEN_ANSWER_LENGTH`). */
 const MAX_OPEN_ANSWER = 2000;
@@ -40,21 +41,20 @@ export default function PeilingenScreen() {
   if (!viewer) {
     return (
       <>
-        <HeadScroll head={<PageHead title="Peilingen" subtitle="Je RiVers vragen je mening" />} contentContainerStyle={styles.content} style={styles.root}>
+        <HeadScroll head={<PageHead title={t('Peilingen', 'Polls')} subtitle={t('Je RiVers vragen je mening', 'Your study representatives want your opinion')} />} contentContainerStyle={styles.content} style={styles.root}>
           <Card>
-            <Text style={styles.title}>Log eerst in</Text>
+            <Text style={styles.title}>{t('Log eerst in', 'Log in first')}</Text>
             <Text style={styles.body}>
-              Een peiling is voor de studenten van een richting, en welke richting jij volgt, staat
-              in je account. Je antwoord blijft anoniem.
+              {t('Een peiling is voor de studenten van een richting, en welke richting jij volgt, staat in je account. Je antwoord blijft anoniem.', 'A poll is for the students of a programme, and which programme you follow is in your account. Your answer stays anonymous.')}
             </Text>
-            <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+            <Button label={t('Inloggen', 'Log in')} onPress={() => router.push('/inloggen')} />
           </Card>
         </HeadScroll>
       </>
     );
   }
 
-  if (resource.loading) return <Loading label="Peilingen ophalen" />;
+  if (resource.loading) return <Loading label={t('Peilingen ophalen', 'Loading polls')} />;
   if (!resource.data) {
     return (
       <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
@@ -65,7 +65,7 @@ export default function PeilingenScreen() {
 
   return (
     <>
-      <HeadScroll head={<PageHead title="Peilingen" subtitle="Je RiVers vragen je mening" />}
+      <HeadScroll head={<PageHead title={t('Peilingen', 'Polls')} subtitle={t('Je RiVers vragen je mening', 'Your study representatives want your opinion')} />}
         style={styles.root}
         contentContainerStyle={styles.content}
         keyboardDismissMode="on-drag"
@@ -82,13 +82,13 @@ export default function PeilingenScreen() {
         {polls.length === 0 ? (
           missingProgramme ? (
             <Empty
-              title="We weten je richting niet"
-              hint="Een peiling is voor de studenten van een richting. Vul je richting in bij je gegevens op vtk.be; daarna verschijnen hier de vragen van je RiVers."
+              title={t('We weten je richting niet', 'We do not know your programme')}
+              hint={t('Een peiling is voor de studenten van een richting. Vul je richting in bij je gegevens op vtk.be; daarna verschijnen hier de vragen van je RiVers.', 'A poll is for the students of a programme. Fill in your programme in your details on vtk.be; then the questions of your study representatives show up here.')}
             />
           ) : (
             <Empty
-              title="Geen open peilingen"
-              hint="Je RiVers vragen hier je mening voor de volgende POC. Er staat nu niets open."
+              title={t('Geen open peilingen', 'No open polls')}
+              hint={t('Je RiVers vragen hier je mening voor de volgende POC. Er staat nu niets open.', 'Your study representatives ask your opinion here for the next POC. Nothing is open right now.')}
             />
           )
         ) : null}
@@ -128,7 +128,7 @@ function PollCard({ poll, onSaved }: { poll: AppPoll; onSaved: () => void }) {
       setSaved(true);
       onSaved();
     } catch (error) {
-      Alert.alert('Niet verstuurd', pollErrorText(error));
+      Alert.alert(t('Niet verstuurd', 'Not sent'), pollErrorText(error));
     } finally {
       setBusy(false);
     }
@@ -154,15 +154,15 @@ function PollCard({ poll, onSaved }: { poll: AppPoll; onSaved: () => void }) {
       </View>
 
       {saved ? (
-        <Text style={styles.thanks}>Bedankt, je antwoord is bewaard. {poll.thanks}</Text>
+        <Text style={styles.thanks}>{t('Bedankt, je antwoord is bewaard.', 'Thanks, your answer has been saved.')} {poll.thanks}</Text>
       ) : poll.answered ? (
         <Text style={styles.hint}>
-          Je antwoordde al. Pas gerust iets aan: opnieuw versturen vervangt je vorige antwoord.
+          {t('Je antwoordde al. Pas gerust iets aan: opnieuw versturen vervangt je vorige antwoord.', 'You already answered. Feel free to change something: sending again replaces your previous answer.')}
         </Text>
       ) : null}
 
       <Button
-        label={poll.answered || saved ? 'Antwoord aanpassen' : 'Versturen'}
+        label={poll.answered || saved ? t('Antwoord aanpassen', 'Update answer') : t('Versturen', 'Send')}
         busy={busy}
         disabled={!filled}
         onPress={() => void submit()}
@@ -195,7 +195,7 @@ function Question({
       {question.kind === 'YES_NO' ? (
         <View style={styles.choices}>
           <Choice label="Ja" selected={value === '1'} onPress={() => toggle('1')} />
-          <Choice label="Nee" selected={value === '0'} onPress={() => toggle('0')} />
+          <Choice label={t('Nee', 'No')} selected={value === '0'} onPress={() => toggle('0')} />
         </View>
       ) : question.kind === 'SCORE' ? (
         <>
@@ -224,7 +224,7 @@ function Question({
           multiline
           maxLength={MAX_OPEN_ANSWER}
           style={styles.input}
-          placeholder="Je antwoord (mag leeg blijven)"
+          placeholder={t('Je antwoord (mag leeg blijven)', 'Your answer (optional)')}
           placeholderTextColor={COLORS.muted}
           accessibilityLabel={question.text}
         />
@@ -265,19 +265,19 @@ function Choice({
 /** De melding bij een geweigerd antwoord; de codes komen van `submitPollAnswers`. */
 function pollErrorText(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return 'Geen verbinding met vtk.be. Probeer het straks opnieuw.';
+    return t('Geen verbinding met vtk.be. Probeer het straks opnieuw.', 'No connection to vtk.be. Try again later.');
   }
   switch (error.code) {
     case 'POLL_CLOSED':
-      return 'Deze peiling is intussen gesloten.';
+      return t('Deze peiling is intussen gesloten.', 'This poll has closed in the meantime.');
     case 'POLL_NOT_YOURS':
-      return 'Deze peiling is voor een andere richting of fase dan de jouwe.';
+      return t('Deze peiling is voor een andere richting of fase dan de jouwe.', 'This poll is for another programme or phase than yours.');
     case 'POLL_TOO_LONG':
-      return 'Een open antwoord is te lang. Hou het onder de 2000 tekens.';
+      return t('Een open antwoord is te lang. Hou het onder de 2000 tekens.', 'An open answer is too long. Keep it under 2000 characters.');
     case 'POLL_EMPTY':
-      return 'Beantwoord minstens één vraag.';
+      return t('Beantwoord minstens één vraag.', 'Answer at least one question.');
     case 'POLL_INVALID':
-      return 'Een van de antwoorden klopt niet. Trek het scherm omlaag om te vernieuwen.';
+      return t('Een van de antwoorden klopt niet. Trek het scherm omlaag om te vernieuwen.', 'One of the answers is not right. Pull the screen down to refresh.');
     default:
       return error.message;
   }

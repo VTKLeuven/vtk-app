@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { AppPhoto } from '../api/contract';
 import { COLORS, SPACING, TYPE } from '../theme/tokens';
+import { t } from '../i18n';
 
 /**
  * Wat de viewer van een beeld nodig heeft. Een `AppPhoto` uit een album past
@@ -208,7 +209,7 @@ function Pager({
       <Animated.View style={[styles.bar, { top: insets.top + SPACING.md }, chrome]}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Sluiten"
+          accessibilityLabel={t('Sluiten', 'Close')}
           onPress={close}
           hitSlop={14}
           style={styles.button}

@@ -7,6 +7,7 @@ import { IS_DARK } from '../../theme/mode';
 import { COLORS, CUDI_STATUS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW } from '../HomeSection';
 import { Button } from '../ui';
+import { t } from '../../i18n';
 
 /**
  * Eén bestelling bij de cursusdienst, overal hetzelfde: in het tabblad Cudi en op
@@ -38,12 +39,12 @@ export function CudiOrderCard({
   const look = ORDER_LOOK[order.status];
   const Icon = look.icon;
   const payment = order.paidOnline
-    ? { label: 'Betaald', tone: TONES.ok }
+    ? { label: t('Betaald', 'Paid'), tone: TONES.ok }
     : !order.open
       ? null
       : payOnline
-        ? { label: 'Nog online te betalen', tone: TONES.waiting }
-        : { label: 'Betalen bij het afhalen', tone: TONES.info };
+        ? { label: t('Nog online te betalen', 'Still to pay online'), tone: TONES.waiting }
+        : { label: t('Betalen bij het afhalen', 'Pay at pickup'), tone: TONES.info };
 
   return (
     <View style={[styles.card, !order.open && styles.cardDone]}>
@@ -54,7 +55,7 @@ export function CudiOrderCard({
         <View style={styles.flex}>
           <Text style={[styles.title, { color: look.tone.ink }]}>{ORDER_STATUS[order.status]}</Text>
           <Text style={styles.bandMeta}>
-            Bestelling #{order.number} · {formatShortDate(order.createdAt, locale, !order.open)}
+            {t('Bestelling', 'Order')} #{order.number} · {formatShortDate(order.createdAt, locale, !order.open)}
           </Text>
         </View>
       </View>
@@ -82,7 +83,7 @@ export function CudiOrderCard({
               {onCancel && line.cancelable ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`${line.title} uit de bestelling halen`}
+                  accessibilityLabel={t(`${line.title} uit de bestelling halen`, `Remove ${line.title} from the order`)}
                   disabled={Boolean(busy)}
                   onPress={() => onCancel(line)}
                   hitSlop={6}
@@ -91,7 +92,7 @@ export function CudiOrderCard({
                   {busy === line.id ? (
                     <ActivityIndicator size="small" color={COLORS.strong} style={styles.cancelBusy} />
                   ) : (
-                    <Text style={styles.cancelLabel}>Annuleren</Text>
+                    <Text style={styles.cancelLabel}>{t('Annuleren', 'Cancel')}</Text>
                   )}
                 </Pressable>
               ) : null}
@@ -102,7 +103,7 @@ export function CudiOrderCard({
 
       <View style={styles.footer}>
         <View style={styles.flex}>
-          <Text style={styles.totalLabel}>Totaal</Text>
+          <Text style={styles.totalLabel}>{t('Totaal', 'Total')}</Text>
           <Text style={styles.total}>{euro(order.total)}</Text>
         </View>
         {payment ? (
@@ -113,7 +114,7 @@ export function CudiOrderCard({
       </View>
       {payOnline && onPay ? (
         <View style={styles.pay}>
-          <Button label="Nu betalen" busy={busy === order.id} onPress={onPay} />
+          <Button label={t('Nu betalen', 'Pay now')} busy={busy === order.id} onPress={onPay} />
         </View>
       ) : null}
     </View>
@@ -173,28 +174,31 @@ export function needsOnlinePayment(order: AppCudiOrder, ordering: AppCudiOrderin
 }
 
 export const ORDER_STATUS: Record<AppCudiOrder['status'], string> = {
-  READY: 'Ligt klaar',
-  ONLINE_PAID: 'Betaald, af te halen',
-  PENDING: 'Wacht op levering',
-  POS_COMPLETED: 'Afgehaald',
-  EXPIRED: 'Niet op tijd afgehaald',
-  CANCELLED: 'Geannuleerd',
+  READY: t('Ligt klaar', 'Ready'),
+  ONLINE_PAID: t('Betaald, af te halen', 'Paid, ready for pickup'),
+  PENDING: t('Wacht op levering', 'Awaiting delivery'),
+  POS_COMPLETED: t('Afgehaald', 'Collected'),
+  EXPIRED: t('Niet op tijd afgehaald', 'Not collected in time'),
+  CANCELLED: t('Geannuleerd', 'Cancelled'),
 };
 
 export function lineStatus(line: AppCudiOrder['lines'][number], locale: AppLocale): string {
   switch (line.status) {
     case 'ASSIGNED':
       return line.pickupDeadline
-        ? `Ligt klaar tot ${formatDayShort(line.pickupDeadline, locale)} ${formatTime(line.pickupDeadline, locale)}`
-        : 'Ligt klaar';
+        ? t(
+            `Ligt klaar tot ${formatDayShort(line.pickupDeadline, locale)} ${formatTime(line.pickupDeadline, locale)}`,
+            `Ready until ${formatDayShort(line.pickupDeadline, locale)} ${formatTime(line.pickupDeadline, locale)}`,
+          )
+        : t('Ligt klaar', 'Ready');
     case 'BOOKED':
-      return 'Op de wachtlijst';
+      return t('Op de wachtlijst', 'On the waiting list');
     case 'SOLD':
-      return 'Afgehaald';
+      return t('Afgehaald', 'Collected');
     case 'CANCELLED':
-      return 'Geannuleerd';
+      return t('Geannuleerd', 'Cancelled');
     case 'EXPIRED':
-      return 'Vervallen';
+      return t('Vervallen', 'Expired');
     default:
       return '';
   }

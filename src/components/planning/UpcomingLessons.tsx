@@ -8,6 +8,7 @@ import { addDays, shortDay, toneOf, TYPE_LABELS } from '../../planning/grid';
 import { nowInLeuven } from '../../planning/now';
 import { COLORS, FONTS, PLANNING, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW, HomeSection } from '../HomeSection';
+import { t } from '../../i18n';
 
 /** Hoeveel lessen Home vooruit kijkt. */
 const COUNT = 3;
@@ -78,8 +79,8 @@ export function UpcomingLessonsList({
 
   return (
     <HomeSection
-      title={lessons.every((session) => session.date === today) ? 'Je lessen vandaag' : 'Je volgende lessen'}
-      link={{ label: 'Planning', accessibilityLabel: 'Naar je planning', onPress: () => onOpen() }}
+      title={lessons.every((session) => session.date === today) ? t('Je lessen vandaag', 'Your classes today') : t('Je volgende lessen', 'Your next classes')}
+      link={{ label: 'Planning', accessibilityLabel: t('Naar je planning', 'To your planning'), onPress: () => onOpen() }}
     >
       <View style={styles.card}>
         {lessons.map((session, index) => (
@@ -99,7 +100,7 @@ export function UpcomingLessonsList({
 
 /** "Morgen", of "Di 24 nov". */
 function dayLabel(date: string, today: string): string {
-  if (date === addDays(today, 1)) return 'Morgen';
+  if (date === addDays(today, 1)) return t('Morgen', 'Tomorrow');
   const label = shortDay(date);
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
@@ -130,8 +131,8 @@ function Lesson({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={[
-        current ? 'Nu' : (day ?? 'Vandaag'),
-        `${session.start}${session.end ? ` tot ${session.end}` : ''}`,
+        current ? t('Nu', 'Now') : (day ?? t('Vandaag', 'Today')),
+        `${session.start}${session.end ? t(` tot ${session.end}`, ` to ${session.end}`) : ''}`,
         session.course,
         type,
         session.location,
@@ -160,7 +161,7 @@ function Lesson({
         <View style={styles.metaRow}>
           {current ? (
             <View style={styles.now}>
-              <Text style={styles.nowText}>NU</Text>
+              <Text style={styles.nowText}>{t('NU', 'NOW')}</Text>
             </View>
           ) : null}
           <Text style={styles.detail} numberOfLines={1}>

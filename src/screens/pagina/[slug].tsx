@@ -12,6 +12,7 @@ import { Button, Card, ErrorState, Loading } from '../../components/ui';
 import { useApp } from '../../state/app';
 import { COLORS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW } from '../../components/HomeSection';
+import { t } from '../../i18n';
 
 /**
  * Een contentpagina uit het CMS.
@@ -86,7 +87,7 @@ export default function PaginaScreen() {
         {page.content.trim() === '' && page.downloads.length === 0 ? (
           <View style={styles.block}>
             <Card>
-              <Text style={styles.hint}>Deze pagina heeft nog geen inhoud.</Text>
+              <Text style={styles.hint}>{t('Deze pagina heeft nog geen inhoud.', 'This page has no content yet.')}</Text>
             </Card>
           </View>
         ) : null}

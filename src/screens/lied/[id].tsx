@@ -8,6 +8,7 @@ import { PageHead } from '../../components/PageHead';
 import { Empty } from '../../components/ui';
 import { songById, type SongBlock, type SongLine } from '../../liederboek';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 /**
  * Eén lied uit het liederboek: de paginanummers, wie het schreef, de tekst per
@@ -25,8 +26,8 @@ export default function LiedScreen() {
   if (!song) {
     return (
       <View style={styles.root}>
-        <PageHead title="Liederboek" />
-        <Empty title="Lied niet gevonden" hint="Dit lied staat niet (meer) in het liederboek." />
+        <PageHead title={t('Liederboek', 'Songbook')} />
+        <Empty title={t('Lied niet gevonden', 'Song not found')} hint={t('Dit lied staat niet (meer) in het liederboek.', 'This song is not (or no longer) in the songbook.')} />
       </View>
     );
   }
@@ -61,7 +62,7 @@ export default function LiedScreen() {
       ) : null}
 
       {song.s.length === 0 ? (
-        <Text style={styles.hint}>Voor dit lied staat er geen tekst op rondgezang.be.</Text>
+        <Text style={styles.hint}>{t('Voor dit lied staat er geen tekst op rondgezang.be.', 'There are no lyrics for this song on rondgezang.be.')}</Text>
       ) : (
         <View style={styles.text}>
           {song.s.map((stanza, index) => (
@@ -151,7 +152,7 @@ function Video({ id, title }: { id: string; title: string }) {
         accessibilityRole="link"
         onPress={() => void WebBrowser.openBrowserAsync(`https://www.youtube.com/watch?v=${id}`)}
       >
-        Openen op YouTube
+        {t('Openen op YouTube', 'Open on YouTube')}
       </Text>
     </View>
   );

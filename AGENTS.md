@@ -130,8 +130,16 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
 4. **iOS en Android doen hetzelfde.** Geen platformspecifieke schermen.
 5. **Geen dependency die de Expo SDK al dekt.**
 6. **Geen emoji in de UI**; iconen komen uit `lucide-react-native`.
-7. **Nederlands in de interface**, Engelse vakterminologie waar dat natuurlijker
-   is. **Geen em-dashes**, ook niet in code, comments of commits.
+7. **Tweetalig: Nederlands en Engels** (eind november 2026). Nederlands is de
+   standaard; bij de eerste start kies je (`LanguageChoice`), later onder Meer ›
+   je naam. **Elke tekst die de app zelf toont, staat er in beide talen**, naast
+   elkaar: `t('Terug', 'Back')` uit `src/i18n.ts`. Ook een `accessibilityLabel`,
+   een `Alert` en een foutmelding. Wat de server stuurt, komt al in de gekozen
+   taal (`?locale=`). De taal ligt vast bij de start, net als het thema;
+   wisselen herstart de app. Vertaal geen waarde die naar de server gaat of
+   waarmee vergeleken wordt (`place: 'Toog'`, `detail === 'gesloten'`). In het
+   Nederlands Engelse vakterminologie waar dat natuurlijker is. **Geen
+   em-dashes**, ook niet in code, comments of commits.
 8. **Het ontwerp is dat van de nieuwe Home (voorstel F1, november 2026).** De
    tokens in `src/theme/tokens.ts` blijven de enige plek met kleuren (navy, geel,
    papier van de site); verzin er geen. Geel enkel als accent, geen gradienten en
@@ -315,6 +323,8 @@ diezelfde vorm te hebben, met een terugval die werkt zonder.
 - `src/api/useResource.ts` - het patroon van elk scherm dat gegevens ophaalt:
   cache tonen, ophalen, en het zeggen wanneer die verversing niet lukte.
 - `src/format.ts` - datums, uren en geld, altijd in `Europe/Brussels`.
+- `src/i18n.ts` - de taal (`LANG`, `IS_EN`) en `t(nl, en)`. Zie regel 7.
+- `src/restart.ts` - herlaadt de app, voor wat bij de start vastligt (thema, taal).
 - `src/monthGrid.ts` - datumsleutels voor de kalender en de agenda. **Geen kopie van
   `calendarGrid.ts` op de site**: die rekent met de lokale tijd van de machine,
   en op een telefoon is dat niet noodzakelijk Brussel. Hier draait alles op

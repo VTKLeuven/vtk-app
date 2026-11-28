@@ -19,6 +19,7 @@ import { SearchField } from '../SearchField';
 import { Button, Card, CardList, Empty, ErrorState, Loading, MarginRegister, StaleNotice } from '../ui';
 import type { StudiesTabs } from './tabs';
 import { HeadScroll } from '../HeadScroll';
+import { t } from '../../i18n';
 
 /**
  * Burgieclan, het derde tabblad van Studies: de documenten van je vakken.
@@ -40,7 +41,7 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
   const { locale, viewer } = useApp();
   const head = (
     <YellowHead title="Studies" tabs={tabs}>
-      <Text style={styles.headLine}>Samenvattingen, examens en notities per vak</Text>
+      <Text style={styles.headLine}>{t('Samenvattingen, examens en notities per vak', 'Summaries, exams and notes per course')}</Text>
     </YellowHead>
   );
 
@@ -69,12 +70,11 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
       <>
         <HeadScroll head={head} style={styles.root} contentContainerStyle={styles.content}>
           <Card>
-            <Text style={styles.title}>Log eerst in</Text>
+            <Text style={styles.title}>{t('Log eerst in', 'Log in first')}</Text>
             <Text style={styles.body}>
-              Burgieclan gebruikt hetzelfde VTK-account. Eens ingelogd zie je hier je vakken en
-              hun documenten, zonder tweede aanmelding.
+              {t('Burgieclan gebruikt hetzelfde VTK-account. Eens ingelogd zie je hier je vakken en hun documenten, zonder tweede aanmelding.', 'Burgieclan uses the same VTK account. Once logged in you see your courses and their documents here, without a second login.')}
             </Text>
-            <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+            <Button label={t('Inloggen', 'Log in')} onPress={() => router.push('/inloggen')} />
           </Card>
         </HeadScroll>
       </>
@@ -86,9 +86,9 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
       <>
         {head}
         <Empty
-          title="Burgieclan staat hier nog niet"
-          hint="Op burgieclan.vtk.be wel, met hetzelfde VTK-account."
-          action={{ label: 'Naar burgieclan.vtk.be', onPress: () => void WebBrowser.openBrowserAsync('https://burgieclan.vtk.be') }}
+          title={t('Burgieclan staat hier nog niet', 'Burgieclan is not available here yet')}
+          hint={t('Op burgieclan.vtk.be wel, met hetzelfde VTK-account.', 'It is on burgieclan.vtk.be, with the same VTK account.')}
+          action={{ label: t('Naar burgieclan.vtk.be', 'To burgieclan.vtk.be'), onPress: () => void WebBrowser.openBrowserAsync('https://burgieclan.vtk.be') }}
         />
       </>
     );
@@ -104,7 +104,7 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
     } catch (error) {
       setOverrides((current) => ({ ...current, [course.id]: !next }));
       Alert.alert(
-        next ? 'Niet bij je vakken gezet' : 'Niet uit je vakken gehaald',
+        next ? t('Niet bij je vakken gezet', 'Not added to your courses') : t('Niet uit je vakken gehaald', 'Not removed from your courses'),
         messageFor(error instanceof Error ? error : null),
       );
     } finally {
@@ -130,8 +130,8 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
         <SearchField
           value={query}
           onChange={setQuery}
-          placeholder="Zoek een vak op naam of code"
-          label="Vakken zoeken"
+          placeholder={t('Zoek een vak op naam of code', 'Search a course by name or code')}
+          label={t('Vakken zoeken', 'Search courses')}
           // In de gele kop: zonder eigen marge, de kop zet de ruimte al.
           style={styles.headSearch}
         />
@@ -141,13 +141,13 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
 
         {searching ? (
           <View style={styles.block}>
-            <Text accessibilityRole="header" style={styles.heading}>Gevonden</Text>
+            <Text accessibilityRole="header" style={styles.heading}>{t('Gevonden', 'Found')}</Text>
             {search.loading && search.courses.length === 0 ? (
               <ActivityIndicator color={COLORS.strong} style={styles.spinner} />
             ) : search.error ? (
               <Text style={styles.hint}>{search.error}</Text>
             ) : search.courses.length === 0 ? (
-              <Text style={styles.hint}>Geen vak gevonden voor {`“${query.trim()}”`}.</Text>
+              <Text style={styles.hint}>{t(`Geen vak gevonden voor “${query.trim()}”.`, `No course found for “${query.trim()}”.`)}</Text>
             ) : (
               <CourseList
                 courses={search.courses}
@@ -159,16 +159,15 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
             )}
           </View>
         ) : resource.loading && !resource.data ? (
-          <Loading label="Je vakken ophalen" />
+          <Loading label={t('Je vakken ophalen', 'Loading your courses')} />
         ) : !resource.data ? (
           <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
         ) : (
           <View style={styles.block}>
-            <Text accessibilityRole="header" style={styles.heading}>Jouw vakken</Text>
+            <Text accessibilityRole="header" style={styles.heading}>{t('Jouw vakken', 'Your courses')}</Text>
             {favourites.length === 0 ? (
               <Text style={styles.hint}>
-                Zoek je vakken hierboven en tik op de ster. Ze staan dan hier, en op Burgieclan bij
-                Mijn vakken.
+                {t('Zoek je vakken hierboven en tik op de ster. Ze staan dan hier, en op Burgieclan bij Mijn vakken.', 'Search your courses above and tap the star. They then show up here, and on Burgieclan under My courses.')}
               </Text>
             ) : (
               <CourseList
@@ -183,10 +182,10 @@ export function BurgieclanView({ tabs, linked }: { tabs: StudiesTabs; linked: bo
         )}
 
         <MarginRegister
-          title="Op Burgieclan"
+          title={t('Op Burgieclan', 'On Burgieclan')}
           links={[
             {
-              label: 'Een document opladen',
+              label: t('Een document opladen', 'Upload a document'),
               hint: 'burgieclan.vtk.be',
               external: true,
               onPress: () => void WebBrowser.openBrowserAsync(resource.data?.burgieclanUrl ?? 'https://burgieclan.vtk.be'),
@@ -261,7 +260,7 @@ export function CourseList({
           <View key={course.id} style={styles.row}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${course.name}, ${course.documentCount} documenten`}
+              accessibilityLabel={t(`${course.name}, ${course.documentCount} documenten`, `${course.name}, ${course.documentCount} documents`)}
               onPress={() => onOpen(course)}
               style={({ pressed }) => [styles.rowMain, pressed && styles.pressed]}
             >
@@ -276,7 +275,7 @@ export function CourseList({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={starred ? `${course.name} uit je vakken halen` : `${course.name} bij je vakken zetten`}
+              accessibilityLabel={starred ? t(`${course.name} uit je vakken halen`, `Remove ${course.name} from your courses`) : t(`${course.name} bij je vakken zetten`, `Add ${course.name} to your courses`)}
               accessibilityState={{ selected: starred, busy: pending === course.id }}
               disabled={pending === course.id}
               onPress={() => onToggle(course)}
@@ -298,8 +297,8 @@ export function CourseList({
 
 export function courseMeta(course: AppBurgieclanCourse): string {
   const parts = [
-    course.documentCount === 1 ? '1 document' : `${course.documentCount} documenten`,
-    course.credits ? `${course.credits} sp` : null,
+    course.documentCount === 1 ? '1 document' : t(`${course.documentCount} documenten`, `${course.documentCount} documents`),
+    course.credits ? t(`${course.credits} sp`, `${course.credits} ECTS`) : null,
     course.semesters.length > 0 ? course.semesters.join(', ') : null,
   ];
   return parts.filter(Boolean).join(' · ');

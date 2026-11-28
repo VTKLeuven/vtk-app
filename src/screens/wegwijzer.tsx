@@ -12,6 +12,7 @@ import { getCategoryColor } from '../floorplan/theme';
 import type { ExportedBooth, ExportedFloorplanData } from '../floorplan/types';
 import { getPref, setPref } from '../storage';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { t } from '../i18n';
 
 /** De jobfair op de site van Career; het grondplan komt van daar. */
 const CAREER = 'https://www.career.vtk.be';
@@ -91,24 +92,24 @@ export default function WegwijzerScreen() {
 
   return (
     <View style={styles.root}>
-      <PageHead title="Wegwijzer" subtitle="Het grondplan van de VTK Jobfair">
+      <PageHead title={t('Wegwijzer', 'Floor plan')} subtitle={t('Het grondplan van de VTK Jobfair', 'The floor plan of the VTK Jobfair')}>
         {data ? (
           <SearchField
             value={query}
             onChange={setQuery}
-            placeholder="Zoek een bedrijf"
-            label="Zoek een bedrijf op de jobfair"
+            placeholder={t('Zoek een bedrijf', 'Search a company')}
+            label={t('Zoek een bedrijf op de jobfair', 'Search a company at the jobfair')}
             style={styles.searchField}
           />
         ) : null}
       </PageHead>
 
-      {state.kind === 'loading' ? <Loading label="Grondplan ophalen" /> : null}
+      {state.kind === 'loading' ? <Loading label={t('Grondplan ophalen', 'Loading floor plan')} /> : null}
       {state.kind === 'missing' ? (
         <Empty
-          title="Het grondplan staat nog niet online"
-          hint="Zodra Career het grondplan van de jobfair publiceert, zie je hier elk bedrijf op zijn stand. Eens opgehaald, werkt het ook zonder netwerk."
-          action={{ label: 'Naar career.vtk.be', onPress: () => void WebBrowser.openBrowserAsync(`${CAREER}/event/${EVENT}`) }}
+          title={t('Het grondplan staat nog niet online', 'The floor plan is not online yet')}
+          hint={t('Zodra Career het grondplan van de jobfair publiceert, zie je hier elk bedrijf op zijn stand. Eens opgehaald, werkt het ook zonder netwerk.', 'As soon as Career publishes the jobfair floor plan, you see every company at its booth here. Once loaded, it also works without a network.')}
+          action={{ label: t('Naar career.vtk.be', 'To career.vtk.be'), onPress: () => void WebBrowser.openBrowserAsync(`${CAREER}/event/${EVENT}`) }}
         />
       ) : null}
 
@@ -121,7 +122,7 @@ export default function WegwijzerScreen() {
               style={styles.filters}
               contentContainerStyle={styles.filterRow}
             >
-              {[{ id: null as number | null, name: 'Alle richtingen' }, ...categories].map((item) => {
+              {[{ id: null as number | null, name: t('Alle richtingen', 'All programmes') }, ...categories].map((item) => {
                 const active = item.id === category;
                 return (
                   <Pressable
@@ -140,7 +141,7 @@ export default function WegwijzerScreen() {
           ) : null}
 
           {state.kind === 'ready' && state.offline ? (
-            <Text style={styles.offline}>Geen netwerk: je ziet het laatst opgehaalde plan.</Text>
+            <Text style={styles.offline}>{t('Geen netwerk: je ziet het laatst opgehaalde plan.', 'No network: you are seeing the last loaded plan.')}</Text>
           ) : null}
 
           <View style={styles.map}>
@@ -163,7 +164,7 @@ export default function WegwijzerScreen() {
                     <Text style={styles.resultName} numberOfLines={1}>
                       {booth.company!.name}
                     </Text>
-                    <Text style={styles.stand}>Stand {booth.booth_number}</Text>
+                    <Text style={styles.stand}>{t('Stand', 'Booth')} {booth.booth_number}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -207,7 +208,7 @@ function CompanySheet({ booth, onClose }: { booth: ExportedBooth | null; onClose
       title={company ? company.name : booth ? `Stand ${booth.booth_number}` : ''}
       onClose={onClose}
     >
-      {booth && !company ? <Text style={styles.body}>Op deze stand staat (nog) geen bedrijf.</Text> : null}
+      {booth && !company ? <Text style={styles.body}>{t('Op deze stand staat (nog) geen bedrijf.', 'There is no company at this booth (yet).')}</Text> : null}
       {company && booth ? (
         <View style={styles.sheet}>
           <View style={styles.sheetHead}>
@@ -215,7 +216,7 @@ function CompanySheet({ booth, onClose }: { booth: ExportedBooth | null; onClose
               <Image source={{ uri: company.logo_url }} style={styles.logo} contentFit="contain" />
             ) : null}
             <View style={styles.flex}>
-              <Text style={styles.stand}>Stand {booth.booth_number}</Text>
+              <Text style={styles.stand}>{t('Stand', 'Booth')} {booth.booth_number}</Text>
               {company.location ? <Text style={styles.hint}>{company.location}</Text> : null}
             </View>
           </View>
@@ -235,7 +236,7 @@ function CompanySheet({ booth, onClose }: { booth: ExportedBooth | null; onClose
 
           {company.vacancies?.length ? (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Vacatures</Text>
+              <Text style={styles.sectionTitle}>{t('Vacatures', 'Vacancies')}</Text>
               {company.vacancies.map((vacancy) => (
                 <Pressable
                   key={vacancy.id}
@@ -253,7 +254,7 @@ function CompanySheet({ booth, onClose }: { booth: ExportedBooth | null; onClose
 
           {company.representatives?.length ? (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Aanwezig</Text>
+              <Text style={styles.sectionTitle}>{t('Aanwezig', 'Present')}</Text>
               {company.representatives.map((person) => (
                 <View key={person.id} style={styles.item}>
                   <Text style={styles.itemTitle}>{[person.first_name, person.last_name].filter(Boolean).join(' ')}</Text>
@@ -281,7 +282,7 @@ function CompanySheet({ booth, onClose }: { booth: ExportedBooth | null; onClose
               onPress={() => void WebBrowser.openBrowserAsync(company.website!)}
               style={({ pressed }) => [styles.website, pressed && styles.pressed]}
             >
-              <Text style={styles.websiteLabel}>Naar hun website</Text>
+              <Text style={styles.websiteLabel}>{t('Naar hun website', 'To their website')}</Text>
             </Pressable>
           ) : null}
         </View>

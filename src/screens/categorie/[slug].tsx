@@ -14,6 +14,7 @@ import { useApp } from '../../state/app';
 import { useTabRouter } from '../../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW } from '../../components/HomeSection';
+import { t } from '../../i18n';
 
 /**
  * De pagina's onder één categorie.
@@ -104,7 +105,7 @@ export default function CategorieScreen() {
           )
         }
         ListEmptyComponent={
-          <Empty title="Nog niets hier" hint="Er staan nog geen pagina's onder deze categorie." />
+          <Empty title={t('Nog niets hier', 'Nothing here yet')} hint={t("Er staan nog geen pagina's onder deze categorie.", 'There are no pages in this category yet.')} />
         }
       />
     </>

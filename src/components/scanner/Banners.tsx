@@ -2,6 +2,7 @@ import { AlertCircle, CloudUpload, RefreshCw, WifiOff, X } from 'lucide-react-na
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FONTS, RADIUS, SCANNER, SPACING } from '../../theme/tokens';
 import type { ScanConflict, ScannerManifest } from '../../scanner/types';
+import { t } from '../../i18n';
 
 const timeFormat = new Intl.DateTimeFormat('nl-BE', { hour: '2-digit', minute: '2-digit' });
 
@@ -15,8 +16,11 @@ export function OfflineBanner({ manifest }: { manifest: ScannerManifest | null }
       <WifiOff size={18} color={SCANNER.offlineBannerInk} />
       <Text style={styles.bannerText}>
         {manifest
-          ? `Offline scannen op de lijst van ${timeFormat.format(new Date(manifest.generatedAt))}. Scans worden bewaard.`
-          : 'Geen netwerk en geen ticketlijst op dit toestel'}
+          ? t(
+              `Offline scannen op de lijst van ${timeFormat.format(new Date(manifest.generatedAt))}. Scans worden bewaard.`,
+              `Scanning offline with the list from ${timeFormat.format(new Date(manifest.generatedAt))}. Scans are saved.`,
+            )
+          : t('Geen netwerk en geen ticketlijst op dit toestel', 'No network and no ticket list on this device')}
       </Text>
     </View>
   );
@@ -37,7 +41,9 @@ export function QueueBanner({
     <View style={[styles.banner, { backgroundColor: SCANNER.field }]}>
       <CloudUpload size={18} color={SCANNER.accent} />
       <Text style={styles.bannerText}>
-        {size} {size === 1 ? 'scan wacht' : 'scans wachten'} op synchronisatie
+        {size === 1
+          ? t('1 scan wacht op synchronisatie', '1 scan waiting to sync')
+          : t(`${size} scans wachten op synchronisatie`, `${size} scans waiting to sync`)}
       </Text>
       <Pressable
         style={[styles.bannerButton, (syncing || !online) && styles.bannerButtonDisabled]}
@@ -50,7 +56,7 @@ export function QueueBanner({
         ) : (
           <RefreshCw size={14} color={SCANNER.accentInk} />
         )}
-        <Text style={styles.bannerButtonText}>{syncing ? 'Bezig' : 'Nu synchroniseren'}</Text>
+        <Text style={styles.bannerButtonText}>{syncing ? t('Bezig', 'Busy') : t('Nu synchroniseren', 'Sync now')}</Text>
       </Pressable>
     </View>
   );
@@ -72,17 +78,21 @@ export function ConflictBanner({
       <AlertCircle size={18} color={SCANNER.offlineInk} />
       <View style={styles.conflictBody}>
         <Text style={styles.conflictTitle}>
-          {conflicts.length} offline aanvaarde{' '}
-          {conflicts.length === 1 ? 'scan bleek' : 'scans bleken'} toch niet geldig
+          {conflicts.length === 1
+            ? t('1 offline aanvaarde scan bleek toch niet geldig', '1 scan accepted offline turned out to be invalid')
+            : t(
+                `${conflicts.length} offline aanvaarde scans bleken toch niet geldig`,
+                `${conflicts.length} scans accepted offline turned out to be invalid`,
+              )}
         </Text>
         {conflicts.slice(0, 5).map((conflict) => (
           <Text key={conflict.clientScanId} style={styles.conflictRow} numberOfLines={1}>
             {conflict.attendeeName ?? conflict.code} ·{' '}
-            {conflict.result === 'ALREADY_USED' ? 'was al binnen' : conflict.result.toLowerCase()}
+            {conflict.result === 'ALREADY_USED' ? t('was al binnen', 'was already in') : conflict.result.toLowerCase()}
           </Text>
         ))}
       </View>
-      <Pressable onPress={onDismiss} accessibilityLabel="Meldingen wissen" hitSlop={10}>
+      <Pressable onPress={onDismiss} accessibilityLabel={t('Meldingen wissen', 'Clear messages')} hitSlop={10}>
         <X size={18} color={SCANNER.textMuted} />
       </Pressable>
     </View>

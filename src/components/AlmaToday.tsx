@@ -12,6 +12,7 @@ import { useApp } from '../state/app';
 import { COLORS, FONTS, SPACING, TYPE } from '../theme/tokens';
 import { CARD_SHADOW, HomeSection } from './HomeSection';
 import { PhotoViewer, type ViewerPhoto } from './PhotoViewer';
+import { t } from '../i18n';
 
 /**
  * De Alma's op Home, onder je lessen: per restaurant of het open is en wat er
@@ -37,8 +38,8 @@ export function AlmaToday() {
 
   return (
     <HomeSection
-      title="Alma vandaag"
-      link={{ label: 'Menu', accessibilityLabel: 'Naar de menu’s van de Alma’s', onPress: () => open() }}
+      title={t('Alma vandaag', 'Alma today')}
+      link={{ label: 'Menu', accessibilityLabel: t('Naar de menu’s van de Alma’s', 'To the Alma menus'), onPress: () => open() }}
     >
       <View style={styles.card}>
         {restaurants.map((restaurant, index) => (
@@ -93,7 +94,7 @@ function Row({
       {photo && photoDish ? (
         <Pressable
           accessibilityRole="imagebutton"
-          accessibilityLabel={`Foto van ${photoDish.name} in het groot`}
+          accessibilityLabel={t(`Foto van ${photoDish.name} in het groot`, `Large photo of ${photoDish.name}`)}
           onPress={() => onPhoto({ id: photoDish.id, url: photo, filename: photoDish.name })}
           hitSlop={4}
           style={({ pressed }) => [styles.photo, pressed && styles.photoPressed]}

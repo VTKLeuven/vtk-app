@@ -6,6 +6,7 @@ import { formatEuro } from '../format';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { Stepper } from './Stepper';
 import { Button, Card, CardList, Empty } from './ui';
+import { t } from '../i18n';
 
 /**
  * Tickets kiezen: de types met een stapper en de balk onderaan met het totaal en
@@ -70,7 +71,7 @@ function Availability({ available }: { available: number }) {
   return (
     <View style={[styles.chip, soldOut ? styles.chipFull : styles.chipLow]}>
       <Text style={[styles.chipLabel, soldOut ? styles.chipLabelFull : styles.chipLabelLow]}>
-        {soldOut ? 'uitverkocht' : `nog ${available}`}
+        {soldOut ? t('uitverkocht', 'sold out') : t(`nog ${available}`, `${available} left`)}
       </Text>
     </View>
   );
@@ -91,11 +92,11 @@ export function TicketTypes({
       <>
         <ShopHeading>Tickets</ShopHeading>
         <Card>
-          <Text style={styles.title}>Enkel voor leden</Text>
+          <Text style={styles.title}>{t('Enkel voor leden', 'Members only')}</Text>
           <Text style={styles.body}>
-            De tickets voor dit event zijn voorbehouden aan leden. Log in met je VTK-account om ze te zien.
+            {t('De tickets voor dit event zijn voorbehouden aan leden. Log in met je VTK-account om ze te zien.', 'The tickets for this event are for members only. Log in with your VTK account to see them.')}
           </Text>
-          <Button label="Inloggen" onPress={onNeedsLogin} />
+          <Button label={t('Inloggen', 'Log in')} onPress={onNeedsLogin} />
         </Card>
       </>
     );
@@ -110,14 +111,14 @@ export function TicketTypes({
         <Card featured>
           <Text style={styles.body}>
             {event.honoraryOneTicket.used
-              ? 'Als erelid koop je voor dit event één ticket, en dat heb je al.'
-              : 'Als erelid koop je voor dit event één ticket.'}
+              ? t('Als erelid koop je voor dit event één ticket, en dat heb je al.', 'As an honorary member you can buy one ticket for this event, and you already have it.')
+              : t('Als erelid koop je voor dit event één ticket.', 'As an honorary member you can buy one ticket for this event.')}
           </Text>
         </Card>
       ) : null}
 
       {event.ticketTypes.length === 0 ? (
-        <Empty title="Geen tickets beschikbaar" hint="Er staat op dit moment niets te koop voor dit event." />
+        <Empty title={t('Geen tickets beschikbaar', 'No tickets available')} hint={t('Er staat op dit moment niets te koop voor dit event.', 'Nothing is on sale for this event right now.')} />
       ) : null}
 
       <CardList>
@@ -136,7 +137,7 @@ export function TicketTypes({
                   <Text style={styles.title}>{type.name}</Text>
                   {type.description ? <Text style={styles.hint}>{type.description}</Text> : null}
                   <View style={styles.priceRow}>
-                    <Text style={styles.price}>{type.priceCents === 0 ? 'Gratis' : formatEuro(type.priceCents)}</Text>
+                    <Text style={styles.price}>{type.priceCents === 0 ? t('Gratis', 'Free') : formatEuro(type.priceCents)}</Text>
                     <Availability available={type.available} />
                   </View>
                 </View>
@@ -149,7 +150,9 @@ export function TicketTypes({
                 />
               </View>
               {type.minPerOrder && type.minPerOrder > 1 ? (
-                <Text style={styles.hint}>Minstens {type.minPerOrder} per bestelling.</Text>
+                <Text style={styles.hint}>
+                  {t(`Minstens ${type.minPerOrder} per bestelling.`, `At least ${type.minPerOrder} per order.`)}
+                </Text>
               ) : null}
             </View>
           );
@@ -170,16 +173,16 @@ export function TicketOrderBar({ selection, onOrder }: { selection: TicketSelect
     <View style={styles.bar}>
       <View style={styles.flex}>
         <Text style={styles.barTotal}>
-          {totals.count} {totals.count === 1 ? 'ticket' : 'tickets'}, {totals.cents === 0 ? 'gratis' : formatEuro(totals.cents)}
+          {totals.count} {totals.count === 1 ? 'ticket' : 'tickets'}, {totals.cents === 0 ? t('gratis', 'free') : formatEuro(totals.cents)}
         </Text>
         {belowMinimum ? (
           <Text style={styles.hint} numberOfLines={1}>
-            Minstens {belowMinimum.minPerOrder} x {belowMinimum.name}
+            {t('Minstens', 'At least')} {belowMinimum.minPerOrder} x {belowMinimum.name}
           </Text>
         ) : null}
       </View>
       <View style={styles.barButton}>
-        <Button label="Bestellen" disabled={Boolean(belowMinimum)} onPress={onOrder} />
+        <Button label={t('Bestellen', 'Order')} disabled={Boolean(belowMinimum)} onPress={onOrder} />
       </View>
     </View>
   );

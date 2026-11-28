@@ -9,6 +9,7 @@ import { daysBetween } from '../planning/grid';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { CroppedPhoto } from './CroppedPhoto';
 import { CARD_SHADOW } from './HomeSection';
+import { t } from '../i18n';
 
 /** Het moment van een evenement op een gekozen dag, of het eerstvolgende. */
 function momentOf(event: AppCalendarEvent, at?: string) {
@@ -23,7 +24,7 @@ function momentOf(event: AppCalendarEvent, at?: string) {
 
 /** "11:15 – 13:30", of enkel het begin wanneer het einde op een andere dag valt. */
 function hours(event: AppCalendarEvent, start: string, end: string, locale: AppLocale): string {
-  if (event.allDay) return 'Hele dag';
+  if (event.allDay) return t('Hele dag', 'All day');
   const from = formatTime(start, locale);
   return dayKeyOf(start) === dayKeyOf(end) ? `${from} – ${formatTime(end, locale)}` : from;
 }
@@ -99,7 +100,7 @@ function StarButton({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: event.interested }}
-      accessibilityLabel={event.interested ? `${title} niet meer volgen` : `${title} in mijn lijst zetten`}
+      accessibilityLabel={event.interested ? t(`${title} niet meer volgen`, `Stop following ${title}`) : t(`${title} in mijn lijst zetten`, `Add ${title} to my list`)}
       onPress={() => onToggle(!event.interested)}
       hitSlop={6}
       style={({ pressed }) => [styles.star, event.interested && styles.starOn, pressed && styles.pressed]}
@@ -117,11 +118,11 @@ function StarButton({
 /** "Nu bezig", "Vandaag", "Morgen", "Over 3 dagen", of de datum. */
 function countdown(start: string, end: string, today: string, now: Date, locale: AppLocale): string {
   const startDate = new Date(start);
-  if (startDate <= now && now < new Date(end)) return 'Nu bezig';
+  if (startDate <= now && now < new Date(end)) return t('Nu bezig', 'Happening now');
   const days = daysBetween(today, dayKeyOf(start));
-  if (days <= 0) return 'Vandaag';
-  if (days === 1) return 'Morgen';
-  if (days < 7) return `Over ${days} dagen`;
+  if (days <= 0) return t('Vandaag', 'Today');
+  if (days === 1) return t('Morgen', 'Tomorrow');
+  if (days < 7) return t(`Over ${days} dagen`, `In ${days} days`);
   return formatDayShort(start, locale).replace(/\./g, '');
 }
 
@@ -148,7 +149,7 @@ export function MyEventCard({
   const moment = momentOf(event);
   const now = new Date();
   const badge = countdown(moment.start, moment.end, today, now, locale);
-  const soon = badge === 'Nu bezig' || badge === 'Vandaag';
+  const soon = badge === t('Nu bezig', 'Happening now') || badge === t('Vandaag', 'Today');
   const day = formatDayShort(moment.start, locale).replace(/\./g, '');
   const when = `${day.charAt(0).toUpperCase()}${day.slice(1)} · ${hours(event, moment.start, moment.end, locale)}`;
   const title = moment.label ? `${event.title}: ${moment.label}` : event.title;
@@ -183,7 +184,7 @@ export function MyEventCard({
         {onTickets ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Tickets voor ${title}`}
+            accessibilityLabel={t(`Tickets voor ${title}`, `Tickets for ${title}`)}
             onPress={onTickets}
             hitSlop={6}
             style={({ pressed }) => [styles.tickets, pressed && styles.pressed]}

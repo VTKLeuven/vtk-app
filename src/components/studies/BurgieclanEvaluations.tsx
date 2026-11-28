@@ -9,6 +9,7 @@ import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW } from '../HomeSection';
 import { Empty, MarginRegister } from '../ui';
 import { HeadScroll } from '../HeadScroll';
+import { t } from '../../i18n';
 
 /** Zoveel opmerkingen per rubriek staan er meteen; de rest achter "Alle opmerkingen". */
 const FIRST_COMMENTS = 3;
@@ -40,7 +41,7 @@ export function EvaluationsView({
     (section) => section.comments.length > 0 || section.recent.count > 0 || section.allTime.count > 0,
   );
   const external = {
-    label: 'Zelf een evaluatie geven',
+    label: t('Zelf een evaluatie geven', 'Give an evaluation yourself'),
     hint: 'burgieclan.vtk.be',
     external: true,
     onPress: () => void WebBrowser.openBrowserAsync(url),
@@ -50,23 +51,23 @@ export function EvaluationsView({
     return (
       <HeadScroll head={head} style={styles.root}>
         <Empty
-          title="Nog geen evaluaties"
-          hint="Niemand evalueerde dit vak al. Jij kan de eerste zijn, op Burgieclan."
-          action={{ label: 'Evalueren op Burgieclan', onPress: external.onPress }}
+          title={t('Nog geen evaluaties', 'No evaluations yet')}
+          hint={t('Niemand evalueerde dit vak al. Jij kan de eerste zijn, op Burgieclan.', 'Nobody has evaluated this course yet. You can be the first, on Burgieclan.')}
+          action={{ label: t('Evalueren op Burgieclan', 'Evaluate on Burgieclan'), onPress: external.onPress }}
         />
       </HeadScroll>
     );
   }
 
   const recentLabel =
-    evaluations.recentYears.length > 0 ? evaluations.recentYears.join(', ') : 'De laatste jaren';
+    evaluations.recentYears.length > 0 ? evaluations.recentYears.join(', ') : t('De laatste jaren', 'Recent years');
 
   return (
     <HeadScroll head={head} style={styles.root} contentContainerStyle={styles.content}>
       {sections.map((section) => (
         <Section key={section.id} section={section} recentLabel={recentLabel} locale={locale} />
       ))}
-      <MarginRegister title="Op Burgieclan" links={[external]} />
+      <MarginRegister title={t('Op Burgieclan', 'On Burgieclan')} links={[external]} />
     </HeadScroll>
   );
 }
@@ -92,7 +93,7 @@ function Section({
   const description = section.description ? plainText(section.description) : '';
   const summary = [
     section.rated && section.recent.average !== null
-      ? `${section.recent.average.toFixed(1).replace('.', ',')} op 5`
+      ? t(`${section.recent.average.toFixed(1).replace('.', ',')} op 5`, `${section.recent.average.toFixed(1)} out of 5`)
       : null,
     comments.length > 0 ? `${comments.length} ${comments.length === 1 ? 'opmerking' : 'opmerkingen'}` : null,
   ]
@@ -125,7 +126,7 @@ function Section({
           {section.rated ? (
             <View style={styles.scores}>
               <Score label={recentLabel} value={section.recent} />
-              <Score label="Alle jaren" value={section.allTime} />
+              <Score label={t('Alle jaren', 'All years')} value={section.allTime} />
               {section.lowLabel || section.highLabel ? (
                 <Text style={styles.scale}>
                   1 = {section.lowLabel ?? 'laag'}, 5 = {section.highLabel ?? 'hoog'}
@@ -138,7 +139,7 @@ function Section({
             <View key={comment.id} style={styles.comment}>
               <Text style={styles.commentText}>{plainText(comment.content)}</Text>
               <Text style={styles.meta}>
-                {[comment.year ?? formatShortDate(comment.createdAt, locale, true), comment.author ?? 'Anoniem']
+                {[comment.year ?? formatShortDate(comment.createdAt, locale, true), comment.author ?? t('Anoniem', 'Anonymous')]
                   .filter(Boolean)
                   .join(' · ')}
                 {comment.score !== 0 ? ` · ${comment.score > 0 ? '+' : ''}${comment.score}` : ''}
@@ -154,7 +155,7 @@ function Section({
               hitSlop={12}
               style={({ pressed }) => [styles.moreRow, pressed && styles.pressed]}
             >
-              <Text style={styles.more}>{all ? 'Minder tonen' : `Alle ${comments.length} opmerkingen`}</Text>
+              <Text style={styles.more}>{all ? t('Minder tonen', 'Show less') : t(`Alle ${comments.length} opmerkingen`, `All ${comments.length} comments`)}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -207,8 +208,11 @@ function Score({ label, value }: { label: string; value: { average: number | nul
   const average = value.average;
   const spoken =
     average === null
-      ? `${label}: nog te weinig scores`
-      : `${label}: ${average.toFixed(1).replace('.', ',')} op 5, ${value.count} scores`;
+      ? t(`${label}: nog te weinig scores`, `${label}: not enough scores yet`)
+      : t(
+          `${label}: ${average.toFixed(1).replace('.', ',')} op 5, ${value.count} scores`,
+          `${label}: ${average.toFixed(1)} out of 5, ${value.count} scores`,
+        );
   return (
     <View style={styles.score} accessible accessibilityLabel={spoken}>
       <Text style={styles.scoreLabel} numberOfLines={1}>
@@ -216,7 +220,7 @@ function Score({ label, value }: { label: string; value: { average: number | nul
       </Text>
       {average === null ? (
         <Text style={styles.hint}>
-          {value.count === 0 ? 'Nog geen scores' : `Nog te weinig scores (${value.count})`}
+          {value.count === 0 ? t('Nog geen scores', 'No scores yet') : t(`Nog te weinig scores (${value.count})`, `Not enough scores yet (${value.count})`)}
         </Text>
       ) : (
         <View style={styles.stars}>

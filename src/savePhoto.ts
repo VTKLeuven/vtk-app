@@ -1,6 +1,7 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library/legacy';
 import * as Sharing from 'expo-sharing';
+import { t } from './i18n';
 
 /**
  * Een foto bewaren op het toestel.
@@ -97,7 +98,7 @@ export async function savePhotoToLibrary(
 /** Opent het deelvenster met de foto erin. */
 export async function sharePhoto(url: string, filename: string): Promise<SaveOutcome> {
   if (!(await Sharing.isAvailableAsync())) {
-    return { status: 'mislukt', reason: 'Delen kan niet op dit toestel.' };
+    return { status: 'mislukt', reason: t('Delen kan niet op dit toestel.', 'Sharing is not possible on this device.') };
   }
 
   try {
@@ -124,7 +125,7 @@ export async function sharePhoto(url: string, filename: string): Promise<SaveOut
 function describe(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error ?? '');
   if (/native module|doesn't exist|not available|ExpoMediaLibrary|ExpoSharing/i.test(message)) {
-    return 'Deze versie van de app kan nog geen fotos bewaren. Installeer de nieuwste versie.';
+    return t('Deze versie van de app kan nog geen fotos bewaren. Installeer de nieuwste versie.', 'This version of the app cannot save photos yet. Install the latest version.');
   }
-  return message || 'Onbekende fout';
+  return message || t('Onbekende fout', 'Unknown error');
 }

@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS, FONTS, RADIUS, SPACING } from '../theme/tokens';
+import { t } from '../i18n';
 
 const SIDE = SPACING.xl - 4;
 
@@ -85,7 +86,7 @@ export function YellowHead<T extends string>({
         <>
           <View style={styles.inlineRow}>
             {showBack ? (
-              <YellowHeadButton label="Terug" onPress={() => router.back()}>
+              <YellowHeadButton label={t('Terug', 'Back')} onPress={() => router.back()}>
                 <ChevronLeft color={COLORS.yellow} size={21} strokeWidth={2.4} />
               </YellowHeadButton>
             ) : null}

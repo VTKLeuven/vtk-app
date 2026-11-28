@@ -5,6 +5,7 @@ import { fetchVouchers } from '../api/endpoints';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { Button } from './ui';
 import { VtkQr } from './VtkQr';
+import { t } from '../i18n';
 
 /**
  * Jouw pas: één code voor alles wat je aan een balie toont.
@@ -38,7 +39,7 @@ export function PassCode({ caption }: { caption?: string }) {
       setExpiresAt(Date.parse(vouchers.passExpiresAt));
       setError(null);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'De code kon niet opgehaald worden.');
+      setError(caught instanceof Error ? caught.message : t('De code kon niet opgehaald worden.', 'The code could not be loaded.'));
     } finally {
       setBusy(false);
     }
@@ -74,20 +75,20 @@ export function PassCode({ caption }: { caption?: string }) {
             {busy ? (
               <ActivityIndicator color={COLORS.strong} />
             ) : (
-              <Text style={styles.error}>{error ?? 'Geen code'}</Text>
+              <Text style={styles.error}>{error ?? t('Geen code', 'No code')}</Text>
             )}
           </View>
         )}
       </View>
 
       <Text style={styles.caption}>
-        {caption ?? 'Laat dit scannen aan de balie of aan de toog.'}
+        {caption ?? t('Laat dit scannen aan de balie of aan de toog.', 'Have this scanned at the desk or at the bar.')}
       </Text>
       <Text style={styles.hint}>
-        De code vernieuwt zichzelf om de twee minuten, dus een screenshot doet niets.
+        {t('De code vernieuwt zichzelf om de twee minuten, dus een screenshot doet niets.', 'The code refreshes itself every two minutes, so a screenshot will not work.')}
       </Text>
 
-      {error ? <Button label="Opnieuw proberen" variant="ghost" onPress={() => void load()} /> : null}
+      {error ? <Button label={t('Opnieuw proberen', 'Try again')} variant="ghost" onPress={() => void load()} /> : null}
     </View>
   );
 }

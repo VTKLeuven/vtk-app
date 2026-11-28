@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import type { AppPublication } from '../api/contract';
 import { mediaUrl } from '../api/client';
 import { PhotoViewer, type ViewerPhoto } from './PhotoViewer';
+import { t } from '../i18n';
 
 /**
  * De lezer: elke bladzijde als beeld in de fotoviewer, dus vegen om te bladeren,
@@ -27,7 +28,7 @@ export function MagazineReader({
         url: mediaUrl(url) as string,
         // De kaft hangt al in de cache van de plank; bladzijde 1 staat er zo meteen.
         thumbUrl: index === 0 ? mediaUrl(publication?.coverUrl ?? null) : null,
-        filename: `Bladzijde ${index + 1} van ${all.length}`,
+        filename: t(`Bladzijde ${index + 1} van ${all.length}`, `Page ${index + 1} of ${all.length}`),
       })),
     [publication],
   );

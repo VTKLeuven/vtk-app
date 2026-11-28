@@ -19,6 +19,7 @@ import { useTabRouter } from '../../navigation';
 import { checkoutErrorText, decodeQuantities, paymentErrorText } from '../../ticketOrder';
 import { IS_DARK } from '../../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 /**
  * De tweede stap van tickets kopen: wie er komt, je gegevens, de voorwaarden en
@@ -75,9 +76,9 @@ export default function TicketOrderScreen() {
 }
 
 const METHOD_LABEL: Record<AppPaymentMethod, { title: string; hint: string }> = {
-  bancontact: { title: 'Bancontact', hint: 'Met de app van je bank of de Bancontact-app' },
-  mollie: { title: 'Mollie', hint: 'Kaart en andere betaalwijzen, ook voor een buitenlandse rekening' },
-  mock: { title: 'Testbetaling', hint: 'Enkel op een testserver' },
+  bancontact: { title: 'Bancontact', hint: t('Met de app van je bank of de Bancontact-app', 'With your banking app or the Bancontact app') },
+  mollie: { title: 'Mollie', hint: t('Kaart en andere betaalwijzen, ook voor een buitenlandse rekening', 'Card and other payment methods, also for a foreign account') },
+  mock: { title: t('Testbetaling', 'Test payment'), hint: t('Enkel op een testserver', 'Only on a test server') },
 };
 
 /**
@@ -160,13 +161,13 @@ function Order({
   const todo = pending
     ? null
     : !seats.length
-      ? 'Kies eerst je tickets'
+      ? t('Kies eerst je tickets', 'Choose your tickets first')
       : missing
-        ? 'Vul alle namen en verplichte vragen in'
+        ? t('Vul alle namen en verplichte vragen in', 'Fill in all names and required questions')
         : !buyerOk
-          ? 'Vul je naam en e-mail in'
+          ? t('Vul je naam en e-mail in', 'Fill in your name and email')
           : !terms
-            ? 'Aanvaard de voorwaarden'
+            ? t('Aanvaard de voorwaarden', 'Accept the terms')
             : null;
 
   /** Wat er van de bestelling geworden is, gevraagd aan de server en niet geraden. */
@@ -176,9 +177,9 @@ function Order({
       onDone();
     } else {
       Alert.alert(
-        'Nog niet betaald',
-        'We zien nog geen betaling. Je bestelling staat klaar: betaal opnieuw, eventueel met een andere betaalwijze. Betaalde je wel, kijk dan over een minuut bij Mijn tickets.',
-        [{ text: 'Naar mijn tickets', onPress: onDone }, { text: 'Opnieuw betalen' }],
+        t('Nog niet betaald', 'Not paid yet'),
+        t('We zien nog geen betaling. Je bestelling staat klaar: betaal opnieuw, eventueel met een andere betaalwijze. Betaalde je wel, kijk dan over een minuut bij Mijn tickets.', 'We do not see a payment yet. Your order is ready: pay again, possibly with another payment method. If you did pay, check My tickets in a minute.'),
+        [{ text: t('Naar mijn tickets', 'To my tickets'), onPress: onDone }, { text: t('Opnieuw betalen', 'Pay again') }],
       );
     }
   };
@@ -205,7 +206,7 @@ function Order({
         if (error instanceof ApiError && (error.code === 'RESERVATION_EXPIRED' || error.code === 'ORDER_NOT_PAYABLE')) {
           setPending(null);
         }
-        Alert.alert('Betalen lukte niet', paymentErrorText(error));
+        Alert.alert(t('Betalen lukte niet', 'Payment failed'), paymentErrorText(error));
       }
     }
   };
@@ -238,7 +239,7 @@ function Order({
       setPending({ orderId: checkout.orderId, checkoutUrl: checkout.checkoutUrl });
       await pay(checkout.orderId, checkout.checkoutUrl);
     } catch (error) {
-      Alert.alert('Bestellen lukte niet', checkoutErrorText(error));
+      Alert.alert(t('Bestellen lukte niet', 'Ordering failed'), checkoutErrorText(error));
     } finally {
       setBusy(false);
     }
@@ -260,7 +261,7 @@ function Order({
         automaticallyAdjustKeyboardInsets
       >
         <View style={styles.overscroll} />
-        <YellowHead title="Bestellen" subtitle={event.title} back>
+        <YellowHead title={t('Bestellen', 'Order')} subtitle={event.title} back>
           {/* Je bestelling, in het geel: wat je koopt en wat het kost. */}
           <View style={styles.summary}>
             {lines.map((type) => (
@@ -269,7 +270,7 @@ function Order({
                   {quantities[type.id]} x {type.name}
                 </Text>
                 <Text style={styles.linePrice}>
-                  {type.priceCents === 0 ? 'Gratis' : formatEuro((quantities[type.id] ?? 0) * type.priceCents)}
+                  {type.priceCents === 0 ? t('Gratis', 'Free') : formatEuro((quantities[type.id] ?? 0) * type.priceCents)}
                 </Text>
               </View>
             ))}
@@ -277,8 +278,8 @@ function Order({
               <>
                 <View style={styles.summaryLine} />
                 <View style={styles.line}>
-                  <Text style={[styles.lineText, styles.total]}>Totaal</Text>
-                  <Text style={[styles.linePrice, styles.total]}>{free ? 'Gratis' : formatEuro(totalCents)}</Text>
+                  <Text style={[styles.lineText, styles.total]}>{t('Totaal', 'Total')}</Text>
+                  <Text style={[styles.linePrice, styles.total]}>{free ? t('Gratis', 'Free') : formatEuro(totalCents)}</Text>
                 </View>
               </>
             ) : null}
@@ -289,26 +290,25 @@ function Order({
           {pending ? (
             <Card featured>
               <Text style={styles.body}>
-                Je bestelling staat klaar en je tickets blijven even voor je gereserveerd. Kies hoe je betaalt en
-                tik op Betalen.
+                {t('Je bestelling staat klaar en je tickets blijven even voor je gereserveerd. Kies hoe je betaalt en tik op Betalen.', 'Your order is ready and your tickets stay reserved for you for a while. Choose how you pay and tap Pay.')}
               </Text>
             </Card>
           ) : null}
 
-          <Heading>Wie komt er</Heading>
+          <Heading>{t('Wie komt er', 'Who is coming')}</Heading>
           {seats.map(({ key, type, index }) => (
             <Card key={key}>
               <Text style={styles.kicker}>
                 Ticket {index + 1}, {type.name}
               </Text>
-              <Text style={styles.label}>Naam op het ticket</Text>
+              <Text style={styles.label}>{t('Naam op het ticket', 'Name on the ticket')}</Text>
               <TextInput
                 value={attendees[key] ?? ''}
                 onChangeText={(next) => setAttendees((current) => ({ ...current, [key]: next }))}
                 style={styles.input}
                 editable={!pending}
                 autoCapitalize="words"
-                accessibilityLabel={`Naam voor ticket ${index + 1}, ${type.name}`}
+                accessibilityLabel={t(`Naam voor ticket ${index + 1}, ${type.name}`, `Name for ticket ${index + 1}, ${type.name}`)}
               />
               {type.questions.map((question) => (
                 <QuestionField
@@ -326,9 +326,9 @@ function Order({
             </Card>
           ))}
 
-          <Heading>Je gegevens</Heading>
+          <Heading>{t('Je gegevens', 'Your details')}</Heading>
           <Card>
-            <Text style={styles.label}>Naam</Text>
+            <Text style={styles.label}>{t('Naam', 'Name')}</Text>
             <TextInput
               value={buyerName}
               onChangeText={setBuyerName}
@@ -336,7 +336,7 @@ function Order({
               editable={!pending}
               autoCapitalize="words"
               autoComplete="name"
-              accessibilityLabel="Jouw naam"
+              accessibilityLabel={t('Jouw naam', 'Your name')}
             />
             <Text style={styles.label}>E-mail</Text>
             <TextInput
@@ -347,14 +347,14 @@ function Order({
               autoCapitalize="none"
               autoComplete="email"
               keyboardType="email-address"
-              accessibilityLabel="Jouw e-mailadres"
+              accessibilityLabel={t('Jouw e-mailadres', 'Your email address')}
             />
-            <Text style={styles.hint}>De tickets komen op dit adres toe, en staan daarna ook bij Mijn tickets.</Text>
+            <Text style={styles.hint}>{t('De tickets komen op dit adres toe, en staan daarna ook bij Mijn tickets.', 'The tickets arrive at this address, and are then also in My tickets.')}</Text>
           </Card>
 
           {!free && methods.length > 1 ? (
             <>
-              <Heading>Betalen met</Heading>
+              <Heading>{t('Betalen met', 'Pay with')}</Heading>
               <CardList inset={0}>
                 {methods.map((option) => {
                   const selected = option === method;
@@ -392,14 +392,14 @@ function Order({
                 <View style={[styles.box, terms && styles.boxOn]}>
                   {terms ? <Check color={COLORS.onSelectedAccent} size={16} strokeWidth={3} /> : null}
                 </View>
-                <Text style={[styles.body, styles.flex]}>Ik ga akkoord met de voorwaarden</Text>
+                <Text style={[styles.body, styles.flex]}>{t('Ik ga akkoord met de voorwaarden', 'I agree to the terms')}</Text>
               </Pressable>
               <Text
                 style={styles.link}
                 accessibilityRole="link"
                 onPress={() => void WebBrowser.openBrowserAsync(`${baseUrl()}${event.termsUrl}`)}
               >
-                Lees de voorwaarden
+                {t('Lees de voorwaarden', 'Read the terms')}
               </Text>
             </Card>
           )}
@@ -411,7 +411,7 @@ function Order({
         {payment ? (
           <WebFlow
             url={payment.url}
-            title="Betalen"
+            title={t('Betalen', 'Pay')}
             markAsApp
             isDone={(url) => {
               if (!isOrderPage(url, payment.orderId)) {
@@ -440,13 +440,13 @@ function Order({
             </Text>
           ) : !free && method ? (
             <Text style={styles.hint} numberOfLines={1}>
-              Je betaalt in de app, met {METHOD_LABEL[method].title}
+              {t('Je betaalt in de app, met', 'You pay in the app, with')} {METHOD_LABEL[method].title}
             </Text>
           ) : null}
         </View>
         <View style={styles.barButton}>
           <Button
-            label={free ? 'Afronden' : 'Betalen'}
+            label={free ? t('Afronden', 'Complete') : t('Betalen', 'Pay')}
             busy={busy}
             disabled={!canSubmit}
             onPress={() => void submit()}

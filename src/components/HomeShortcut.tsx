@@ -22,6 +22,7 @@ import { useApp } from '../state/app';
 import { getPref, setPref } from '../storage';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { Sheet } from './planning/PlanningSheets';
+import { t } from '../i18n';
 
 const KEY = 'home-snelknop';
 
@@ -41,23 +42,23 @@ type Choice = {
  * werd niet gebruikt. Nu kiest iedereen zelf.
  */
 const CHOICES: Choice[] = [
-  { key: 'broodjes', label: 'Broodjes', icon: Sandwich, to: () => '/broodjes' },
+  { key: 'broodjes', label: t('Broodjes', 'Sandwiches'), icon: Sandwich, to: () => '/broodjes' },
   {
     key: 'planning',
     label: 'Planning',
     icon: CalendarDays,
     to: () => ({ pathname: '/kalender', params: { tab: 'planning', week: '1', les: '', n: String(Date.now()) } }),
   },
-  { key: 'evenementen', label: 'Evenementen', icon: CalendarRange, to: () => ({ pathname: '/kalender', params: { tab: 'agenda' } }) },
-  { key: 'blokken', label: 'Samen blokken', icon: BookOpen, to: () => ({ pathname: '/studies', params: { tab: 'blokken' } }) },
-  { key: 'cudi', label: 'Cursusdienst', icon: BookMarked, to: () => ({ pathname: '/studies', params: { tab: 'cudi' } }) },
+  { key: 'evenementen', label: t('Evenementen', 'Events'), icon: CalendarRange, to: () => ({ pathname: '/kalender', params: { tab: 'agenda' } }) },
+  { key: 'blokken', label: t('Samen blokken', 'Study together'), icon: BookOpen, to: () => ({ pathname: '/studies', params: { tab: 'blokken' } }) },
+  { key: 'cudi', label: t('Cursusdienst', 'Course shop'), icon: BookMarked, to: () => ({ pathname: '/studies', params: { tab: 'cudi' } }) },
   { key: 'burgieclan', label: 'Burgieclan', icon: GraduationCap, to: () => ({ pathname: '/studies', params: { tab: 'burgieclan' } }) },
-  { key: 'tickets', label: 'Mijn tickets', icon: Ticket, to: () => ({ pathname: '/tickets', params: { tab: 'mijne' } }) },
-  { key: 'shiften', label: 'Shiften', icon: HandHeart, to: () => '/shiften' },
+  { key: 'tickets', label: t('Mijn tickets', 'My tickets'), icon: Ticket, to: () => ({ pathname: '/tickets', params: { tab: 'mijne' } }) },
+  { key: 'shiften', label: t('Shiften', 'Shifts'), icon: HandHeart, to: () => '/shiften' },
   { key: 'alma', label: 'Alma', icon: UtensilsCrossed, to: () => '/alma' },
-  { key: 'lokalen', label: 'Lokalen', icon: MapPin, to: () => '/lokalen' },
+  { key: 'lokalen', label: t('Lokalen', 'Rooms'), icon: MapPin, to: () => '/lokalen' },
   { key: 'piano', label: 'Piano', icon: Music, to: () => '/piano' },
-  { key: 'deur', label: 'Tickets scannen', icon: ScanLine, to: () => '/deur', needs: 'scanTickets' },
+  { key: 'deur', label: t('Tickets scannen', 'Scan tickets'), icon: ScanLine, to: () => '/deur', needs: 'scanTickets' },
 ];
 
 const DEFAULT = 'broodjes';
@@ -87,7 +88,7 @@ export function HomeShortcut() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={current.label}
-        accessibilityHint="Lang drukken om te kiezen wat deze knop opent"
+        accessibilityHint={t('Lang drukken om te kiezen wat deze knop opent', 'Long press to choose what this button opens')}
         onPress={() => router.push(current.to())}
         onLongPress={() => setPicking(true)}
         delayLongPress={350}
@@ -97,8 +98,8 @@ export function HomeShortcut() {
         <Icon color={COLORS.yellow} size={19} />
       </Pressable>
 
-      <Sheet visible={picking} title="Wat opent deze knop?" onClose={() => setPicking(false)}>
-        <Text style={styles.hint}>Kies wat je het vaakst opent. Je kan dit altijd wijzigen door lang op de knop te drukken.</Text>
+      <Sheet visible={picking} title={t('Wat opent deze knop?', 'What does this button open?')} onClose={() => setPicking(false)}>
+        <Text style={styles.hint}>{t('Kies wat je het vaakst opent. Je kan dit altijd wijzigen door lang op de knop te drukken.', 'Choose what you open most often. You can always change this by long-pressing the button.')}</Text>
         <View style={styles.list}>
           {allowed.map((choice, index) => {
             const ChoiceIcon = choice.icon;

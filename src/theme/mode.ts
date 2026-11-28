@@ -1,5 +1,4 @@
-import { DevSettings } from 'react-native';
-
+import { restartApp } from '../restart';
 import { getPref, setPref } from '../storage';
 
 /**
@@ -25,12 +24,5 @@ export const IS_DARK = THEME === 'dark';
 export async function applyTheme(next: ThemeMode): Promise<void> {
   if (next === THEME) return;
   setPref(KEY, next);
-  try {
-    // Laat geladen, en enkel hier: dit heeft niets te zoeken in de start van de app.
-    const Updates = await import('expo-updates');
-    await Updates.reloadAsync();
-  } catch {
-    // In een ontwikkelbuild herlaadt `expo-updates` niet; daar doet DevSettings het.
-    DevSettings.reload();
-  }
+  await restartApp();
 }

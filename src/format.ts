@@ -1,4 +1,5 @@
 import type { AppLocale } from './api/contract';
+import { t } from './i18n';
 
 /**
  * Datums, uren en geld, altijd in de tijdzone van Leuven.
@@ -90,10 +91,10 @@ export function formatEventWhen(
     isoDayFormat.format(new Date(startIso)) === isoDayFormat.format(new Date(endIso));
 
   if (allDay) {
-    return sameDay ? start : `${start} tot ${formatDay(endIso, locale)}`;
+    return sameDay ? start : `${start} ${locale === 'en' ? 'to' : 'tot'} ${formatDay(endIso, locale)}`;
   }
   if (sameDay) return `${start}, ${formatTimeRange(startIso, endIso, locale)}`;
-  return `${start} ${formatTime(startIso, locale)} tot ${formatDay(endIso, locale)} ${formatTime(endIso, locale)}`;
+  return `${start} ${formatTime(startIso, locale)} ${locale === 'en' ? 'to' : 'tot'} ${formatDay(endIso, locale)} ${formatTime(endIso, locale)}`;
 }
 
 /**
@@ -170,5 +171,7 @@ export function formatSpan(seconds: number): string {
   if (minutes < 60) return `${minutes} min`;
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  return rest === 0 ? `${hours}u` : `${hours}u ${String(rest).padStart(2, '0')}`;
+  // Het uur heet `u` in het Nederlands en `h` in het Engels.
+  const h = t('u', 'h');
+  return rest === 0 ? `${hours}${h}` : `${hours}${h} ${String(rest).padStart(2, '0')}`;
 }

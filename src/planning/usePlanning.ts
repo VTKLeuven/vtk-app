@@ -12,6 +12,7 @@ import {
 } from '../api/endpoints';
 import { messageFor, useResource, type Resource } from '../api/useResource';
 import { writeCache } from '../storage';
+import { t } from '../i18n';
 
 /** De sleutel waaronder `useResource` de planning bewaart (`<cacheKey>:<deps>`). */
 const cacheKeyFor = (locale: AppLocale) => `planning:${locale}`;
@@ -64,7 +65,7 @@ export function usePlanning(locale: AppLocale): PlanningHandle {
         return true;
       } catch (error) {
         if (optimistic) setOverride(before);
-        Alert.alert('Dat lukte niet', messageFor(error instanceof Error ? error : null));
+        Alert.alert(t('Dat lukte niet', 'That did not work'), messageFor(error instanceof Error ? error : null));
         return false;
       } finally {
         setBusy(false);

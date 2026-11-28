@@ -13,6 +13,7 @@ import { IS_DARK } from '../theme/mode';
 import { COLORS, FONTS, RADIUS, SPACING } from '../theme/tokens';
 import { CroppedPhoto } from './CroppedPhoto';
 import { useStatusBar } from './PageHead';
+import { t } from '../i18n';
 
 /** Zoveel dagen toont de strook, vandaag inbegrepen. */
 export const WEEK_DAYS = 7;
@@ -109,7 +110,7 @@ export function WeekHero({
       </View>
 
       <Text accessibilityRole="header" style={styles.title}>
-        Deze week bij VTK
+        {t('Deze week bij VTK', 'This week at VTK')}
       </Text>
 
       <View style={styles.strip}>
@@ -157,7 +158,7 @@ export function WeekHero({
 
       {!day ? null : items.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyText}>Niets gepland op deze dag.</Text>
+          <Text style={styles.emptyText}>{t('Niets gepland op deze dag.', 'Nothing planned on this day.')}</Text>
         </View>
       ) : (
         <ScrollView
@@ -206,7 +207,7 @@ function EventCard({
   const { event, moment } = item;
   const start = moment?.start ?? event.start;
   const end = moment?.end ?? event.end;
-  const when = event.allDay ? 'Hele dag' : `${formatTime(start, locale)} – ${formatTime(end, locale)}`;
+  const when = event.allDay ? t('Hele dag', 'All day') : `${formatTime(start, locale)} – ${formatTime(end, locale)}`;
   const title = moment?.label ? `${event.title}: ${moment.label}` : event.title;
   const location = moment?.location ?? event.location;
   const meta = [location, event.ticketSlug ? 'tickets' : null].filter(Boolean).join(' · ');
@@ -214,7 +215,7 @@ function EventCard({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={[title, when, location, event.ticketSlug ? 'tickets te koop' : null]
+      accessibilityLabel={[title, when, location, event.ticketSlug ? t('tickets te koop', 'tickets on sale') : null]
         .filter(Boolean)
         .join(', ')}
       onPress={onPress}
@@ -248,14 +249,14 @@ function EventCard({
 }
 
 function countLabel(count: number): string {
-  if (count === 0) return 'geen evenementen';
-  return count === 1 ? '1 evenement' : `${count} evenementen`;
+  if (count === 0) return t('geen evenementen', 'no events');
+  return count === 1 ? t('1 evenement', '1 event') : t(`${count} evenementen`, `${count} events`);
 }
 
 /** "Vandaag", "Morgen", of "Woensdag 2 december". */
 function dayTitle(key: string, today: string, locale: AppLocale): string {
-  if (key === today) return 'Vandaag';
-  if (key === addDays(today, 1)) return 'Morgen';
+  if (key === today) return t('Vandaag', 'Today');
+  if (key === addDays(today, 1)) return t('Morgen', 'Tomorrow');
   const label = formatDay(`${key}T12:00:00Z`, locale);
   return label.charAt(0).toUpperCase() + label.slice(1);
 }

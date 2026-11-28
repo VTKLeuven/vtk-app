@@ -16,6 +16,7 @@ import { useApp } from '../state/app';
 import { useTabRouter } from '../navigation';
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { HeadScroll } from '../components/HeadScroll';
+import { t } from '../i18n';
 
 type ScanResult =
   | { kind: 'busy' }
@@ -92,7 +93,7 @@ export default function ScannenScreen() {
           .then((checkin) =>
             setResult({
               kind: 'fakbar',
-              text: checkin.counted ? 'Ingecheckt' : 'Al ingecheckt',
+              text: checkin.counted ? t('Ingecheckt', 'Checked in') : t('Al ingecheckt', 'Already checked in'),
               detail: fakCheckinDetail(checkin),
             }),
           )
@@ -103,7 +104,7 @@ export default function ScannenScreen() {
       if (!mayAcceptVouchers) {
         setResult({
           kind: 'error',
-          message: 'Dit is de pas van een student. Je hebt geen rechten om er bonnetjes van af te boeken.',
+          message: t('Dit is de pas van een student. Je hebt geen rechten om er bonnetjes van af te boeken.', 'This is a student pass. You do not have rights to deduct vouchers from it.'),
         });
         return;
       }
@@ -118,14 +119,13 @@ export default function ScannenScreen() {
   if (!viewer) {
     return (
       <>
-        <HeadScroll head={<PageHead title="Scannen" />} contentContainerStyle={styles.content} style={styles.root}>
+        <HeadScroll head={<PageHead title={t('Scannen', 'Scan')} />} contentContainerStyle={styles.content} style={styles.root}>
           <Card>
-            <Text style={styles.title}>Log eerst in</Text>
+            <Text style={styles.title}>{t('Log eerst in', 'Log in first')}</Text>
             <Text style={styles.body}>
-              Wat je scant hangt aan jouw account: je scanrechten, je check-in aan de bar, en wie
-              er afboekt.
+              {t('Wat je scant hangt aan jouw account: je scanrechten, je check-in aan de bar, en wie er afboekt.', 'What you scan is linked to your account: your scan rights, your check-in at the bar, and who deducts.')}
             </Text>
-            <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+            <Button label={t('Inloggen', 'Log in')} onPress={() => router.push('/inloggen')} />
           </Card>
         </HeadScroll>
       </>
@@ -134,11 +134,11 @@ export default function ScannenScreen() {
 
   return (
     <>
-      <HeadScroll head={<PageHead title="Scannen" subtitle="Uitnodiging, fakbar of een pas" />} contentContainerStyle={styles.content} style={styles.root}>
+      <HeadScroll head={<PageHead title={t('Scannen', 'Scan')} subtitle={t('Uitnodiging, fakbar of een pas', 'Invitation, student bar or a pass')} />} contentContainerStyle={styles.content} style={styles.root}>
         <QrScanner
           onScan={handle}
           paused={result !== null}
-          hint="Houd de code in het vierkant"
+          hint={t('Houd de code in het vierkant', 'Hold the code inside the square')}
         />
 
         {result ? (
@@ -161,7 +161,7 @@ export default function ScannenScreen() {
         {/* Enkel voor wie iets te scannen heeft. Een gewone student krijgt
             deze knop pas na een uitnodiging, en dan ook meteen het event. */}
         {mayScanTickets && !result ? (
-          <Button label="Tickets scannen" variant="ghost" onPress={() => router.push('/deur')} />
+          <Button label={t('Tickets scannen', 'Scan tickets')} variant="ghost" onPress={() => router.push('/deur')} />
         ) : null}
       </HeadScroll>
     </>
@@ -184,7 +184,7 @@ function Result({
   mayScanTickets: boolean;
   onRedeemed: () => void;
 }) {
-  if (result.kind === 'busy') return <Loading label="Bezig" />;
+  if (result.kind === 'busy') return <Loading label={t('Bezig', 'Busy')} />;
 
   // Een ticket telt pas wanneer het aan de deur van zijn evenement gescand wordt;
   // hier zou het nergens meetellen.
@@ -193,15 +193,15 @@ function Result({
       <Card style={styles.resultCard}>
         <View style={styles.resultHead}>
           <DoorOpen color={COLORS.muted} size={18} />
-          <Text style={styles.title}>Dit is een ticket</Text>
+          <Text style={styles.title}>{t('Dit is een ticket', 'This is a ticket')}</Text>
         </View>
         <Text style={styles.body}>
           {mayScanTickets
-            ? 'Tickets scan je onder Tickets scannen: kies daar het evenement, dan telt de scan ook mee.'
-            : 'Tickets scant wie aan de deur staat. Kom je helpen? Vraag de organisator om de uitnodigings-QR en scan die hier.'}
+            ? t('Tickets scan je onder Tickets scannen: kies daar het evenement, dan telt de scan ook mee.', 'Scan tickets under Scan tickets: choose the event there, so the scan counts.')
+            : t('Tickets scant wie aan de deur staat. Kom je helpen? Vraag de organisator om de uitnodigings-QR en scan die hier.', 'Tickets are scanned by the people at the door. Coming to help? Ask the organiser for the invitation QR and scan it here.')}
         </Text>
-        {mayScanTickets ? <Button label="Naar Tickets scannen" onPress={onOpenDoor} /> : null}
-        <Button label="Opnieuw scannen" variant="ghost" onPress={onClose} />
+        {mayScanTickets ? <Button label={t('Naar Tickets scannen', 'To Scan tickets')} onPress={onOpenDoor} /> : null}
+        <Button label={t('Opnieuw scannen', 'Scan again')} variant="ghost" onPress={onClose} />
       </Card>
     );
   }
@@ -211,10 +211,10 @@ function Result({
       <Card style={styles.resultCard}>
         <View style={styles.resultHead}>
           <ScanLine color={COLORS.muted} size={18} />
-          <Text style={styles.title}>Dat lukte niet</Text>
+          <Text style={styles.title}>{t('Dat lukte niet', 'That did not work')}</Text>
         </View>
         <Text style={styles.body}>{result.message}</Text>
-        <Button label="Opnieuw scannen" variant="ghost" onPress={onClose} />
+        <Button label={t('Opnieuw scannen', 'Scan again')} variant="ghost" onPress={onClose} />
       </Card>
     );
   }
@@ -225,12 +225,12 @@ function Result({
         <View style={styles.resultHead}>
           <TicketCheck color={COLORS.ink} size={18} />
           <Text style={styles.title}>
-            {result.already ? 'Je kon dit al scannen' : 'Je kan dit evenement nu scannen'}
+            {result.already ? t('Je kon dit al scannen', 'You could already scan this') : t('Je kan dit evenement nu scannen', 'You can now scan this event')}
           </Text>
         </View>
         <Text style={styles.body}>{result.title}</Text>
-        <Button label="Beginnen met scannen" onPress={() => onOpenEvent(result.eventId)} />
-        <Button label="Sluiten" variant="ghost" onPress={onClose} />
+        <Button label={t('Beginnen met scannen', 'Start scanning')} onPress={() => onOpenEvent(result.eventId)} />
+        <Button label={t('Sluiten', 'Close')} variant="ghost" onPress={onClose} />
       </Card>
     );
   }
@@ -243,7 +243,7 @@ function Result({
           <Text style={styles.title}>{result.text}</Text>
         </View>
         <Text style={styles.body}>{result.detail}</Text>
-        <Button label="Sluiten" variant="ghost" onPress={onClose} />
+        <Button label={t('Sluiten', 'Close')} variant="ghost" onPress={onClose} />
       </Card>
     );
   }
@@ -282,7 +282,10 @@ function PassResult({
     try {
       const result = await redeemVouchers({ pass, amount, place: 'Toog' });
       setMessage(
-        `${result.amount} afgeboekt bij ${result.name}. Nog ${formatVouchers(result.remaining)} over.`,
+        t(
+          `${result.amount} afgeboekt bij ${result.name}. Nog ${formatVouchers(result.remaining)} over.`,
+          `${result.amount} deducted from ${result.name}. ${formatVouchers(result.remaining)} left.`,
+        ),
       );
     } catch (error) {
       setMessage(scanError(error));
@@ -296,10 +299,10 @@ function PassResult({
       <Card featured style={styles.resultCard}>
         <View style={styles.resultHead}>
           <Coins color={COLORS.ink} size={18} />
-          <Text style={styles.title}>Klaar</Text>
+          <Text style={styles.title}>{t('Klaar', 'Done')}</Text>
         </View>
         <Text style={styles.body}>{message}</Text>
-        <Button label="Volgende" onPress={onDone} />
+        <Button label={t('Volgende', 'Next')} onPress={onDone} />
       </Card>
     );
   }
@@ -313,22 +316,22 @@ function PassResult({
       {holder.rNumber ? <Text style={styles.hint}>{holder.rNumber}</Text> : null}
 
       <View style={styles.balance}>
-        <Text style={styles.body}>Openstaande bonnetjes</Text>
+        <Text style={styles.body}>{t('Openstaande bonnetjes', 'Available vouchers')}</Text>
         <Text style={styles.balanceValue}>{formatVouchers(holder.vouchers)}</Text>
       </View>
 
       {holder.theokotOrder ? (
         <View style={styles.orderBox}>
-          <Text style={styles.kicker}>BROODJE VAN VANDAAG</Text>
+          <Text style={styles.kicker}>{t('BROODJE VAN VANDAAG', "TODAY'S SANDWICH")}</Text>
           {holder.theokotOrder.lines.map((line, index) => (
             <Text key={`${line.name}-${index}`} style={styles.body}>
               {line.quantity}x {line.name}
             </Text>
           ))}
           <Text style={styles.hint}>
-            Te betalen: {formatEuro(holder.theokotOrder.totalCents)}
+            {t('Te betalen:', 'To pay:')} {formatEuro(holder.theokotOrder.totalCents)}
             {holder.theokotOrder.canRedeemVouchers
-              ? `, of ${formatVouchers(holder.theokotOrder.voucherCost)} bonnetjes`
+              ? t(`, of ${formatVouchers(holder.theokotOrder.voucherCost)} bonnetjes`, `, or ${formatVouchers(holder.theokotOrder.voucherCost)} vouchers`)
               : ''}
           </Text>
         </View>
@@ -337,13 +340,13 @@ function PassResult({
       {payable === 0 ? (
         <Text style={styles.body}>
           {holder.vouchers > 0
-            ? 'Er staat enkel een half bonnetje open. Aan de toog gaan er enkel hele af; het half kan aan de afhaalbalie van het Theokot.'
-            : 'Er staan geen bonnetjes open, dus er valt niets af te boeken.'}
+            ? t('Er staat enkel een half bonnetje open. Aan de toog gaan er enkel hele af; het half kan aan de afhaalbalie van het Theokot.', 'Only half a voucher is available. At the bar only whole ones are deducted; the half can be used at the Theokot pickup desk.')
+            : t('Er staan geen bonnetjes open, dus er valt niets af te boeken.', 'No vouchers are available, so there is nothing to deduct.')}
         </Text>
       ) : (
         <>
           <View style={styles.amountRow}>
-            <Text style={styles.body}>Af te boeken</Text>
+            <Text style={styles.body}>{t('Af te boeken', 'To deduct')}</Text>
             <Stepper
               value={amount}
               max={payable}
@@ -360,7 +363,7 @@ function PassResult({
         </>
       )}
 
-      <Button label="Annuleren" variant="ghost" onPress={onClose} />
+      <Button label={t('Annuleren', 'Cancel')} variant="ghost" onPress={onClose} />
     </Card>
   );
 }
@@ -378,13 +381,13 @@ function PassResult({
  */
 function fakCheckinDetail(checkin: AppFakCheckin): string {
   const stand = checkin.period
-    ? `${checkin.total} check-ins tijdens ${checkin.period}.`
-    : `${checkin.total} punten.`;
+    ? t(`${checkin.total} check-ins tijdens ${checkin.period}.`, `${checkin.total} check-ins during ${checkin.period}.`)
+    : t(`${checkin.total} punten.`, `${checkin.total} points.`);
   // `!== false`: een server van voor de periodes stuurt dit veld nog niet.
   const beer = checkin.freeBeer
-    ? ' Je hebt een gratis pint verdiend.'
+    ? t(' Je hebt een gratis pint verdiend.', ' You earned a free beer.')
     : checkin.freeBeers !== false
-      ? ` Nog ${checkin.toNextBeer} tot een gratis pint.`
+      ? t(` Nog ${checkin.toNextBeer} tot een gratis pint.`, ` ${checkin.toNextBeer} more until a free beer.`)
       : '';
   const next = !checkin.counted && checkin.period && checkin.message ? `${checkin.message} ` : '';
   return `${next}${stand}${beer}`;
@@ -392,25 +395,25 @@ function fakCheckinDetail(checkin: AppFakCheckin): string {
 
 function scanError(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return 'Geen verbinding. Aan een deur zonder netwerk werkt scannen niet; probeer het opnieuw.';
+    return t('Geen verbinding. Aan een deur zonder netwerk werkt scannen niet; probeer het opnieuw.', 'No connection. Scanning does not work at a door without a network; try again.');
   }
   switch (error.code) {
     case 'PASS_EXPIRED':
-      return 'Deze code is verlopen. Laat ze opnieuw tonen; ze vernieuwt zichzelf om de twee minuten.';
+      return t('Deze code is verlopen. Laat ze opnieuw tonen; ze vernieuwt zichzelf om de twee minuten.', 'This code has expired. Have it shown again; it refreshes itself every two minutes.');
     case 'PASS_INVALID':
-      return 'Deze code hoort niet bij VTK.';
+      return t('Deze code hoort niet bij VTK.', 'This code does not belong to VTK.');
     case 'INVITE_EXPIRED':
-      return 'Deze uitnodiging is verlopen. Vraag ze opnieuw te tonen; ze ververst om de twintig seconden.';
+      return t('Deze uitnodiging is verlopen. Vraag ze opnieuw te tonen; ze ververst om de twintig seconden.', 'This invitation has expired. Ask to show it again; it refreshes every twenty seconds.');
     case 'NOT_ENOUGH':
-      return 'Er staan niet genoeg bonnetjes open.';
+      return t('Er staan niet genoeg bonnetjes open.', 'Not enough vouchers are available.');
     case 'CONFLICT':
-      return 'Het saldo veranderde net. Scan opnieuw.';
+      return t('Het saldo veranderde net. Scan opnieuw.', 'The balance just changed. Scan again.');
     case 'SELF':
-      return 'Je kan niet bij jezelf afboeken.';
+      return t('Je kan niet bij jezelf afboeken.', 'You cannot deduct from yourself.');
     case 'BAR_CLOSED':
-      return "'t ElixIr staat nu niet als open geregistreerd, dus deze check-in telt niet.";
+      return t("'t ElixIr staat nu niet als open geregistreerd, dus deze check-in telt niet.", "'t ElixIr is not registered as open right now, so this check-in does not count.");
     case 'NO_RNUMBER':
-      return 'Je account heeft geen r-nummer, dus je stand kan nergens aan hangen.';
+      return t('Je account heeft geen r-nummer, dus je stand kan nergens aan hangen.', 'Your account has no r-number, so your score cannot be linked to anything.');
     default:
       return error.message;
   }

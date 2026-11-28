@@ -16,6 +16,7 @@ import { useApp } from '../../state/app';
 import { useTabRouter } from '../../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { CARD_SHADOW } from '../../components/HomeSection';
+import { t } from '../../i18n';
 
 type View_ = 'documenten' | 'evaluaties';
 
@@ -45,7 +46,7 @@ export default function VakScreen() {
   if (resource.loading && !detail) {
     return (
       <>
-        <YellowHead title={naam ?? 'Vak'} back />
+        <YellowHead title={naam ?? t('Vak', 'Course')} back />
         <Loading />
       </>
     );
@@ -53,7 +54,7 @@ export default function VakScreen() {
   if (!detail) {
     return (
       <>
-        <YellowHead title={naam ?? 'Vak'} back />
+        <YellowHead title={naam ?? t('Vak', 'Course')} back />
         <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
       </>
     );
@@ -74,7 +75,7 @@ export default function VakScreen() {
     } catch (error) {
       setFavorite(!next);
       Alert.alert(
-        next ? 'Niet bij je vakken gezet' : 'Niet uit je vakken gehaald',
+        next ? t('Niet bij je vakken gezet', 'Not added to your courses') : t('Niet uit je vakken gehaald', 'Not removed from your courses'),
         messageFor(error instanceof Error ? error : null),
       );
     } finally {
@@ -89,7 +90,7 @@ export default function VakScreen() {
       // In de app zelf (`pdf.tsx`), niet meer in het browservenster van het systeem.
       router.push({ pathname: '/pdf', params: { url: file.url, title: document.name } });
     } catch (error) {
-      Alert.alert('Document niet geopend', messageFor(error instanceof Error ? error : null));
+      Alert.alert(t('Document niet geopend', 'Document not opened'), messageFor(error instanceof Error ? error : null));
     } finally {
       setOpening(null);
     }
@@ -103,7 +104,7 @@ export default function VakScreen() {
           subtitle={[course.code, subtitleFor(course)].filter(Boolean).join(' · ')}
           right={
             <YellowHeadButton
-              label={starred ? 'Uit je vakken halen' : 'Bij je vakken zetten'}
+              label={starred ? t('Uit je vakken halen', 'Remove from your courses') : t('Bij je vakken zetten', 'Add to your courses')}
               onPress={() => {
                 if (!starBusy) void toggleStar();
               }}
@@ -144,9 +145,9 @@ export default function VakScreen() {
         {documents.length === 0 ? (
           <Empty
             flush
-            title="Nog geen documenten"
-            hint="Niemand deelde voor dit vak al iets. Heb jij een samenvatting of een oud examen?"
-            action={{ label: 'Opladen op Burgieclan', onPress: () => void WebBrowser.openBrowserAsync(course.url) }}
+            title={t('Nog geen documenten', 'No documents yet')}
+            hint={t('Niemand deelde voor dit vak al iets. Heb jij een samenvatting of een oud examen?', 'Nobody has shared anything for this course yet. Do you have a summary or an old exam?')}
+            action={{ label: t('Opladen op Burgieclan', 'Upload on Burgieclan'), onPress: () => void WebBrowser.openBrowserAsync(course.url) }}
           />
         ) : null}
 
@@ -188,7 +189,7 @@ export default function VakScreen() {
                     <Pressable
                       key={document.id}
                       accessibilityRole="button"
-                      accessibilityLabel={document.hasFile ? `${document.name} openen` : `${document.name}, geen bestand`}
+                      accessibilityLabel={document.hasFile ? t(`${document.name} openen`, `Open ${document.name}`) : t(`${document.name}, geen bestand`, `${document.name}, no file`)}
                       disabled={!document.hasFile || opening !== null}
                       onPress={() => void open(document)}
                       style={({ pressed }) => [
@@ -210,8 +211,8 @@ export default function VakScreen() {
                         </Text>
                         {document.underReview || !document.hasFile ? (
                           <View style={styles.flags}>
-                            {document.underReview ? <Text style={styles.flag}>Wacht op goedkeuring</Text> : null}
-                            {!document.hasFile ? <Text style={styles.flag}>Geen bestand</Text> : null}
+                            {document.underReview ? <Text style={styles.flag}>{t('Wacht op goedkeuring', 'Awaiting approval')}</Text> : null}
+                            {!document.hasFile ? <Text style={styles.flag}>{t('Geen bestand', 'No file')}</Text> : null}
                           </View>
                         ) : null}
                       </View>
@@ -229,10 +230,10 @@ export default function VakScreen() {
 
         {documents.length > 0 ? (
           <MarginRegister
-            title="Op Burgieclan"
+            title={t('Op Burgieclan', 'On Burgieclan')}
             links={[
               {
-                label: 'Iets opladen of bespreken',
+                label: t('Iets opladen of bespreken', 'Upload or discuss something'),
                 hint: 'burgieclan.vtk.be',
                 external: true,
                 onPress: () => void WebBrowser.openBrowserAsync(course.url),

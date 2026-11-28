@@ -9,6 +9,7 @@ import { WebView } from 'react-native-webview';
 import { HeadButton, PageHead } from '../components/PageHead';
 import { Empty } from '../components/ui';
 import { COLORS } from '../theme/tokens';
+import { t } from '../i18n';
 
 /**
  * Een pdf in de app zelf, voor de documenten van Burgieclan (november 2026). Tot
@@ -74,7 +75,7 @@ export default function PdfScreen() {
       inline
       right={
         file ? (
-          <HeadButton accessibilityLabel="Delen of bewaren" onPress={() => void Sharing.shareAsync(file.uri)}>
+          <HeadButton accessibilityLabel={t('Delen of bewaren', 'Share or save')} onPress={() => void Sharing.shareAsync(file.uri)}>
             <Share size={19} color={COLORS.ink} />
           </HeadButton>
         ) : undefined
@@ -87,8 +88,8 @@ export default function PdfScreen() {
       <View style={styles.root}>
         {head}
         <Empty
-          title="Document niet geopend"
-          hint="Het bestand kon niet opgehaald worden. Ga terug en probeer het opnieuw."
+          title={t('Document niet geopend', 'Document not opened')}
+          hint={t('Het bestand kon niet opgehaald worden. Ga terug en probeer het opnieuw.', 'The file could not be loaded. Go back and try again.')}
         />
       </View>
     );

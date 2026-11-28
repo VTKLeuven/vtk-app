@@ -21,6 +21,7 @@ import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, SPACING, TYPE } from '../theme/tokens';
 import { useTabParam } from '../useTabParam';
 import { useTrackView } from '../usage';
+import { t } from '../i18n';
 
 /** De tabbladen in de kop. */
 type Tab = 'planning' | 'agenda' | 'mijn';
@@ -169,12 +170,12 @@ export default function KalenderScreen() {
     onChange: setChosen,
     options: [
       ...(planningTab ? [{ value: 'planning' as const, label: 'Planning' }] : []),
-      { value: 'agenda' as const, label: 'Evenementen' },
-      ...(viewer ? [{ value: 'mijn' as const, label: 'Mijn lijst' }] : []),
+      { value: 'agenda' as const, label: t('Evenementen', 'Events') },
+      ...(viewer ? [{ value: 'mijn' as const, label: t('Mijn lijst', 'My list') }] : []),
     ],
   };
   const bell = viewer ? (
-    <YellowHeadButton label="Meldingen instellen" onPress={() => router.push('/meldingen')}>
+    <YellowHeadButton label={t('Meldingen instellen', 'Notification settings')} onPress={() => router.push('/meldingen')}>
       <Bell color={COLORS.yellow} size={19} />
     </YellowHeadButton>
   ) : undefined;
@@ -189,7 +190,7 @@ export default function KalenderScreen() {
             locale={locale}
             focus={focus}
             renderHead={(extra) => (
-              <YellowHead title="Kalender" tabs={tabs} right={bell}>
+              <YellowHead title={t('Kalender', 'Calendar')} tabs={tabs} right={bell}>
                 {extra}
               </YellowHead>
             )}
@@ -200,15 +201,14 @@ export default function KalenderScreen() {
         ) : (
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={styles.overscroll} />
-            <YellowHead title="Kalender" tabs={tabs} />
+            <YellowHead title={t('Kalender', 'Calendar')} tabs={tabs} />
             <View style={styles.content}>
               <Card>
-                <Text style={styles.loginTitle}>Log eerst in</Text>
+                <Text style={styles.loginTitle}>{t('Log eerst in', 'Log in first')}</Text>
                 <Text style={styles.loginBody}>
-                  Daarna kan je je lessenrooster van KU Leuven importeren, en zie je hier je lessen naast de
-                  evenementen van VTK.
+                  {t('Daarna kan je je lessenrooster van KU Leuven importeren, en zie je hier je lessen naast de evenementen van VTK.', 'Then you can import your KU Leuven timetable and see your classes here next to the VTK events.')}
                 </Text>
-                <Button label="Inloggen" onPress={() => router.push('/inloggen')} />
+                <Button label={t('Inloggen', 'Log in')} onPress={() => router.push('/inloggen')} />
               </Card>
             </View>
           </ScrollView>
@@ -225,7 +225,7 @@ export default function KalenderScreen() {
         setSelectedDay(null);
       }}
       options={[
-        { value: 'lijst', label: 'Lijst' },
+        { value: 'lijst', label: t('Lijst', 'List') },
         { value: 'agenda', label: 'Agenda' },
       ]}
     />
@@ -234,20 +234,24 @@ export default function KalenderScreen() {
   const headExtra = mine ? (
     resource.data ? (
       <Text style={styles.headLabel}>
-        {events.length === 0 ? 'Nog niets aangeduid' : events.length === 1 ? '1 evenement aangeduid' : `${events.length} evenementen aangeduid`}
+        {events.length === 0
+          ? t('Nog niets aangeduid', 'Nothing marked yet')
+          : events.length === 1
+            ? t('1 evenement aangeduid', '1 event marked')
+            : t(`${events.length} evenementen aangeduid`, `${events.length} events marked`)}
       </Text>
     ) : null
   ) : agenda ? (
     <>
       <View style={styles.headRow}>
         <View style={styles.headNav}>
-          <YellowRoundButton label="Vorige weken" onPress={() => setPage(page - 1)}>
+          <YellowRoundButton label={t('Vorige weken', 'Previous weeks')} onPress={() => setPage(page - 1)}>
             <ChevronLeft size={17} color={COLORS.strong} strokeWidth={2.4} />
           </YellowRoundButton>
           <Text style={styles.headLabel} numberOfLines={1}>
             {shortRange(agendaStart, agendaEnd, locale)}
           </Text>
-          <YellowRoundButton label="Volgende weken" onPress={() => setPage(page + 1)}>
+          <YellowRoundButton label={t('Volgende weken', 'Next weeks')} onPress={() => setPage(page + 1)}>
             <ChevronRight size={17} color={COLORS.strong} strokeWidth={2.4} />
           </YellowRoundButton>
         </View>
@@ -264,14 +268,14 @@ export default function KalenderScreen() {
     </>
   ) : (
     <View style={styles.headRow}>
-      <Text style={styles.headLabel}>Vanaf vandaag</Text>
+      <Text style={styles.headLabel}>{t('Vanaf vandaag', 'From today')}</Text>
       {switcher}
     </View>
   );
 
   let body: React.ReactNode;
   if (resource.loading && !resource.data) {
-    body = <Loading label="Kalender ophalen" />;
+    body = <Loading label={t('Kalender ophalen', 'Loading calendar')} />;
   } else if (!resource.data) {
     body = <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />;
   } else if (agenda) {
@@ -279,7 +283,7 @@ export default function KalenderScreen() {
       <>
         <DayTitle day={day} today={today} locale={locale} count={dayEvents.length} />
         {dayEvents.length === 0 ? (
-          <Text style={styles.hint}>Niets gepland op deze dag.</Text>
+          <Text style={styles.hint}>{t('Niets gepland op deze dag.', 'Nothing planned on this day.')}</Text>
         ) : (
           dayEvents.map(({ event, at }) => (
             <EventRow
@@ -297,11 +301,11 @@ export default function KalenderScreen() {
   } else if (events.length === 0) {
     body = (
       <Empty
-        title="Niets gevonden"
+        title={t('Niets gevonden', 'Nothing found')}
         hint={
           mine
-            ? 'Je hebt nog niets aangeduid. Tik het sterretje bij een evenement en het komt hier te staan.'
-            : 'Er staat nog niets gepland.'
+            ? t('Je hebt nog niets aangeduid. Tik het sterretje bij een evenement en het komt hier te staan.', 'You have not marked anything yet. Tap the star next to an event and it shows up here.')
+            : t('Er staat nog niets gepland.', 'Nothing is planned yet.')
         }
       />
     );
@@ -337,8 +341,7 @@ export default function KalenderScreen() {
         ))}
         {viewer && resource.data.filteredByAudience ? (
           <Text style={styles.footer}>
-            Je ziet de evenementen die bij jouw studiejaar horen. Activiteiten voor een andere doelgroep staan er
-            niet tussen.
+            {t('Je ziet de evenementen die bij jouw studiejaar horen. Activiteiten voor een andere doelgroep staan er niet tussen.', 'You see the events that belong to your year of study. Activities for another audience are not included.')}
           </Text>
         ) : null}
       </>
@@ -359,7 +362,7 @@ export default function KalenderScreen() {
         }
       >
         <View style={styles.overscroll} />
-        <YellowHead title="Kalender" tabs={tabs} right={bell}>
+        <YellowHead title={t('Kalender', 'Calendar')} tabs={tabs} right={bell}>
           {headExtra}
         </YellowHead>
         {resource.stale ? <StaleNotice onRetry={() => void resource.refresh()} /> : null}
@@ -384,12 +387,12 @@ function DayTitle({
   const full = formatDay(`${day}T12:00:00.000Z`, locale);
   const [weekday, ...rest] = full.split(' ');
   const title =
-    day === today ? 'Vandaag' : day === addDays(today, 1) ? 'Morgen' : weekday.charAt(0).toUpperCase() + weekday.slice(1);
+    day === today ? t('Vandaag', 'Today') : day === addDays(today, 1) ? t('Morgen', 'Tomorrow') : weekday.charAt(0).toUpperCase() + weekday.slice(1);
   const detail =
     count !== undefined
       ? count === 1
-        ? '1 evenement'
-        : `${count} evenementen`
+        ? t('1 evenement', '1 event')
+        : t(`${count} evenementen`, `${count} events`)
       : day === today || day === addDays(today, 1)
         ? full
         : rest.join(' ');

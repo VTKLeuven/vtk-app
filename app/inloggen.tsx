@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { WebFlow } from '../src/components/WebFlow';
 import { isLoginDoneUrl, loginUrl } from '../src/auth/session';
 import { useApp } from '../src/state/app';
+import { t } from '../src/i18n';
 
 /**
  * Inloggen met de gewone weblogin.
@@ -21,7 +22,7 @@ export default function LoginScreen() {
   return (
     <WebFlow
       url={loginUrl()}
-      title="Inloggen"
+      title={t('Inloggen', 'Log in')}
       isDone={isLoginDoneUrl}
       onDone={() => {
         void refresh();

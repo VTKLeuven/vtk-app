@@ -1,5 +1,6 @@
 import * as Calendar from 'expo-calendar/legacy';
 import { Platform } from 'react-native';
+import { t } from './i18n';
 
 /**
  * Een evenement in de agenda van de telefoon zetten.
@@ -98,10 +99,10 @@ export async function addEventToDeviceCalendar(event: {
 export function addResultMessage(result: Extract<AddResult, { ok: false }>): string {
   switch (result.reason) {
     case 'denied':
-      return 'VTK mag niet aan je agenda. Dat kan je aanzetten in de instellingen van je telefoon.';
+      return t('VTK mag niet aan je agenda. Dat kan je aanzetten in de instellingen van je telefoon.', 'VTK is not allowed to access your calendar. You can turn that on in your phone settings.');
     case 'no-calendar':
-      return 'Er staat geen agenda op dit toestel waar iets in geschreven kan worden.';
+      return t('Er staat geen agenda op dit toestel waar iets in geschreven kan worden.', 'There is no calendar on this device that can be written to.');
     default:
-      return 'De afspraak kon niet aangemaakt worden.';
+      return t('De afspraak kon niet aangemaakt worden.', 'The event could not be created.');
   }
 }

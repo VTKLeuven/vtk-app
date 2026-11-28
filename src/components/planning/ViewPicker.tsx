@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { COLORS, FONTS, RADIUS, SPACING } from '../../theme/tokens';
 import { CARD_SHADOW } from '../HomeSection';
+import { t } from '../../i18n';
 
 /** De vier weergaven van de planner, zoals de tabbladen Week, Per vak, Semester en Blok op Burgieclan. */
 export type PlanningMode = 'week' | 'vak' | 'semester' | 'blok';
@@ -9,10 +10,10 @@ export type PlanningMode = 'week' | 'vak' | 'semester' | 'blok';
 export const PLANNING_MODES: readonly PlanningMode[] = ['week', 'vak', 'semester', 'blok'];
 
 const MODES: { value: PlanningMode; label: string; hint: string }[] = [
-  { value: 'week', label: 'Week', hint: 'Je lessen, deadlines en VTK-evenementen, drie dagen naast elkaar.' },
-  { value: 'vak', label: 'Per vak', hint: 'Per vak wat je afvinkte, wat je nog moet inhalen en wat nog komt.' },
-  { value: 'semester', label: 'Semester', hint: 'Al je vakken en alle weken van het semester in één raster.' },
-  { value: 'blok', label: 'Blok', hint: 'Je examens, en per dag wat je wil doen. Werkt ook zonder lessenrooster.' },
+  { value: 'week', label: 'Week', hint: t('Je lessen, deadlines en VTK-evenementen, drie dagen naast elkaar.', 'Your classes, deadlines and VTK events, three days side by side.') },
+  { value: 'vak', label: t('Per vak', 'Per course'), hint: t('Per vak wat je afvinkte, wat je nog moet inhalen en wat nog komt.', 'Per course what you checked off, what you still need to catch up on and what is still to come.') },
+  { value: 'semester', label: 'Semester', hint: t('Al je vakken en alle weken van het semester in één raster.', 'All your courses and all weeks of the semester in one grid.') },
+  { value: 'blok', label: t('Blok', 'Exams'), hint: t('Je examens, en per dag wat je wil doen. Werkt ook zonder lessenrooster.', 'Your exams, and per day what you want to do. Also works without a timetable.') },
 ];
 
 /**
@@ -35,7 +36,7 @@ export function ModeBar({
 }) {
   return (
     <View style={styles.row}>
-      <View style={styles.tabs} accessibilityRole="tablist" accessibilityLabel="Weergave">
+      <View style={styles.tabs} accessibilityRole="tablist" accessibilityLabel={t('Weergave', 'View')}>
         {MODES.map((option) => {
           const active = option.value === mode;
           return (

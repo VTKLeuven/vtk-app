@@ -2,6 +2,7 @@ import { Minus, Plus } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { t } from '../i18n';
 
 /**
  * Een aantal kiezen: min, het getal, plus.
@@ -33,7 +34,7 @@ export function Stepper({
     <View style={styles.root}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Eén minder: ${label}`}
+        accessibilityLabel={t(`Eén minder: ${label}`, `One fewer: ${label}`)}
         disabled={!canRemove}
         onPress={() => onChange(value - 1)}
         style={({ pressed }) => [
@@ -51,7 +52,7 @@ export function Stepper({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Eén meer: ${label}`}
+        accessibilityLabel={t(`Eén meer: ${label}`, `One more: ${label}`)}
         disabled={!canAdd}
         onPress={() => onChange(value + 1)}
         style={({ pressed }) => [

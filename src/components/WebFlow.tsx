@@ -7,6 +7,7 @@ import { WebView, type WebViewNavigation } from 'react-native-webview';
 
 import { COLORS, FONTS, SPACING } from '../theme/tokens';
 import { HeadButton, useStatusBar } from './PageHead';
+import { t } from '../i18n';
 
 const IN_WEBVIEW_SCHEMES = new Set(['http:', 'https:', 'about:', 'data:', 'blob:']);
 
@@ -162,7 +163,7 @@ export function WebFlow({
     <View style={styles.root}>
       <View style={[styles.bar, { paddingTop: insets.top + SPACING.sm }]}>
         <Text style={styles.title}>{title}</Text>
-        <HeadButton accessibilityLabel="Sluiten" onPress={onClose ?? (() => router.back())}>
+        <HeadButton accessibilityLabel={t('Sluiten', 'Close')} onPress={onClose ?? (() => router.back())}>
           <X color={COLORS.ink} size={21} />
         </HeadButton>
       </View>

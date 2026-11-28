@@ -34,6 +34,7 @@ import { useTabRouter } from '../navigation';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { useTabParam } from '../useTabParam';
 import { useTrackView } from '../usage';
+import { t } from '../i18n';
 
 type Tab = 'kopen' | 'mijne';
 
@@ -91,13 +92,13 @@ export default function TicketsScreen() {
         value: tab,
         onChange: setTab,
         options: [
-          { value: 'mijne', label: 'Mijn tickets', badge: ticketCount },
-          { value: 'kopen', label: 'Kopen' },
+          { value: 'mijne', label: t('Mijn tickets', 'My tickets'), badge: ticketCount },
+          { value: 'kopen', label: t('Kopen', 'Buy') },
         ],
       }}
       right={
         bootstrap?.abilities?.scanTickets ? (
-          <YellowHeadButton label="Tickets scannen" onPress={() => router.push('/deur')}>
+          <YellowHeadButton label={t('Tickets scannen', 'Scan tickets')} onPress={() => router.push('/deur')}>
             <ScanLine color={COLORS.yellow} size={21} />
           </YellowHeadButton>
         ) : undefined
@@ -176,7 +177,7 @@ function SalesList({
     return (
       <Frame head={head}>
         {resource.loading ? (
-          <Loading label="Tickets ophalen" />
+          <Loading label={t('Tickets ophalen', 'Loading tickets')} />
         ) : (
           <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
         )}
@@ -194,12 +195,12 @@ function SalesList({
       {resource.data.length === 0 ? (
         <Empty
           flush
-          title="Momenteel geen ticketverkoop"
-          hint="Nieuwe events verschijnen hier zodra de verkoop opengaat. Duid in de kalender aan wat je interesseert, dan krijg je een bericht."
+          title={t('Momenteel geen ticketverkoop', 'No ticket sales at the moment')}
+          hint={t('Nieuwe events verschijnen hier zodra de verkoop opengaat. Duid in de kalender aan wat je interesseert, dan krijg je een bericht.', 'New events show up here as soon as sales open. Mark what interests you in the calendar and you will get a notification.')}
         />
       ) : (
         <Text accessibilityRole="header" style={styles.heading}>
-          In verkoop
+          {t('In verkoop', 'On sale')}
         </Text>
       )}
 
@@ -209,8 +210,7 @@ function SalesList({
 
       {resource.data.length > 0 ? (
         <Text style={styles.footnote}>
-          Nieuwe events verschijnen hier zodra de verkoop opengaat. Duid in de kalender aan wat je
-          interesseert, dan krijg je een bericht.
+          {t('Nieuwe events verschijnen hier zodra de verkoop opengaat. Duid in de kalender aan wat je interesseert, dan krijg je een bericht.', 'New events show up here as soon as sales open. Mark what interests you in the calendar and you will get a notification.')}
         </Text>
       ) : null}
     </Frame>
@@ -246,22 +246,22 @@ function SaleCard({ event, locale, onOpen }: { event: AppTicketEvent; locale: 'n
         <View style={styles.buy}>
           <View style={styles.flex}>
             {event.requiresLogin ? (
-              <Text style={styles.priceHint}>Log in om de ledentickets te zien</Text>
+              <Text style={styles.priceHint}>{t('Log in om de ledentickets te zien', 'Log in to see the member tickets')}</Text>
             ) : soldOut ? (
               <View style={styles.soldOut}>
-                <Text style={styles.soldOutLabel}>Uitverkocht</Text>
+                <Text style={styles.soldOutLabel}>{t('Uitverkocht', 'Sold out')}</Text>
               </View>
             ) : (
               <>
-                <Text style={styles.priceHint}>{event.fromPriceCents === 0 ? 'Prijs' : 'Vanaf'}</Text>
+                <Text style={styles.priceHint}>{event.fromPriceCents === 0 ? t('Prijs', 'Price') : t('Vanaf', 'From')}</Text>
                 <Text style={styles.price}>
-                  {event.fromPriceCents === 0 ? 'Gratis' : formatEuro(event.fromPriceCents ?? 0)}
+                  {event.fromPriceCents === 0 ? t('Gratis', 'Free') : formatEuro(event.fromPriceCents ?? 0)}
                 </Text>
               </>
             )}
           </View>
           <View style={[styles.cta, soldOut && styles.ctaQuiet]}>
-            <Text style={[styles.ctaLabel, soldOut && styles.ctaLabelQuiet]}>{soldOut ? 'Bekijken' : 'Tickets'}</Text>
+            <Text style={[styles.ctaLabel, soldOut && styles.ctaLabelQuiet]}>{soldOut ? t('Bekijken', 'View') : 'Tickets'}</Text>
           </View>
         </View>
       </View>
@@ -295,9 +295,9 @@ function MyTickets({
     return (
       <Frame head={head}>
         <Card>
-          <Text style={styles.cardTitle}>Log eerst in</Text>
-          <Text style={styles.body}>Je tickets hangen aan je account.</Text>
-          <Button label="Inloggen" onPress={onLogin} />
+          <Text style={styles.cardTitle}>{t('Log eerst in', 'Log in first')}</Text>
+          <Text style={styles.body}>{t('Je tickets hangen aan je account.', 'Your tickets are linked to your account.')}</Text>
+          <Button label={t('Inloggen', 'Log in')} onPress={onLogin} />
         </Card>
       </Frame>
     );
@@ -307,7 +307,7 @@ function MyTickets({
     return (
       <Frame head={head}>
         {resource.loading ? (
-          <Loading label="Tickets ophalen" />
+          <Loading label={t('Tickets ophalen', 'Loading tickets')} />
         ) : (
           <ErrorState message={messageFor(resource.error)} onRetry={() => void resource.refresh()} />
         )}
@@ -332,13 +332,13 @@ function MyTickets({
         {upcoming.length === 0 ? (
           <Empty
             flush
-            title={past.length > 0 ? 'Geen tickets voor aankomende evenementen' : 'Nog geen tickets'}
-            hint="Wat je koopt, komt hier te staan en blijft ook zonder netwerk zichtbaar."
-            action={{ label: 'Naar de verkoop', onPress: onShop }}
+            title={past.length > 0 ? t('Geen tickets voor aankomende evenementen', 'No tickets for upcoming events') : t('Nog geen tickets', 'No tickets yet')}
+            hint={t('Wat je koopt, komt hier te staan en blijft ook zonder netwerk zichtbaar.', 'What you buy shows up here and stays visible without a network.')}
+            action={{ label: t('Naar de verkoop', 'To the sales'), onPress: onShop }}
           />
         ) : (
           <Text accessibilityRole="header" style={styles.heading}>
-            Komend
+            {t('Komend', 'Upcoming')}
           </Text>
         )}
 
@@ -348,7 +348,7 @@ function MyTickets({
 
         {upcoming.length > 0 ? (
           <Text style={styles.footnote}>
-            Tik op een code om ze over het hele scherm te tonen. Je tickets blijven zichtbaar zonder netwerk.
+            {t('Tik op een code om ze over het hele scherm te tonen. Je tickets blijven zichtbaar zonder netwerk.', 'Tap a code to show it full screen. Your tickets stay visible without a network.')}
           </Text>
         ) : null}
 
@@ -356,8 +356,8 @@ function MyTickets({
           <Button
             label={
               showPast
-                ? 'Voorbije evenementen verbergen'
-                : `Voorbije evenementen tonen (${past.length})`
+                ? t('Voorbije evenementen verbergen', 'Hide past events')
+                : t(`Voorbije evenementen tonen (${past.length})`, `Show past events (${past.length})`)
             }
             variant="ghost"
             onPress={() => setShowPast(!showPast)}
@@ -481,7 +481,7 @@ function TicketStub({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: () 
           camera een grote QR op wit veel sneller dan een klein vierkant in een kaart. */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${ticket.typeName}: vergroten om te laten scannen`}
+        accessibilityLabel={t(`${ticket.typeName}: vergroten om te laten scannen`, `${ticket.typeName}: enlarge to have it scanned`)}
         onPress={onEnlarge}
         style={({ pressed }) => [styles.qrButton, pressed && styles.pressed, used && styles.usedQr]}
       >
@@ -489,7 +489,7 @@ function TicketStub({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: () 
         {/* Zegt dat de code groter kan: zonder dit wist niet iedereen dat je erop kon tikken. */}
         <View style={styles.enlarge}>
           <Maximize2 color={COLORS.yellow} size={12} strokeWidth={2.6} />
-          <Text style={styles.enlargeLabel}>Vergroot</Text>
+          <Text style={styles.enlargeLabel}>{t('Vergroot', 'Enlarge')}</Text>
         </View>
       </Pressable>
       <View style={styles.stubText}>
@@ -499,14 +499,14 @@ function TicketStub({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: () 
         {used ? (
           <View style={styles.usedRow}>
             <CircleCheck color={COLORS.muted} size={14} />
-            <Text style={styles.hint}>Al gescand</Text>
+            <Text style={styles.hint}>{t('Al gescand', 'Already scanned')}</Text>
           </View>
         ) : null}
         <View style={styles.stubActions}>
           {walletUrl ? (
             <SmallButton
               label="Wallet"
-              accessibilityLabel={Platform.OS === 'ios' ? 'Aan Apple Wallet toevoegen' : 'Aan Google Wallet toevoegen'}
+              accessibilityLabel={Platform.OS === 'ios' ? t('Aan Apple Wallet toevoegen', 'Add to Apple Wallet') : t('Aan Google Wallet toevoegen', 'Add to Google Wallet')}
               icon={<Wallet color={COLORS.strong} size={15} />}
               onPress={() =>
                 void (Platform.OS === 'ios' ? addToAppleWallet(walletUrl) : addToGoogleWallet(walletUrl))
@@ -515,7 +515,7 @@ function TicketStub({ ticket, onEnlarge }: { ticket: AppMyTicket; onEnlarge: () 
           ) : null}
           <SmallButton
             label="PDF"
-            accessibilityLabel="Ticket als PDF"
+            accessibilityLabel={t('Ticket als PDF', 'Ticket as PDF')}
             icon={<FileText color={COLORS.strong} size={15} />}
             onPress={() => void WebBrowser.openBrowserAsync(ticket.pdfUrl)}
           />
@@ -599,14 +599,14 @@ function TicketZoomBody({
 
   return (
     <Pressable
-      accessibilityLabel="Sluiten"
+      accessibilityLabel={t('Sluiten', 'Close')}
       onPress={onClose}
       style={[styles.zoom, { paddingTop: insets.top + SPACING.md, paddingBottom: insets.bottom + SPACING.xl }]}
     >
       <View style={styles.zoomTop}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Sluiten"
+          accessibilityLabel={t('Sluiten', 'Close')}
           onPress={onClose}
           hitSlop={8}
           style={({ pressed }) => [styles.zoomClose, pressed && styles.pressed]}
@@ -641,7 +641,7 @@ function TicketZoomBody({
           style={styles.zoomPager}
         >
           {order.tickets.map((ticket) => (
-            <Pressable key={ticket.id} onPress={onClose} accessibilityLabel="Sluiten" style={[styles.zoomPage, { width }]}>
+            <Pressable key={ticket.id} onPress={onClose} accessibilityLabel={t('Sluiten', 'Close')} style={[styles.zoomPage, { width }]}>
               <Text style={styles.zoomType}>
                 {ticket.typeName}
                 {ticket.attendeeName ? `, ${ticket.attendeeName}` : ''}
@@ -653,7 +653,7 @@ function TicketZoomBody({
               {ticket.checkedInAt ? (
                 <View style={styles.usedRow}>
                   <CircleCheck color={COLORS.muted} size={16} />
-                  <Text style={styles.hint}>Al gescand</Text>
+                  <Text style={styles.hint}>{t('Al gescand', 'Already scanned')}</Text>
                 </View>
               ) : null}
             </Pressable>
@@ -668,13 +668,15 @@ function TicketZoomBody({
               ))}
             </View>
             <Text style={styles.hint}>
-              Ticket {current + 1} van {count}
-              {next ? `, veeg voor ${next.attendeeName || 'het volgende'}` : ''}
+              {t(`Ticket ${current + 1} van ${count}`, `Ticket ${current + 1} of ${count}`)}
+              {next
+                ? t(`, veeg voor ${next.attendeeName || 'het volgende'}`, `, swipe for ${next.attendeeName || 'the next one'}`)
+                : ''}
             </Text>
           </View>
         ) : null}
       </View>
-      <Text style={styles.hint}>Tik ergens om te sluiten</Text>
+      <Text style={styles.hint}>{t('Tik ergens om te sluiten', 'Tap anywhere to close')}</Text>
     </Pressable>
   );
 }

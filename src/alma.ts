@@ -1,5 +1,6 @@
 import type { AppAlmaDish, AppAlmaRestaurant } from './api/contract';
 import { formatEuro } from './format';
+import { IS_EN, t } from './i18n';
 
 /**
  * Wat Home en het Alma-scherm samen over een Alma zeggen: de statusregel en de
@@ -11,6 +12,13 @@ import { formatEuro } from './format';
 export function almaStatusLine(restaurant: AppAlmaRestaurant): string {
   const detail = restaurant.detail.trim();
   if (restaurant.unavailable) return detail;
+  // Met `?locale=en` schrijft de server de toestand in het Engels, zoals bij `ServiceList`.
+  if (IS_EN) {
+    if (restaurant.openNow) return detail.startsWith('until') ? `Open ${detail}` : 'Open now';
+    if (detail === 'closed') return 'Closed';
+    if (detail.startsWith('opens')) return `O${detail.slice(1)}`;
+    return `Opens ${detail}`;
+  }
   if (restaurant.openNow) return detail.startsWith('tot') ? `Open ${detail}` : 'Nu open';
   if (detail === 'gesloten') return 'Gesloten';
   if (detail.startsWith('opent')) return `O${detail.slice(1)}`;
@@ -55,7 +63,7 @@ export function almaHighlights(restaurant: AppAlmaRestaurant): { kind: 'warm' | 
 /** Eurocent naar "€6,15". */
 export function almaPrice(cents: number | null): string | null {
   if (cents === null) return null;
-  if (cents === 0) return 'Gratis';
+  if (cents === 0) return t('Gratis', 'Free');
   return formatEuro(cents);
 }
 

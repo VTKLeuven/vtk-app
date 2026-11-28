@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { WebFlow } from '../src/components/WebFlow';
 import { gateUrl, isGateDoneUrl } from '../src/auth/session';
 import { useApp } from '../src/state/app';
+import { t } from '../src/i18n';
 
 /**
  * Onboarding of studiebevestiging afwerken.
@@ -21,7 +22,7 @@ export default function GateScreen() {
   return (
     <WebFlow
       url={gateUrl(gate)}
-      title={gate === 'onboarding' ? 'Profiel afwerken' : 'Studie bevestigen'}
+      title={gate === 'onboarding' ? t('Profiel afwerken', 'Complete your profile') : t('Studie bevestigen', 'Confirm your studies')}
       isDone={(url) => isGateDoneUrl(url, gate)}
       onDone={() => {
         void refresh();

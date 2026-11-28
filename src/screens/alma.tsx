@@ -27,6 +27,7 @@ import { PhotoViewer, type ViewerPhoto } from '../components/PhotoViewer';
 import { CardList, Empty, ErrorState, Loading, MarginRegister, SectionHeading, StaleNotice } from '../components/ui';
 import { useApp } from '../state/app';
 import { COLORS, FONTS, RADIUS, SPACING, TYPE } from '../theme/tokens';
+import { t } from '../i18n';
 
 type Slug = AppAlmaRestaurant['slug'];
 
@@ -42,7 +43,7 @@ const FOLD = 5;
 
 const DIET: Record<NonNullable<AppAlmaDish['diet']>, string | null> = {
   vegan: 'Vegan',
-  vegetarian: 'Vegetarisch',
+  vegetarian: t('Vegetarisch', 'Vegetarian'),
   meat: null,
 };
 
@@ -269,7 +270,7 @@ function DayPage({
           </Text>
           <Menu restaurant={restaurant} date={date} key={`${restaurant.slug}:${date}`} />
           <MarginRegister
-            title="Meer"
+            title={t('Meer', 'More')}
             style={styles.register}
             links={[
               ...(restaurant.location
@@ -286,8 +287,8 @@ function DayPage({
                   ]
                 : []),
               {
-                label: 'Op alma.be',
-                hint: 'Allergenen en alle prijzen',
+                label: t('Op alma.be', 'On alma.be'),
+                hint: t('Allergenen en alle prijzen', 'Allergens and all prices'),
                 external: true,
                 onPress: () => void WebBrowser.openBrowserAsync(restaurant.url),
               },
@@ -313,9 +314,9 @@ function addDays(date: string, days: number): string {
 /** "Vandaag", "Morgen", of "Maandag 30 november". */
 function dayHeading(date: string): string {
   const today = todayKey();
-  if (date === today) return 'Vandaag';
-  if (date === addDays(today, 1)) return 'Morgen';
-  const label = new Intl.DateTimeFormat('nl-BE', {
+  if (date === today) return t('Vandaag', 'Today');
+  if (date === addDays(today, 1)) return t('Morgen', 'Tomorrow');
+  const label = new Intl.DateTimeFormat(t('nl-BE', 'en-GB'), {
     timeZone: 'UTC',
     weekday: 'long',
     day: 'numeric',
@@ -353,7 +354,7 @@ function DaySquares({
   for (let day = from; day <= last && days.length < 21; day = addDays(day, 1)) days.push(day);
   const withMenu = new Set(pages);
   const format = (options: Intl.DateTimeFormatOptions) =>
-    new Intl.DateTimeFormat('nl-BE', { timeZone: 'UTC', ...options });
+    new Intl.DateTimeFormat(t('nl-BE', 'en-GB'), { timeZone: 'UTC', ...options });
   const weekday = format({ weekday: 'short' });
   const dayOfMonth = format({ day: 'numeric' });
   const full = format({ weekday: 'long', day: 'numeric', month: 'long' });
@@ -377,7 +378,7 @@ function DaySquares({
               offsets.current[date] = event.nativeEvent.layout.x;
             }}
             accessibilityRole="button"
-            accessibilityLabel={open ? full.format(noon) : `${full.format(noon)}, geen menu`}
+            accessibilityLabel={open ? full.format(noon) : t(`${full.format(noon)}, geen menu`, `${full.format(noon)}, no menu`)}
             accessibilityState={{ selected: active, disabled: !open }}
             disabled={!open}
             onPress={() => onSelect(date)}
@@ -419,13 +420,13 @@ function Menu({ restaurant, date }: { restaurant: AppAlmaRestaurant; date: strin
   if (restaurant.unavailable) {
     return (
       <Empty
-        title="Niet beschikbaar"
-        hint="Het menu kon niet van alma.be gehaald worden. Probeer het straks opnieuw."
+        title={t('Niet beschikbaar', 'Not available')}
+        hint={t('Het menu kon niet van alma.be gehaald worden. Probeer het straks opnieuw.', 'The menu could not be loaded from alma.be. Try again later.')}
       />
     );
   }
   if (restaurant.menuDate !== date || restaurant.menu.length === 0) {
-    return <Empty title="Geen menu" hint={`${restaurant.name} heeft voor deze dag geen menu online gezet.`} />;
+    return <Empty title={t('Geen menu', 'No menu')} hint={t(`${restaurant.name} heeft voor deze dag geen menu online gezet.`, `${restaurant.name} has not put a menu online for this day.`)} />;
   }
 
   return (
@@ -467,7 +468,7 @@ function Menu({ restaurant, date }: { restaurant: AppAlmaRestaurant; date: strin
                 hitSlop={8}
                 style={styles.more}
               >
-                <Text style={styles.moreText}>Toon alle {all.length}</Text>
+                <Text style={styles.moreText}>{t('Toon alle', 'Show all')} {all.length}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -498,7 +499,7 @@ function Dish({
       onPress={onPress}
       disabled={!onPress}
       accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityHint={onPress ? 'Toont de foto in het groot' : undefined}
+      accessibilityHint={onPress ? t('Toont de foto in het groot', 'Shows the photo large') : undefined}
       accessibilityLabel={[dish.name, price, diet, meta].filter(Boolean).join(', ')}
     >
       {/* Alma's foto's zijn meestal PNG's met een doorzichtige achtergrond: daar
@@ -542,7 +543,7 @@ function Dish({
 /** "di 24/11", zoals Alma het onderaan zijn pagina schrijft. */
 function hoursDay(date: string): string {
   const [, month, day] = date.split('-').map(Number);
-  const weekday = new Intl.DateTimeFormat('nl-BE', {
+  const weekday = new Intl.DateTimeFormat(t('nl-BE', 'en-GB'), {
     timeZone: 'UTC',
     weekday: 'short',
   })
@@ -597,13 +598,16 @@ function WeekHours({
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ expanded: open }}
-          accessibilityLabel={`Openingsuren van ${restaurant.name}, ${open ? 'dichtklappen' : 'de hele week tonen'}`}
+          accessibilityLabel={t(
+            `Openingsuren van ${restaurant.name}, ${open ? 'dichtklappen' : 'de hele week tonen'}`,
+            `Opening hours of ${restaurant.name}, ${open ? 'collapse' : 'show the whole week'}`,
+          )}
           onPress={onToggle}
           style={({ pressed }) => [styles.hoursHead, pressed && styles.pressed]}
         >
           <Clock color={COLORS.strong} size={18} />
           <View style={styles.flex}>
-            <Text style={styles.hoursTitle}>Openingsuren</Text>
+            <Text style={styles.hoursTitle}>{t('Openingsuren', 'Opening hours')}</Text>
             {!open ? (
               <Text style={styles.hoursSummary} numberOfLines={1}>
                 {dayHeading(selected)}: {selectedText ?? 'gesloten'}
@@ -627,7 +631,7 @@ function WeekHours({
                   <Text style={[styles.hoursDay, current && styles.hoursToday]}>{hoursDay(date)}</Text>
                   <View style={styles.hoursRight}>
                     <Text style={[styles.hoursValue, !text && styles.hoursClosed, current && styles.hoursToday]}>
-                      {text ?? 'Gesloten'}
+                      {text ?? t('Gesloten', 'Closed')}
                     </Text>
                     {extra.map((item) => (
                       <Text key={item.label} style={styles.hoursExtra}>
@@ -640,10 +644,10 @@ function WeekHours({
             })}
             {others.length > 0 ? (
               <Text style={styles.hoursNote}>
-                {`Hierboven: ${primary.kind.toLowerCase()}. `}
+                {t(`Hierboven: ${primary.kind.toLowerCase()}. `, `Above: ${primary.kind.toLowerCase()}. `)}
                 {steady
                   .filter((item) => item.steady)
-                  .map((item) => `${item.kind.kind}: ${item.steady} op de dagen dat het open is.`)
+                  .map((item) => t(`${item.kind.kind}: ${item.steady} op de dagen dat het open is.`, `${item.kind.kind}: ${item.steady} on the days it is open.`))
                   .join(' ')}
               </Text>
             ) : null}

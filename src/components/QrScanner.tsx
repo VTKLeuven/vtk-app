@@ -4,6 +4,7 @@ import { Linking, StyleSheet, Text, View } from 'react-native';
 
 import { COLORS, RADIUS, SPACING, TYPE } from '../theme/tokens';
 import { Button } from './ui';
+import { t } from '../i18n';
 
 /**
  * De camera, met precies één taak: een QR lezen en de inhoud doorgeven.
@@ -74,7 +75,7 @@ export function QrScanner({
   if (!permission) {
     return (
       <View style={styles.frame}>
-        <Text style={styles.message}>Camera klaarzetten</Text>
+        <Text style={styles.message}>{t('Camera klaarzetten', 'Preparing the camera')}</Text>
       </View>
     );
   }
@@ -84,11 +85,11 @@ export function QrScanner({
       <View style={styles.frame}>
         <Text style={styles.message}>
           {permission.canAskAgain
-            ? 'VTK heeft je camera nodig om een code te lezen. Er wordt niets opgenomen of bewaard.'
-            : 'Je toestel laat de camera niet toe voor deze app. Dat kan je aanzetten in de instellingen van je telefoon.'}
+            ? t('VTK heeft je camera nodig om een code te lezen. Er wordt niets opgenomen of bewaard.', 'VTK needs your camera to read a code. Nothing is recorded or stored.')
+            : t('Je toestel laat de camera niet toe voor deze app. Dat kan je aanzetten in de instellingen van je telefoon.', 'Your device does not allow the camera for this app. You can turn it on in your phone settings.')}
         </Text>
         <Button
-          label={permission.canAskAgain ? 'Camera toelaten' : 'Instellingen openen'}
+          label={permission.canAskAgain ? t('Camera toelaten', 'Allow camera') : t('Instellingen openen', 'Open settings')}
           onDark
           onPress={() => {
             if (permission.canAskAgain) void requestPermission();

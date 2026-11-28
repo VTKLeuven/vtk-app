@@ -25,16 +25,18 @@ import { COLORS, COURSE_COLORS, FONTS, PLANNING, RADIUS, SPACING, TYPE } from '.
 import { CARD_SHADOW } from '../HomeSection';
 import { Button } from '../ui';
 import { Sheet } from './PlanningSheets';
+import { IS_EN, t } from '../../i18n';
 
 /** De bibplaatsen van KU Leuven reserveer je in KURT. */
 export const KURT_URL = 'https://kurt3.ghum.kuleuven.be/';
 
-const WEEKDAYS = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
-const WEEKDAYS_LONG = ['maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag'];
-const MONTHS_LONG = [
-  'januari', 'februari', 'maart', 'april', 'mei', 'juni',
-  'juli', 'augustus', 'september', 'oktober', 'november', 'december',
-];
+const WEEKDAYS = IS_EN ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
+const WEEKDAYS_LONG = IS_EN
+  ? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  : ['maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag'];
+const MONTHS_LONG = IS_EN
+  ? ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  : ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
 
 const longDay = (date: string) =>
   `${WEEKDAYS_LONG[weekdayOf(date)]} ${Number(date.slice(8, 10))} ${MONTHS_LONG[Number(date.slice(5, 7)) - 1]}`;
@@ -81,16 +83,19 @@ export function BlokView({
           <Text style={styles.heroTitle}>
             {view.next
               ? view.next.days === 0
-                ? `Vandaag: examen ${nextLabel}`
+                ? t(`Vandaag: examen ${nextLabel}`, `Today: exam ${nextLabel}`)
                 : view.next.days === 1
-                  ? 'Morgen je volgende examen'
-                  : `Nog ${view.next.days} dagen tot je volgende examen`
-              : 'Je blok'}
+                  ? t('Morgen je volgende examen', 'Your next exam is tomorrow')
+                  : t(`Nog ${view.next.days} dagen tot je volgende examen`, `${view.next.days} days until your next exam`)
+              : t('Je blok', 'Your exam period')}
           </Text>
           <Text style={styles.heroText}>
             {view.next && view.next.days > 0
-              ? `Volgende: ${nextLabel}, ${shortDay(view.next.exam.date)}${view.next.exam.time ? ` om ${view.next.exam.time}` : ''}.`
-              : 'Zet je examens in de kalender en plan per dag wat je wil doen. Tik op een dag om te beginnen.'}
+              ? t(
+                  `Volgende: ${nextLabel}, ${shortDay(view.next.exam.date)}${view.next.exam.time ? ` om ${view.next.exam.time}` : ''}.`,
+                  `Next: ${nextLabel}, ${shortDay(view.next.exam.date)}${view.next.exam.time ? ` at ${view.next.exam.time}` : ''}.`,
+                )
+              : t('Zet je examens in de kalender en plan per dag wat je wil doen. Tik op een dag om te beginnen.', 'Put your exams in the calendar and plan what you want to do each day. Tap a day to start.')}
           </Text>
         </View>
 
@@ -98,9 +103,17 @@ export function BlokView({
           <View style={styles.catchup}>
             <Text style={styles.catchupText}>
               <Text style={styles.catchupStrong}>
-                {view.missed.length === 1 ? '1 taak is' : `${view.missed.length} taken zijn`} voorbij en niet afgevinkt.
+                {view.missed.length === 1
+                  ? t('1 taak is voorbij en niet afgevinkt.', '1 task is past and not checked off.')
+                  : t(
+                      `${view.missed.length} taken zijn voorbij en niet afgevinkt.`,
+                      `${view.missed.length} tasks are past and not checked off.`,
+                    )}
               </Text>{' '}
-              Zet ze op vandaag, of open de dag om ze ergens anders te zetten.
+              {t(
+                'Zet ze op vandaag, of open de dag om ze ergens anders te zetten.',
+                'Move them to today, or open the day to put them somewhere else.',
+              )}
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -109,7 +122,7 @@ export function BlokView({
               style={({ pressed }) => [styles.catchupButton, pressed && styles.pressed]}
             >
               <ArrowRight size={15} color={COLORS.plate} />
-              <Text style={styles.catchupButtonText}>Naar vandaag</Text>
+              <Text style={styles.catchupButtonText}>{t('Naar vandaag', 'Move to today')}</Text>
             </Pressable>
           </View>
         ) : null}
@@ -133,11 +146,13 @@ export function BlokView({
                 <Text style={styles.courseChipMeta} numberOfLines={1}>
                   {c.exam
                     ? `${shortDay(c.exam.date)}${c.exam.date >= view.today ? `, ${dayDistance(c.exam.date, view.today)}` : ''}`
-                    : 'Geen examen ingevuld'}
-                  {c.tasks > 0 ? ` · ${c.done}/${c.tasks} gedaan` : ''}
+                    : t('Geen examen ingevuld', 'No exam set')}
+                  {c.tasks > 0 ? t(` · ${c.done}/${c.tasks} gedaan`, ` · ${c.done}/${c.tasks} done`) : ''}
                 </Text>
                 {c.missed > 0 ? (
-                  <Text style={styles.missedSmall}>{c.missed === 1 ? '1 taak' : `${c.missed} taken`} in te halen</Text>
+                  <Text style={styles.missedSmall}>
+                    {c.missed === 1 ? t('1 taak in te halen', '1 task to catch up') : t(`${c.missed} taken in te halen`, `${c.missed} tasks to catch up`)}
+                  </Text>
                 ) : null}
               </View>
             </Pressable>
@@ -148,7 +163,7 @@ export function BlokView({
             style={({ pressed }) => [styles.courseChip, styles.addChip, pressed && styles.pressed]}
           >
             <GraduationCap size={16} color={COLORS.ink} />
-            <Text style={styles.courseChipLabel}>Examen toevoegen</Text>
+            <Text style={styles.courseChipLabel}>{t('Examen toevoegen', 'Add exam')}</Text>
           </Pressable>
         </View>
 
@@ -164,15 +179,15 @@ export function BlokView({
 
         <LinkCard
           icon={BookOpen}
-          title="Een bibplaats nodig?"
-          text="Reserveer een plaats in een bib van KU Leuven via KURT."
+          title={t('Een bibplaats nodig?', 'Need a library seat?')}
+          text={t('Reserveer een plaats in een bib van KU Leuven via KURT.', 'Book a seat in a KU Leuven library via KURT.')}
           external
           onPress={() => void WebBrowser.openBrowserAsync(KURT_URL)}
         />
         <LinkCard
           icon={Timer}
-          title="Samen blokken"
-          text="Zet de studietimer aan en zie wie van je studiegroep nu ook zit."
+          title={t('Samen blokken', 'Study together')}
+          text={t('Zet de studietimer aan en zie wie van je studiegroep nu ook zit.', 'Start the study timer and see who in your study group is studying too.')}
           onPress={onOpenStudies}
         />
       </View>
@@ -210,7 +225,7 @@ function LinkCard({
   return (
     <Pressable
       accessibilityRole={external ? 'link' : 'button'}
-      accessibilityHint={external ? 'Opent in de browser' : undefined}
+      accessibilityHint={external ? t('Opent in de browser', 'Opens in the browser') : undefined}
       onPress={onPress}
       style={({ pressed }) => [styles.linkCard, pressed && styles.pressed]}
     >
@@ -246,10 +261,10 @@ function MonthCalendar({
     <View style={styles.card}>
       <View style={styles.monthHead}>
         <Text style={styles.monthTitle}>{monthTitle(month)}</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Vorige maand" hitSlop={8} onPress={() => onMonth(shiftMonth(month, -1))} style={styles.monthNav}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Vorige maand', 'Previous month')} hitSlop={8} onPress={() => onMonth(shiftMonth(month, -1))} style={styles.monthNav}>
           <ChevronLeft size={20} color={COLORS.ink} />
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Volgende maand" hitSlop={8} onPress={() => onMonth(shiftMonth(month, 1))} style={styles.monthNav}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Volgende maand', 'Next month')} hitSlop={8} onPress={() => onMonth(shiftMonth(month, 1))} style={styles.monthNav}>
           <ChevronRight size={20} color={COLORS.ink} />
         </Pressable>
       </View>
@@ -269,9 +284,11 @@ function MonthCalendar({
             const isSelected = date === selected;
             const label = [
               longDay(date),
-              day.free ? 'vrije dag' : null,
-              ...day.exams.map((e) => `examen ${view.course(e.subject)?.label ?? e.subjectLabel}`),
-              day.tasks.length > 0 ? `${day.tasks.length} ${day.tasks.length === 1 ? 'taak' : 'taken'}` : null,
+              day.free ? t('vrije dag', 'day off') : null,
+              ...day.exams.map((e) => t(`examen ${view.course(e.subject)?.label ?? e.subjectLabel}`, `exam ${view.course(e.subject)?.label ?? e.subjectLabel}`)),
+              day.tasks.length > 0
+                ? `${day.tasks.length} ${day.tasks.length === 1 ? t('taak', 'task') : t('taken', 'tasks')}`
+                : null,
             ]
               .filter(Boolean)
               .join(', ');
@@ -320,7 +337,7 @@ function MonthCalendar({
                     })}
                   </View>
                 ) : day.free ? (
-                  <Text style={styles.freeLabel}>vrij</Text>
+                  <Text style={styles.freeLabel}>{t('vrij', 'free')}</Text>
                 ) : null}
               </Pressable>
             );
@@ -354,32 +371,35 @@ function DayDetails({
 
   const deleteExam = (exam: AppPlanningExam) => {
     const name = view.course(exam.subject)?.label ?? exam.subjectLabel;
-    Alert.alert('Examen verwijderen?', `${name} op ${shortDay(exam.date)} gaat uit je blokkalender. Je taken voor dit vak blijven staan.`, [
-      { text: 'Behouden', style: 'cancel' },
-      { text: 'Verwijderen', style: 'destructive', onPress: () => void handle.run({ op: 'deleteExam', id: exam.id }) },
+    Alert.alert(t('Examen verwijderen?', 'Remove exam?'), t(
+        `${name} op ${shortDay(exam.date)} gaat uit je blokkalender. Je taken voor dit vak blijven staan.`,
+        `${name} on ${shortDay(exam.date)} will be removed from your exam calendar. Your tasks for this course stay.`,
+      ), [
+      { text: t('Behouden', 'Keep'), style: 'cancel' },
+      { text: t('Verwijderen', 'Remove'), style: 'destructive', onPress: () => void handle.run({ op: 'deleteExam', id: exam.id }) },
     ]);
   };
 
   return (
     <View style={[styles.card, styles.dayCard]}>
       <View>
-        {isToday ? <Text style={styles.kicker}>Vandaag</Text> : null}
+        {isToday ? <Text style={styles.kicker}>{t('Vandaag', 'Today')}</Text> : null}
         <Text style={styles.dayTitle}>{longDay(date).replace(/^./, (c) => c.toUpperCase())}</Text>
       </View>
       <View style={styles.freeRow}>
-        <Text style={styles.freeText}>Vrije dag</Text>
+        <Text style={styles.freeText}>{t('Vrije dag', 'Day off')}</Text>
         <Switch
           value={day.free}
           disabled={handle.busy}
           onValueChange={(value) => void handle.run({ op: 'freeDay', date, value })}
           trackColor={{ true: COLORS.ink, false: COLORS.line2 }}
-          accessibilityLabel="Vrije dag"
+          accessibilityLabel={t('Vrije dag', 'Day off')}
         />
       </View>
 
       {day.exams.length > 0 ? (
         <View style={styles.stack}>
-          <Text style={styles.label}>Examens</Text>
+          <Text style={styles.label}>{t('Examens', 'Exams')}</Text>
           {day.exams.map((exam) => (
             <View key={exam.id} style={[styles.exam, { backgroundColor: colourOf(view.course(exam.subject)?.colour ?? 0) }]}>
               <GraduationCap size={17} color={COLORS.plate} />
@@ -387,12 +407,12 @@ function DayDetails({
                 {view.course(exam.subject)?.label ?? exam.subjectLabel}
                 {exam.time ? <Text style={styles.examTime}>  {exam.time}</Text> : null}
               </Text>
-              <Pressable accessibilityRole="button" accessibilityLabel="Examen wijzigen" hitSlop={8} onPress={() => onEditExam(exam)} style={styles.examAction}>
+              <Pressable accessibilityRole="button" accessibilityLabel={t('Examen wijzigen', 'Edit exam')} hitSlop={8} onPress={() => onEditExam(exam)} style={styles.examAction}>
                 <Pencil size={15} color={COLORS.plate} />
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Examen verwijderen"
+                accessibilityLabel={t('Examen verwijderen', 'Remove exam')}
                 hitSlop={8}
                 disabled={handle.busy}
                 onPress={() => deleteExam(exam)}
@@ -406,9 +426,9 @@ function DayDetails({
       ) : null}
 
       <View style={styles.stack}>
-        <Text style={styles.label}>Wat wil je doen?</Text>
+        <Text style={styles.label}>{t('Wat wil je doen?', 'What do you want to do?')}</Text>
         {day.tasks.length === 0 ? (
-          <Text style={styles.muted}>{day.free ? (isToday ? 'Vandaag is een vrije dag. Geniet ervan.' : 'Een vrije dag.') : 'Nog niets gepland.'}</Text>
+          <Text style={styles.muted}>{day.free ? (isToday ? t('Vandaag is een vrije dag. Geniet ervan.', 'Today is a day off. Enjoy it.') : t('Een vrije dag.', 'A day off.')) : t('Nog niets gepland.', 'Nothing planned yet.')}</Text>
         ) : (
           day.tasks.map((task) =>
             editing === task.id ? (
@@ -442,11 +462,11 @@ function DayDetails({
       <View style={styles.dayActions}>
         <Pressable accessibilityRole="button" onPress={onAddExam} style={({ pressed }) => [styles.smallButton, pressed && styles.pressed]}>
           <GraduationCap size={15} color={COLORS.ink} />
-          <Text style={styles.smallButtonText}>Examen op deze dag</Text>
+          <Text style={styles.smallButtonText}>{t('Examen op deze dag', 'Exam on this day')}</Text>
         </Pressable>
         {onToday ? (
           <Pressable accessibilityRole="button" onPress={onToday} hitSlop={6}>
-            <Text style={styles.link}>Terug naar vandaag</Text>
+            <Text style={styles.link}>{t('Terug naar vandaag', 'Back to today')}</Text>
           </Pressable>
         ) : null}
       </View>
@@ -484,9 +504,9 @@ function TaskRow({ task, view, handle, onEdit }: { task: AppPlanningTask; view: 
           </View>
         ) : null}
         {showTitle ? <Text style={[styles.taskTitle, task.done && styles.struck]}>{task.title}</Text> : null}
-        {missed ? <Text style={styles.missedSmall}>in te halen</Text> : null}
+        {missed ? <Text style={styles.missedSmall}>{t('in te halen', 'to catch up')}</Text> : null}
       </View>
-      <Pressable accessibilityRole="button" accessibilityLabel={`${label} wijzigen`} hitSlop={6} onPress={onEdit} style={styles.iconHit}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t(`${label} wijzigen`, `Edit ${label}`)} hitSlop={6} onPress={onEdit} style={styles.iconHit}>
         <Pencil size={15} color={COLORS.muted} />
       </Pressable>
       <Pressable
@@ -580,7 +600,7 @@ function CoursePicker({
         placeholderTextColor={COLORS.muted}
         autoCorrect={false}
         style={styles.input}
-        accessibilityLabel="Vak"
+        accessibilityLabel={t('Vak', 'Course')}
       />
       {open && (own.length > 0 || catalogue.length > 0 || typed) ? (
         <View style={styles.suggestions}>
@@ -591,7 +611,7 @@ function CoursePicker({
             <Suggestion key={o.key} label={o.label} onPress={() => onChange(o)} />
           ))}
           {typed && !exact ? (
-            <Suggestion label={`‘${typed}’ als eigen vak`} onPress={() => onChange({ key: `name:${typed}`, label: typed })} />
+            <Suggestion label={t(`‘${typed}’ als eigen vak`, `‘${typed}’ as your own course`)} onPress={() => onChange({ key: `name:${typed}`, label: typed })} />
           ) : null}
         </View>
       ) : null}
@@ -644,21 +664,21 @@ function TaskForm({
 
   return (
     <View style={styles.form}>
-      <CoursePicker view={view} value={course} onChange={setCourse} placeholder="Vak (optioneel)" />
+      <CoursePicker view={view} value={course} onChange={setCourse} placeholder={t('Vak (optioneel)', 'Course (optional)')} />
       <TextInput
         value={title}
         onChangeText={setTitle}
-        placeholder="bv. H1 - H3, lesvideo 1 - 2"
+        placeholder={t('bv. H1 - H3, lesvideo 1 - 2', 'e.g. Ch1 - Ch3, lecture video 1 - 2')}
         placeholderTextColor={COLORS.muted}
         style={styles.input}
         returnKeyType="done"
         onSubmitEditing={() => void submit()}
-        accessibilityLabel="Wat wil je doen?"
+        accessibilityLabel={t('Wat wil je doen?', 'What do you want to do?')}
       />
       <View style={styles.formActions}>
         {onCancel ? (
           <Pressable accessibilityRole="button" onPress={onCancel} hitSlop={6}>
-            <Text style={styles.link}>Annuleren</Text>
+            <Text style={styles.link}>{t('Annuleren', 'Cancel')}</Text>
           </Pressable>
         ) : null}
         <Pressable
@@ -667,7 +687,7 @@ function TaskForm({
           onPress={() => void submit()}
           style={({ pressed }) => [styles.addButton, (!ready || busy) && styles.disabled, pressed && styles.pressed]}
         >
-          <Text style={styles.addButtonText}>{task ? 'Opslaan' : 'Toevoegen'}</Text>
+          <Text style={styles.addButtonText}>{task ? t('Opslaan', 'Save') : t('Toevoegen', 'Add')}</Text>
         </Pressable>
       </View>
     </View>
@@ -706,15 +726,18 @@ function ExamSheet({
   };
 
   return (
-    <Sheet visible title={exam ? 'Examen wijzigen' : `Examen op ${shortDay(date)}`} onClose={() => onDone(null)}>
+    <Sheet visible title={exam ? t('Examen wijzigen', 'Edit exam') : t(`Examen op ${shortDay(date)}`, `Exam on ${shortDay(date)}`)} onClose={() => onDone(null)}>
       <Text style={styles.muted}>
         {exam
-          ? 'Een andere dag kies je door het examen hier te verwijderen en op die dag opnieuw toe te voegen.'
-          : `Dit examen komt op ${longDay(date)}. Een andere dag? Sluit dit blad en tik eerst die dag aan in de kalender.`}
+          ? t('Een andere dag kies je door het examen hier te verwijderen en op die dag opnieuw toe te voegen.', 'To pick another day, remove the exam here and add it again on that day.')
+          : t(
+              `Dit examen komt op ${longDay(date)}. Een andere dag? Sluit dit blad en tik eerst die dag aan in de kalender.`,
+              `This exam goes on ${longDay(date)}. Another day? Close this sheet and tap that day in the calendar first.`,
+            )}
       </Text>
-      <Text style={styles.label}>Vak</Text>
-      <CoursePicker view={view} value={course} onChange={setCourse} placeholder="Zoek een vak of typ een naam" />
-      <Text style={styles.label}>Uur (optioneel)</Text>
+      <Text style={styles.label}>{t('Vak', 'Course')}</Text>
+      <CoursePicker view={view} value={course} onChange={setCourse} placeholder={t('Zoek een vak of typ een naam', 'Search a course or type a name')} />
+      <Text style={styles.label}>{t('Uur (optioneel)', 'Time (optional)')}</Text>
       <TextInput
         value={time}
         onChangeText={setTime}
@@ -722,10 +745,10 @@ function ExamSheet({
         placeholderTextColor={COLORS.muted}
         keyboardType="numbers-and-punctuation"
         style={[styles.input, timeInvalid && styles.inputInvalid]}
-        accessibilityLabel="Uur van het examen"
+        accessibilityLabel={t('Uur van het examen', 'Time of the exam')}
       />
-      {timeInvalid ? <Text style={styles.error}>Schrijf het uur als 09:00.</Text> : null}
-      <Button label={exam ? 'Opslaan' : 'Examen toevoegen'} busy={handle.busy} disabled={!course || timeInvalid} onPress={() => void save()} />
+      {timeInvalid ? <Text style={styles.error}>{t('Schrijf het uur als 09:00.', 'Write the time as 09:00.')}</Text> : null}
+      <Button label={exam ? t('Opslaan', 'Save') : t('Examen toevoegen', 'Add exam')} busy={handle.busy} disabled={!course || timeInvalid} onPress={() => void save()} />
     </Sheet>
   );
 }

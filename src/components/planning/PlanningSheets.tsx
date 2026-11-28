@@ -41,6 +41,7 @@ import type { PlanningHandle } from '../../planning/usePlanning';
 import { COLORS, FONTS, PLANNING, RADIUS, SPACING, TYPE } from '../../theme/tokens';
 import { Button } from '../ui';
 import { CARD_SHADOW } from '../HomeSection';
+import { t } from '../../i18n';
 
 /** Een blad dat van onder inschuift, op papier, zoals de rest van de app. */
 export function Sheet({
@@ -58,13 +59,13 @@ export function Sheet({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.root}>
-        <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel="Sluiten" />
+        <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel={t('Sluiten', 'Close')} />
         <View style={[styles.sheet, { paddingBottom: insets.bottom + SPACING.lg }]}>
           <View style={styles.header}>
             <Text style={styles.title} numberOfLines={3}>
               {title}
             </Text>
-            <Pressable onPress={onClose} hitSlop={12} accessibilityLabel="Sluiten" accessibilityRole="button">
+            <Pressable onPress={onClose} hitSlop={12} accessibilityLabel={t('Sluiten', 'Close')} accessibilityRole="button">
               <X size={20} color={COLORS.muted} />
             </Pressable>
           </View>
@@ -177,14 +178,14 @@ export function DetailSheet({
     const { event, occurrence } = ref;
     return (
       <Sheet visible title={event.title} onClose={onClose}>
-        <Text style={styles.kicker}>VTK-evenement</Text>
-        <Fact label="Wanneer" value={`${shortDay(occurrence.date)}${occurrence.allDay ? '' : `, ${range(occurrence.start, occurrence.end)}`}${occurrence.endDate !== occurrence.date ? ` tot ${shortDay(occurrence.endDate)}` : ''}`} />
+        <Text style={styles.kicker}>{t('VTK-evenement', 'VTK event')}</Text>
+        <Fact label={t('Wanneer', 'When')} value={`${shortDay(occurrence.date)}${occurrence.allDay ? '' : `, ${range(occurrence.start, occurrence.end)}`}${occurrence.endDate !== occurrence.date ? t(` tot ${shortDay(occurrence.endDate)}`, ` to ${shortDay(occurrence.endDate)}`) : ''}`} />
         <Fact label="Moment" value={occurrence.label} />
-        <Fact label="Waar" value={occurrence.location ?? event.location} />
+        <Fact label={t('Waar', 'Where')} value={occurrence.location ?? event.location} />
         <View style={styles.actions}>
           <ActionRow
             icon={CalendarCheck}
-            label="Bekijk het evenement"
+            label={t('Bekijk het evenement', 'View the event')}
             onPress={() => {
               onClose();
               onOpenEvent(event.id);
@@ -192,8 +193,8 @@ export function DetailSheet({
           />
           <ActionRow
             icon={Trash2}
-            label="Uit mijn planning halen"
-            hint="Het evenement blijft op de kalender staan; het verdwijnt enkel uit je planning en je geëxporteerde agenda."
+            label={t('Uit mijn planning halen', 'Remove from my planning')}
+            hint={t('Het evenement blijft op de kalender staan; het verdwijnt enkel uit je planning en je geëxporteerde agenda.', 'The event stays on the calendar; it is only removed from your planning and your exported calendar.')}
             disabled={busy}
             destructive
             onPress={() => {
@@ -209,33 +210,36 @@ export function DetailSheet({
     const { item } = ref;
     return (
       <Sheet visible title={item.title} onClose={onClose}>
-        <Text style={styles.kicker}>{item.kind === 'deadline' ? 'Deadline' : 'Verplichte sessie'}</Text>
-        <Fact label="Vak" value={item.subjectLabel} />
+        <Text style={styles.kicker}>{item.kind === 'deadline' ? 'Deadline' : t('Verplichte sessie', 'Mandatory session')}</Text>
+        <Fact label={t('Vak', 'Course')} value={item.subjectLabel} />
         <Fact
-          label={item.kind === 'deadline' ? 'Tegen' : 'Wanneer'}
-          value={`${shortDay(item.date)}${item.time ? `, ${range(item.time, item.end)}` : item.kind === 'deadline' ? ', einde van de dag' : ''}`}
+          label={item.kind === 'deadline' ? t('Tegen', 'Due') : t('Wanneer', 'When')}
+          value={`${shortDay(item.date)}${item.time ? `, ${range(item.time, item.end)}` : item.kind === 'deadline' ? t(', einde van de dag', ', end of the day') : ''}`}
         />
-        <Fact label="Notitie" value={item.note} />
+        <Fact label={t('Notitie', 'Note')} value={item.note} />
         <View style={styles.actions}>
           <ActionRow
             icon={Check}
-            label={item.done ? 'Niet meer afgevinkt' : 'Afvinken'}
+            label={item.done ? t('Niet meer afgevinkt', 'Uncheck') : t('Afvinken', 'Check off')}
             disabled={busy}
             onPress={() => void handle.run({ op: 'itemDone', id: item.id, value: !item.done })}
           />
           <ActionRow
             icon={Trash2}
-            label="Verwijderen"
+            label={t('Verwijderen', 'Remove')}
             disabled={busy}
             destructive
             onPress={() =>
               Alert.alert(
-                'Deze deadline verwijderen?',
-                `"${item.title}" verdwijnt uit je planning, ook op Burgieclan en uit je geëxporteerde agenda. Je lessen en je andere deadlines blijven staan.`,
+                t('Deze deadline verwijderen?', 'Remove this deadline?'),
+                t(
+                  `"${item.title}" verdwijnt uit je planning, ook op Burgieclan en uit je geëxporteerde agenda. Je lessen en je andere deadlines blijven staan.`,
+                  `"${item.title}" will be removed from your planning, also on Burgieclan and from your exported calendar. Your classes and other deadlines stay.`,
+                ),
                 [
-                  { text: 'Annuleren', style: 'cancel' },
+                  { text: t('Annuleren', 'Cancel'), style: 'cancel' },
                   {
-                    text: 'Verwijderen',
+                    text: t('Verwijderen', 'Remove'),
                     style: 'destructive',
                     onPress: () => void handle.run({ op: 'deleteItem', id: item.id }).then((ok) => ok && onClose()),
                   },
@@ -313,23 +317,23 @@ function SessionSheet({
       <View style={styles.toggles}>
         <Toggle
           icon={Check}
-          label={session.done ? 'Afgevinkt' : 'Afvinken'}
+          label={session.done ? t('Afgevinkt', 'Checked off') : t('Afvinken', 'Check off')}
           active={session.done}
           disabled={busy}
           onPress={() => void run({ op: 'done', uid: session.uid, value: !session.done })}
         />
         <Toggle
           icon={Flag}
-          label="Verplicht"
-          note={session.mandatory === 'rule' ? 'elke week' : undefined}
+          label={t('Verplicht', 'Mandatory')}
+          note={session.mandatory === 'rule' ? t('elke week', 'every week') : undefined}
           active={session.mandatory !== null}
           disabled={busy}
           onPress={toggleMandatory}
         />
         <Toggle
           icon={EyeOff}
-          label={session.hidden ? 'Verborgen' : 'Verbergen'}
-          note={session.hidden === 'rule' ? 'elke week' : undefined}
+          label={session.hidden ? t('Verborgen', 'Hidden') : t('Verbergen', 'Hide')}
+          note={session.hidden === 'rule' ? t('elke week', 'every week') : undefined}
           active={session.hidden !== null}
           disabled={busy}
           onPress={toggleHidden}
@@ -340,8 +344,8 @@ function SessionSheet({
         {parallel && session.hidden === null ? (
           <ActionRow
             icon={Users}
-            label="Ik ga naar deze groep"
-            hint="Verbergt de andere groepen van dit vak deze week."
+            label={t('Ik ga naar deze groep', 'I go to this group')}
+            hint={t('Verbergt de andere groepen van dit vak deze week.', 'Hides the other groups of this course this week.')}
             disabled={busy}
             onPress={() => void run({ op: 'keepOnly', uid: session.uid })}
           />
@@ -355,25 +359,25 @@ function SessionSheet({
         >
           <Repeat size={18} color={COLORS.ink} />
           <View style={styles.rowText}>
-            <Text style={styles.rowLabel}>Elke week op dit uur</Text>
+            <Text style={styles.rowLabel}>{t('Elke week op dit uur', 'Every week at this time')}</Text>
           </View>
           {weekly ? <ChevronUp size={18} color={COLORS.muted} /> : <ChevronDown size={18} color={COLORS.muted} />}
         </Pressable>
 
         {weekly ? (
           <View style={styles.nested}>
-            <Text style={styles.hint}>Voor elke les van dit vak op deze dag, dit uur en in dit lokaal.</Text>
+            <Text style={styles.hint}>{t('Voor elke les van dit vak op deze dag, dit uur en in dit lokaal.', 'For every class of this course on this day, at this time and in this room.')}</Text>
             {session.mandatory === 'rule' && session.mandatoryRule ? (
               <ActionRow
                 icon={Flag}
-                label="Niet meer elke week verplicht"
+                label={t('Niet meer elke week verplicht', 'No longer mandatory every week')}
                 disabled={busy}
                 onPress={() => void run({ op: 'removeRule', id: session.mandatoryRule as string })}
               />
             ) : (
               <ActionRow
                 icon={Flag}
-                label="Elke week verplicht"
+                label={t('Elke week verplicht', 'Mandatory every week')}
                 disabled={busy}
                 onPress={() => void run({ op: 'addRule', uid: session.uid, action: 'mandatory' })}
               />
@@ -381,14 +385,14 @@ function SessionSheet({
             {session.hidden === 'rule' && session.hiddenRule ? (
               <ActionRow
                 icon={Eye}
-                label="Niet meer elke week verbergen"
+                label={t('Niet meer elke week verbergen', 'Stop hiding every week')}
                 disabled={busy}
                 onPress={() => void run({ op: 'removeRule', id: session.hiddenRule as string })}
               />
             ) : (
               <ActionRow
                 icon={EyeOff}
-                label="Elke week verbergen"
+                label={t('Elke week verbergen', 'Hide every week')}
                 disabled={busy}
                 onPress={() => void run({ op: 'addRule', uid: session.uid, action: 'hide' })}
               />
@@ -399,8 +403,8 @@ function SessionSheet({
         {session.courseUrl ? (
           <ActionRow
             icon={BookOpen}
-            label="Vak op Burgieclan"
-            hint="Cursussen, examens en samenvattingen."
+            label={t('Vak op Burgieclan', 'Course on Burgieclan')}
+            hint={t('Cursussen, examens en samenvattingen.', 'Course notes, exams and summaries.')}
             onPress={() => void WebBrowser.openBrowserAsync(session.courseUrl as string)}
           />
         ) : null}
@@ -475,11 +479,9 @@ export function ExportSheet({
   const webcal = planning?.webcalUrl ?? null;
 
   return (
-    <Sheet visible={visible} title="Je planning in je eigen agenda" onClose={onClose}>
+    <Sheet visible={visible} title={t('Je planning in je eigen agenda', 'Your planning in your own calendar')} onClose={onClose}>
       <Text style={styles.text}>
-        Een link waarop Apple Agenda, Google Agenda of Outlook zich kan abonneren. Je lessen zonder
-        de verborgen, verplichte lessen als MANDATORY, je deadlines, en de VTK-evenementen die je in
-        je planning zette. Het is dezelfde link als op Burgieclan.
+        {t('Een link waarop Apple Agenda, Google Agenda of Outlook zich kan abonneren. Je lessen zonder de verborgen, verplichte lessen als MANDATORY, je deadlines, en de VTK-evenementen die je in je planning zette. Het is dezelfde link als op Burgieclan.', 'A link that Apple Calendar, Google Calendar or Outlook can subscribe to. Your classes without the hidden ones, mandatory classes as MANDATORY, your deadlines, and the VTK events you added to your planning. It is the same link as on Burgieclan.')}
       </Text>
       {feed ? (
         <Text selectable style={styles.link}>
@@ -489,35 +491,34 @@ export function ExportSheet({
       <View style={styles.buttons}>
         {webcal ? (
           <Button
-            label="Abonneren in mijn agenda"
+            label={t('Abonneren in mijn agenda', 'Subscribe in my calendar')}
             onPress={() =>
               void Linking.openURL(webcal).catch(() =>
-                Alert.alert('Geen agenda-app gevonden', 'Deel de link en voeg hem toe als agenda via URL.'),
+                Alert.alert(t('Geen agenda-app gevonden', 'No calendar app found'), t('Deel de link en voeg hem toe als agenda via URL.', 'Share the link and add it as a calendar by URL.')),
               )
             }
           />
         ) : null}
         {feed ? (
-          <Button label="Link delen" variant="ghost" onPress={() => void Share.share({ message: feed })} />
+          <Button label={t('Link delen', 'Share link')} variant="ghost" onPress={() => void Share.share({ message: feed })} />
         ) : null}
       </View>
       <Text style={styles.hint}>
-        Zeg je abonnement op het KU Leuven-rooster op, anders staat elke les er twee keer. Google
-        Agenda ververst een geabonneerde agenda maar om de paar uur.
+        {t('Zeg je abonnement op het KU Leuven-rooster op, anders staat elke les er twee keer. Google Agenda ververst een geabonneerde agenda maar om de paar uur.', 'Cancel your subscription to the KU Leuven timetable, or every class will show up twice. Google Calendar only refreshes a subscribed calendar every few hours.')}
       </Text>
       <View style={styles.actions}>
         <ActionRow
           icon={Link2}
-          label="Maak een nieuwe link"
-          hint="Iedereen met de link kan je planning zien."
+          label={t('Maak een nieuwe link', 'Create a new link')}
+          hint={t('Iedereen met de link kan je planning zien.', 'Anyone with the link can see your planning.')}
           disabled={handle.busy}
           onPress={() =>
             Alert.alert(
-              'Een nieuwe link maken?',
-              'De huidige link werkt meteen niet meer, ook niet in een agenda die erop geabonneerd is. Je planning zelf blijft zoals ze is.',
+              t('Een nieuwe link maken?', 'Create a new link?'),
+              t('De huidige link werkt meteen niet meer, ook niet in een agenda die erop geabonneerd is. Je planning zelf blijft zoals ze is.', 'The current link stops working right away, also in a calendar subscribed to it. Your planning itself stays as it is.'),
               [
-                { text: 'Annuleren', style: 'cancel' },
-                { text: 'Nieuwe link', style: 'destructive', onPress: () => void handle.rotateFeed() },
+                { text: t('Annuleren', 'Cancel'), style: 'cancel' },
+                { text: t('Nieuwe link', 'New link'), style: 'destructive', onPress: () => void handle.rotateFeed() },
               ],
             )
           }
@@ -549,41 +550,44 @@ export function SettingsSheet({
       <View style={styles.actions}>
         <ActionRow
           icon={RefreshCw}
-          label="Nu synchroniseren"
-          hint={planning?.lastSync ? `Laatst met KU Leuven: ${new Date(planning.lastSync).toLocaleString('nl-BE')}` : undefined}
+          label={t('Nu synchroniseren', 'Sync now')}
+          hint={planning?.lastSync ? t(
+                  `Laatst met KU Leuven: ${new Date(planning.lastSync).toLocaleString('nl-BE')}`,
+                  `Last synced with KU Leuven: ${new Date(planning.lastSync).toLocaleString('en-GB')}`,
+                ) : undefined}
           disabled={handle.busy}
           onPress={() => void handle.sync()}
         />
         <ActionRow
           icon={showHidden ? EyeOff : Eye}
-          label={showHidden ? 'Verborgen lessen niet tonen' : 'Verborgen lessen tonen'}
+          label={showHidden ? t('Verborgen lessen niet tonen', 'Do not show hidden classes') : t('Verborgen lessen tonen', 'Show hidden classes')}
           onPress={() => {
             onToggleHidden();
             onClose();
           }}
         />
-        <ActionRow icon={Link2} label="Ander lessenrooster koppelen" onPress={onChangeLink} />
+        <ActionRow icon={Link2} label={t('Ander lessenrooster koppelen', 'Link another timetable')} onPress={onChangeLink} />
         {planning ? (
           <ActionRow
             icon={ExternalLink}
-            label="Open op Burgieclan"
-            hint="Het overzicht per vak en deadlines toevoegen."
+            label={t('Open op Burgieclan', 'Open on Burgieclan')}
+            hint={t('Het overzicht per vak en deadlines toevoegen.', 'The overview per course and adding deadlines.')}
             onPress={() => void WebBrowser.openBrowserAsync(planning.burgieclanUrl)}
           />
         ) : null}
         <ActionRow
           icon={Unlink}
-          label="Lessenrooster ontkoppelen"
+          label={t('Lessenrooster ontkoppelen', 'Unlink timetable')}
           destructive
           disabled={handle.busy}
           onPress={() =>
             Alert.alert(
-              'Je planning wissen?',
-              'Je lessenrooster wordt ontkoppeld en je hele planning gaat weg, ook op Burgieclan: wat je afvinkte, je deadlines, je wekelijkse regels en de VTK-evenementen erin. De geëxporteerde agenda werkt niet meer. De evenementen zelf blijven op de VTK-kalender.',
+              t('Je planning wissen?', 'Clear your planning?'),
+              t('Je lessenrooster wordt ontkoppeld en je hele planning gaat weg, ook op Burgieclan: wat je afvinkte, je deadlines, je wekelijkse regels en de VTK-evenementen erin. De geëxporteerde agenda werkt niet meer. De evenementen zelf blijven op de VTK-kalender.', 'Your timetable is unlinked and your whole planning is removed, also on Burgieclan: what you checked off, your deadlines, your weekly rules and the VTK events in it. The exported calendar stops working. The events themselves stay on the VTK calendar.'),
               [
-                { text: 'Annuleren', style: 'cancel' },
+                { text: t('Annuleren', 'Cancel'), style: 'cancel' },
                 {
-                  text: 'Wissen',
+                  text: t('Wissen', 'Clear'),
                   style: 'destructive',
                   onPress: () => void handle.unsubscribe().then((ok) => ok && onClose()),
                 },
@@ -613,11 +617,11 @@ export function SetupForm({
   return (
     <View style={styles.setup}>
       <View style={styles.steps}>
-        <Text style={styles.step}>1. Open je rooster op de KU Leuven-roosterwebsite (TimeEdit).</Text>
+        <Text style={styles.step}>{t('1. Open je rooster op de KU Leuven-roosterwebsite (TimeEdit).', '1. Open your timetable on the KU Leuven timetable website (TimeEdit).')}</Text>
         <Text style={styles.step}>
-          2. Kies Abonneren en kopieer de link. Ze begint met webcal://cloud.timeedit.net/be_kuleuven/.
+          {t('2. Kies Abonneren en kopieer de link. Ze begint met webcal://cloud.timeedit.net/be_kuleuven/.', '2. Choose Subscribe and copy the link. It starts with webcal://cloud.timeedit.net/be_kuleuven/.')}
         </Text>
-        <Text style={styles.step}>3. Plak ze hieronder.</Text>
+        <Text style={styles.step}>{t('3. Plak ze hieronder.', '3. Paste it below.')}</Text>
       </View>
       <TextInput
         value={link}
@@ -627,18 +631,17 @@ export function SetupForm({
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"
-        accessibilityLabel="Abonnementslink van je KU Leuven-lessenrooster"
+        accessibilityLabel={t('Abonnementslink van je KU Leuven-lessenrooster', 'Subscription link of your KU Leuven timetable')}
         style={styles.input}
       />
       <Button
-        label="Rooster koppelen"
+        label={t('Rooster koppelen', 'Link timetable')}
         busy={handle.busy}
         disabled={link.trim() === ''}
         onPress={() => void handle.subscribe(link.trim()).then((ok) => ok && onDone?.())}
       />
       <Text style={styles.hint}>
-        Alleen jij ziet je planning. Ze is dezelfde als op Burgieclan, en Burgieclan kijkt ongeveer
-        elk uur of je rooster veranderde.
+        {t('Alleen jij ziet je planning. Ze is dezelfde als op Burgieclan, en Burgieclan kijkt ongeveer elk uur of je rooster veranderde.', 'Only you can see your planning. It is the same as on Burgieclan, and Burgieclan checks about every hour whether your timetable changed.')}
       </Text>
     </View>
   );
