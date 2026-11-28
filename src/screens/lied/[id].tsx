@@ -12,9 +12,9 @@ import { t } from '../../i18n';
 
 /**
  * Eén lied uit het liederboek: de paginanummers, wie het schreef, de tekst per
- * strofe en, als rondgezang.be er een heeft, de video onderaan.
+ * strofe en, als er een is, de video onderaan.
  *
- * De tekst volgt de opmaak van codex.rondgezang.be: een refrein staat
+ * Een refrein staat
  * ingesprongen achter de gele lijn, een herhaling in het geel gemarkeerd met
  * het aantal keer erachter ("(bis)", "(ter)"), een vervangregel of tussenzin
  * schuin.
@@ -62,7 +62,7 @@ export default function LiedScreen() {
       ) : null}
 
       {song.s.length === 0 ? (
-        <Text style={styles.hint}>{t('Voor dit lied staat er geen tekst op rondgezang.be.', 'There are no lyrics for this song on rondgezang.be.')}</Text>
+        <Text style={styles.hint}>{t('Voor dit lied is er geen tekst.', 'There are no lyrics for this song.')}</Text>
       ) : (
         <View style={styles.text}>
           {song.s.map((stanza, index) => (
@@ -124,7 +124,7 @@ function Line({ line, chorus }: { line: SongLine; chorus: boolean }) {
 }
 
 /**
- * De video van rondgezang.be, ingebed. YouTube weigert een inbedding zonder
+ * De video bij het lied, ingebed. YouTube weigert een inbedding zonder
  * herkomst, dus de pagina krijgt vtk.be als basis; lukt het toch niet, dan opent
  * de link eronder YouTube zelf.
  */

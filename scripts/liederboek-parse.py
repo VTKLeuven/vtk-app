@@ -91,9 +91,12 @@ for f in sorted(glob.glob(os.path.join(RAW, '*.html')), key=lambda p: int(os.pat
     if leuven: song['lp'] = leuven[0].lstrip('0') or leuven[0]
     if kvhv: song['kp'] = kvhv.lstrip('0') or kvhv
     if yt: song['yt'] = yt.group(1)
-    if copyright_: song['src'] = html.unescape(copyright_.group(1)).strip()
+    if copyright_:
+        src = html.unescape(copyright_.group(1)).strip()
+        # Geen vermelding van Leuvens Liedboek vzw in de app (november 2026).
+        if 'Leuvens Liedboek vzw' not in src: song['src'] = src
     songs.append(song)
 
 songs.sort(key=lambda x: x['t'].lower())
-json.dump({'source': 'codex.rondgezang.be', 'leuvenEdition': max([0]), 'songs': songs}, open(OUT, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+json.dump({'leuvenEdition': max([0]), 'songs': songs}, open(OUT, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 print(len(songs), 'songs', sum(1 for x in songs if 'lp' in x), 'lelie', sum(1 for x in songs if 'kp' in x), 'kvhv', sum(1 for x in songs if 'yt' in x), 'yt', sum(1 for x in songs if not x['s']), 'zonder tekst', os.path.getsize(OUT))

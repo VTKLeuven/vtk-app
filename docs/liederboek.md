@@ -7,8 +7,10 @@ opengaan.
 
 Per lied: de titel, de tekst per strofe (couplet en refrein, herhalingen,
 vervangregels), de pagina in het Leuvens Liedboek (de nieuwste uitgave) en in de
-KVHV Groene Codex van 2020, wie het schreef, de bron ("Tekst verkregen via ...")
-en de YouTube-video als die er staat. Zoeken gaat op titel en op paginanummer.
+KVHV Groene Codex van 2020, wie het schreef, de bron (behalve "Tekst verkregen
+via Leuvens Liedboek vzw", dat de app sinds november 2026 niet meer toont; het
+importscript laat die weg) en de YouTube-video als die er staat. De app noemt
+de herkomst nergens. Zoeken gaat op titel en op paginanummer.
 
 ## Bijwerken
 

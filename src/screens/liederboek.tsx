@@ -12,7 +12,7 @@ import { t } from '../i18n';
 type Book = 'alle' | 'leuven' | 'kvhv';
 
 /**
- * Het liederboek: alle liedjes van codex.rondgezang.be, ook zonder netwerk.
+ * Het liederboek: alle liedjes, ook zonder netwerk.
  *
  * Zoeken gaat op titel én op paginanummer: tik "133" en je krijgt het lied op
  * pagina 133 van het Leuvens Liedboek (LeLie) en dat op pagina 133 van de KVHV
@@ -59,7 +59,7 @@ export default function LiederboekScreen() {
           <View style={styles.overscroll} />
           <PageHead
             title={t('Liederboek', 'Songbook')}
-            subtitle={t(`${songs.length} liedjes van codex.rondgezang.be`, `${songs.length} songs from codex.rondgezang.be`)}
+            subtitle={t(`${songs.length} liedjes`, `${songs.length} songs`)}
             tabs={{
               value: book,
               onChange: setBook,

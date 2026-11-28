@@ -1,13 +1,12 @@
 /**
- * Het liederboek: de liedjes van codex.rondgezang.be (Rondgezang vzw), met
- * toestemming overgenomen in de app (november 2026), zodat ze ook zonder netwerk
- * open gaan op een cantus.
+ * Het liederboek: de liedjes staan in de app zelf (november 2026), zodat ze
+ * ook zonder netwerk open gaan op een cantus.
  *
  * De gegevens staan in `src/data/liederboek.json` en worden gemaakt met het
  * importscript (zie `docs/liederboek.md`). Per lied: de titel, de tekst per
  * strofe, de paginanummers in het Leuvens Liedboek (de nieuwste uitgave) en in
- * de KVHV Groene Codex van 2020, wie het schreef, en de YouTube-video als
- * rondgezang.be er een bij heeft.
+ * de KVHV Groene Codex van 2020, wie het schreef, en de YouTube-video als die
+ * er is.
  *
  * Het bestand is groot (honderden liedjes); het wordt pas ingelezen wanneer je
  * het liederboek opent, niet bij het opstarten van de app.
@@ -35,11 +34,11 @@ export type Song = {
   kp?: string;
   /** YouTube-id. */
   yt?: string;
-  /** "Tekst verkregen via ...". */
+  /** Bronvermelding of copyright bij de tekst. */
   src?: string;
 };
 
-type Book = { source: string; songs: Song[] };
+type Book = { songs: Song[] };
 
 let cache: Book | null = null;
 

@@ -104,7 +104,7 @@ export const TAB_ROUTES = {
     'beheer',
     'vervoer',
     'web',
-    // Het liederboek van codex.rondgezang.be.
+    // Het liederboek.
     'liederboek',
     'lied/[id]',
     // Het grondplan van de jobfair (uit vtk-floorplan-app).
