@@ -1,4 +1,5 @@
-import { Check, Globe, Plus } from 'lucide-react-native';
+import * as Linking from 'expo-linking';
+import { Check, Globe, Phone, Plus } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -52,6 +53,10 @@ const MAX_PIPS = 6;
  * Je eigen shiften staan ertussen, met "Jij" in het geel. Tik een rij aan voor
  * de uitleg, wie er nog op staat, de keuze om je plaats af te staan en
  * uitschrijven.
+ *
+ * Bij een bijrijdshift (zoals C&G) waarop je staat, tonen de details wie er
+ * rijdt, met een knop om te bellen; de server stuurt dat enkel voor je eigen
+ * shift (`ride`).
  *
  * Alle regels staan op de server. Of je nog kan uitschrijven is een veld dat de
  * API meestuurt (`canUnregister`) en geen berekening hier: de 24-uursgrens en de
@@ -390,6 +395,7 @@ function ShiftRow({
   };
 
   const full = shift.takenSpots >= shift.maxParticipants;
+  const driver = shift.ride?.driver ?? null;
 
   return (
     <View style={[styles.shift, !first && styles.shiftDivider]}>
@@ -459,6 +465,36 @@ function ShiftRow({
           ) : null}
           {shift.description ? <Text style={styles.body}>{shift.description}</Text> : null}
           {shift.instructions ? <Prose>{shift.instructions}</Prose> : null}
+
+          {/* Een bijrijdshift waarop je zelf staat: wie er rijdt en op welk
+              nummer. De server stuurt `ride` enkel mee op je eigen shift, dus
+              hier is er niets af te schermen. */}
+          {shift.ride ? (
+            <View style={styles.driver}>
+              <Text style={styles.factLabel}>{t('Chauffeur', 'Driver')}</Text>
+              {driver ? (
+                <>
+                  <Text style={styles.driverName}>{driver.name}</Text>
+                  {driver.phone ? (
+                    <Pressable
+                      accessibilityRole="link"
+                      accessibilityLabel={`${t('Bel', 'Call')} ${driver.name}: ${driver.phone}`}
+                      onPress={() => void Linking.openURL(`tel:${driver.phone?.replace(/[^\d+]/g, '')}`)}
+                      hitSlop={6}
+                      style={({ pressed }) => [styles.call, pressed && styles.pressed]}
+                    >
+                      <Phone color={COLORS.strong} size={15} />
+                      <Text style={styles.callText}>{driver.phone}</Text>
+                    </Pressable>
+                  ) : (
+                    <Text style={styles.hint}>{t('Geen nummer bekend', 'No number known')}</Text>
+                  )}
+                </>
+              ) : (
+                <Text style={styles.hint}>{t('Nog niet gekend', 'Not known yet')}</Text>
+              )}
+            </View>
+          ) : null}
 
           <View style={styles.factRow}>
             <Text style={styles.factLabel}>{t('Levert op', 'Earns')}</Text>
@@ -648,6 +684,17 @@ const styles = StyleSheet.create({
   details: { paddingBottom: SPACING.md, gap: SPACING.sm },
   factRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   factLabel: { ...TYPE.kicker, color: COLORS.muted, textTransform: 'uppercase' },
+  driver: { gap: 4 },
+  driverName: { ...TYPE.small, color: COLORS.ink },
+  call: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, alignSelf: 'flex-start', paddingVertical: 4 },
+  callText: {
+    fontFamily: FONTS.semibold,
+    fontSize: 14,
+    color: COLORS.strong,
+    textDecorationLine: 'underline',
+    textDecorationColor: COLORS.yellow,
+    fontVariant: ['tabular-nums'],
+  },
   roster: { gap: SPACING.sm, marginTop: SPACING.xs },
   people: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   person: {
