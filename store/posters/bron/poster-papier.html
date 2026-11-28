@@ -39,16 +39,8 @@
   .feature span { font-size: 15.5px; line-height: 1.2; font-weight: 700; }
 
   .scan { margin-top: auto; display: flex; align-items: center; gap: 18px; }
-  .qr {
-    position: relative; width: 112px; height: 112px; flex: none; box-sizing: border-box;
-    background: #FFFFFF; border: 2px solid #0E1A36; border-radius: 14px; padding: 7px;
-  }
-  .qr > img { display: block; width: 94px; height: 94px; }
-  .qr .mark {
-    position: absolute; left: 37px; top: 42px; width: 34px; height: 24px; background: #FFFFFF;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .qr .mark img { width: 28px; height: auto; display: block; }
+  /* qr.png heeft witte hoeken buiten zijn navy kader (vanaf 20/1200, straal 89/1200); knip die weg. */
+  .qr { display: block; width: 116px; height: 116px; flex: none; clip-path: inset(1.95px round 8.6px); }
   .scan-title { font-size: 25px; line-height: 1; font-weight: 800; letter-spacing: -0.03em; }
   .scan-url {
     margin-top: 8px; font-size: 17px; font-weight: 700;
@@ -63,7 +55,6 @@
   }
   .frame {
     position: relative; background: #0E1A36; border-radius: 43px; padding: 8px;
-    box-shadow: 0 24px 50px rgba(14, 26, 54, 0.28);
   }
   .frame > img { display: block; width: 242px; height: auto; border-radius: 35px; }
   .island {
@@ -102,10 +93,7 @@
   </div>
 
   <div class="scan">
-    <div class="qr">
-      <img src="qr.svg" alt="QR-code naar vtk.be/app">
-      <div class="mark"><img src="vtk-logo.svg" alt=""></div>
-    </div>
+    <img class="qr" src="qr.png" alt="QR-code naar vtk.be/app">
     <div>
       <div class="scan-title">Scan en<br>download</div>
       <div class="scan-url">vtk.be/app</div>
